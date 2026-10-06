@@ -1,0 +1,23 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <!-- 圆润播放三角：三个尖角用二次贝塞尔（Q）收圆，控制点为原顶点 -->
+    <!-- group 以画布中心(24,24)等比放大 1.4 倍，让三角在系统启动屏图标区内更大气 -->
+    <group
+        android:pivotX="24"
+        android:pivotY="24"
+        android:scaleX="1.4"
+        android:scaleY="1.4">
+        <path
+            android:fillColor="@color/splash_logo_tint"
+            android:pathData="M18,18.2
+                L18,29.8
+                Q18,33 20.828,31.503
+                L32.172,25.497
+                Q35,24 32.172,22.503
+                L20.828,16.497
+                Q18,15 18,18.2 Z" />
+    </group>
+</vector>

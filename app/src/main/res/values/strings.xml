@@ -1,0 +1,348 @@
+<resources>
+    <string name="app_name">123AV</string>
+
+    <!-- 底部导航 -->
+    <string name="tab_home">首页</string>
+    <string name="tab_channels">分栏</string>
+    <string name="tab_history">历史</string>
+    <string name="tab_profile">我的</string>
+
+    <!-- 分栏 -->
+    <string name="channels_title">分栏</string>
+    <string name="channels_quick">快捷入口</string>
+    <string name="channels_empty_title">暂无分栏内容</string>
+    <string name="channels_empty_subtitle">首页导航解析为空，点击重试</string>
+    <string name="channel_back">返回</string>
+    <string name="channel_empty_title">该栏目暂无内容</string>
+    <string name="channel_empty_subtitle">换个栏目看看吧</string>
+    <string name="channel_filter_hint">筛选条目</string>
+    <string name="channel_filter_no_match">没有匹配的条目</string>
+    <string name="channel_entry_count">%1$s 个视频</string>
+    <string name="channel_video_count">%1$,d 个视频</string>
+    <string name="channel_filters_reset">重置筛选</string>
+    <string name="actress_follow">关注</string>
+    <string name="actress_stat_videos">视频</string>
+    <string name="actress_stat_views">观看</string>
+    <string name="actress_stat_followers">关注者</string>
+    <string name="actress_stat_debut">出道</string>
+
+    <!-- 首页 -->
+    <string name="home_section_hot">热门排行</string>
+    <string name="home_section_latest">最新上架</string>
+    <string name="home_section_view_all">查看全部</string>
+    <string name="home_search">搜索</string>
+    <string name="home_category_empty_title">该分类暂无内容</string>
+    <string name="home_category_empty_subtitle">下拉刷新或切换其他分类看看</string>
+
+    <!-- 搜索 -->
+    <string name="search_back">返回</string>
+    <string name="search_action">搜索</string>
+    <string name="search_clear">清空</string>
+    <string name="search_hint">输入编号或关键词</string>
+    <string name="search_initial_title">搜索视频</string>
+    <string name="search_initial_subtitle">输入编号或关键词，查找想看的内容</string>
+    <string name="search_empty_title">未找到相关内容</string>
+    <string name="search_empty_subtitle">没有找到与“%1$s”相关的内容，换个关键词试试</string>
+    <string name="search_result_count">“%1$s” 的搜索结果（%2$d）</string>
+    <string name="search_history_title">搜索历史</string>
+    <string name="search_history_clear_all">清空搜索历史</string>
+    <string name="search_history_clear_confirm">确定清空全部搜索历史吗？</string>
+    <string name="search_history_clear_yes">清空</string>
+    <string name="search_history_clear_no">取消</string>
+    <string name="search_history_delete">删除搜索记录：%1$s</string>
+
+    <!-- 历史 -->
+    <string name="history_title">观看历史</string>
+    <string name="history_title_count">观看历史(%1$d)</string>
+    <string name="history_empty_title">还没有观看记录</string>
+    <string name="history_empty_subtitle">看过的内容会出现在这里</string>
+    <string name="history_clear">清空历史</string>
+    <string name="history_clear_confirm">确定清空全部观看历史吗？</string>
+    <string name="history_clear_confirm_yes">清空</string>
+    <string name="history_clear_confirm_no">取消</string>
+    <string name="history_selected_count">已选择 %1$d 项</string>
+    <string name="history_exit_selection">退出多选</string>
+    <string name="history_select_all">全选</string>
+    <string name="history_deselect_all">取消全选</string>
+    <string name="history_delete_selected">删除所选</string>
+    <string name="history_deleted_single">已删除一条观看记录</string>
+    <string name="history_deleted_multi">已删除 %1$d 条观看记录</string>
+    <string name="history_undo">撤销</string>
+    <string name="history_watched_at">看到 %1$s</string>
+
+    <!-- 收藏 -->
+    <string name="favorites_back">返回</string>
+    <string name="favorites_title">我的收藏</string>
+    <string name="favorites_title_count">我的收藏(%1$d)</string>
+    <string name="favorites_empty_title">还没有收藏</string>
+    <string name="favorites_empty_subtitle">在详情页点击收藏，喜欢的内容会出现在这里</string>
+    <string name="favorites_clear">清空收藏</string>
+    <string name="favorites_clear_confirm">确定清空全部收藏吗？</string>
+    <string name="favorites_clear_confirm_yes">清空</string>
+    <string name="favorites_clear_confirm_no">取消</string>
+    <string name="favorites_selected_count">已选择 %1$d 项</string>
+    <string name="favorites_exit_selection">退出多选</string>
+    <string name="favorites_select_all">全选</string>
+    <string name="favorites_deselect_all">取消全选</string>
+    <string name="favorites_delete_selected">删除所选</string>
+    <string name="favorites_deleted_multi">已取消 %1$d 个收藏</string>
+    <string name="favorites_deleted_single">已取消收藏</string>
+    <string name="favorites_undo">撤销</string>
+    <!-- 收藏分组（收藏夹） -->
+    <string name="favorites_filter_all">全部 %1$d</string>
+    <string name="favorites_filter_ungrouped">未分组 %1$d</string>
+    <string name="favorites_new_group">新建收藏夹</string>
+    <string name="favorites_rename_group">重命名收藏夹</string>
+    <string name="favorites_delete_group">删除收藏夹</string>
+    <string name="favorites_delete_group_confirm">删除收藏夹“%1$s”？其中的视频不会被取消收藏。</string>
+    <string name="favorites_delete_group_confirm_yes">删除</string>
+    <string name="favorites_group_name_hint">收藏夹名称</string>
+    <string name="favorites_group_duplicate">已存在同名收藏夹</string>
+    <string name="favorites_dialog_done">完成</string>
+    <string name="favorites_manage_groups">加入收藏夹</string>
+    <string name="favorites_empty_group_title">这个收藏夹还是空的</string>
+    <string name="favorites_empty_group_subtitle">返回总览，长按或点击管理即可把视频加入收藏夹</string>
+    <!-- 收藏分组重构：文件夹总览 + 单选选择器 -->
+    <string name="favorites_all_videos">全部视频</string>
+    <string name="favorites_ungrouped_label">未分组</string>
+    <string name="favorites_section_groups">我的收藏夹</string>
+    <string name="favorites_group_count">%1$d 个视频</string>
+    <string name="favorites_no_groups_hint">还没有收藏夹，新建后会显示在这里</string>
+    <string name="favorites_picker_title">把 %1$d 个视频添加到收藏夹</string>
+    <string name="favorites_picker_done">完成</string>
+    <string name="favorites_added_group">已添加到“%1$s”</string>
+    <string name="favorites_folder_actions">收藏夹操作</string>
+
+    <!-- 本地关注女演员 -->
+    <string name="followed_title">我的关注</string>
+    <string name="followed_back">返回</string>
+    <string name="followed_refresh">刷新新片</string>
+    <string name="followed_empty_title">还没有关注的演员</string>
+    <string name="followed_empty_subtitle">在女演员个人页点击“关注”，新片会聚合到这里</string>
+    <string name="followed_retry">重新加载</string>
+    <string name="followed_no_videos">暂未获取到影片</string>
+    <string name="actress_followed">已关注</string>
+
+    <!-- 我的 -->
+    <string name="profile_title">我的</string>
+    <string name="profile_user_name">本地用户</string>
+    <string name="profile_user_subtitle">本地视频库 · 观看数据仅保存在本机</string>
+    <string name="profile_group_appearance">外观</string>
+    <string name="profile_group_playback">播放</string>
+    <string name="profile_group_data">内容与数据</string>
+    <string name="profile_group_about">关于</string>
+    <string name="profile_stats_history">观看记录</string>
+    <string name="profile_stats_history_value">%1$d 部</string>
+    <string name="profile_stats_favorites">收藏视频</string>
+    <string name="profile_my_favorites">我的收藏</string>
+    <string name="profile_my_favorites_subtitle">%1$d 个收藏视频</string>
+    <string name="profile_my_followed">我的关注</string>
+    <string name="profile_my_followed_subtitle">%1$d 位关注演员</string>
+    <string name="profile_dynamic_color">动态取色</string>
+    <string name="profile_dynamic_color_desc">跟随壁纸生成主题色（Android 12+）</string>
+    <string name="profile_dynamic_color_unsupported">需 Android 12 及以上系统</string>
+    <string name="profile_pip">画中画播放</string>
+    <string name="profile_pip_desc">全屏播放时按 Home 键或切换应用，自动以小窗继续播放</string>
+    <string name="profile_auto_next">片尾自动连播</string>
+    <string name="profile_auto_next_desc">当前选集播放结束后自动播放下一集</string>
+    <string name="profile_dark_mode">深色模式</string>
+    <string name="profile_dark_mode_system">跟随系统</string>
+    <string name="profile_dark_mode_light">浅色</string>
+    <string name="profile_dark_mode_dark">深色</string>
+    <string name="profile_dark_mode_system_desc">根据系统设置自动切换浅色 / 深色</string>
+    <string name="profile_dark_mode_light_desc">始终使用浅色主题</string>
+    <string name="profile_dark_mode_dark_desc">始终使用深色主题</string>
+    <string name="profile_data_source">数据源状态</string>
+    <string name="profile_data_source_value">在线网页解析 · Jsoup</string>
+    <!-- profile_probe_* 文案由网络诊断页复用 -->
+    <string name="profile_probe_ok">可以正常访问</string>
+    <string name="profile_probe_http_error">站点返回错误</string>
+    <string name="profile_probe_unreachable">暂时无法访问</string>
+    <string name="profile_probe_http_code">HTTP %1$d</string>
+    <string name="profile_probe_latency_ms">%1$d ms</string>
+    <string name="profile_probe_ip">公网 IP</string>
+    <string name="profile_probe_location">归属地</string>
+    <string name="profile_probe_isp">运营商</string>
+    <string name="profile_probe_unknown">未知</string>
+    <string name="profile_probe_ip_failed">IP 信息获取失败</string>
+    <string name="profile_about_version">版本</string>
+    <string name="profile_about_dialog_title">应用说明</string>
+    <string name="profile_about_dialog_intro">本应用是基于 Material Design 3 与 Jetpack Compose 构建的学习练手项目，代码由 AI 全量生成，仅用于 Android 技术学习与交流。应用本身不生产、不上传、不存储任何视频内容，所有信息均来自公开网页的实时解析，播放历史与收藏仅保存在本机。</string>
+    <string name="profile_about_dialog_disclaimer_title">免责声明</string>
+    <string name="profile_about_dialog_disclaimer">1. 本应用仅供个人学习与研究使用，禁止用于任何商业或非法用途。\n2. 所有视频、图片等资源的版权均归原网站及权利人所有，本应用不提供资源存储与下载服务。\n3. 若无意侵犯了您的权益，请联系我们，核实后将立即删除相关内容。\n4. 请在下载后 24 小时内删除，支持正版，因使用本应用产生的一切后果由使用者自行承担。</string>
+    <string name="profile_about_dialog_got_it">我知道了</string>
+
+    <!-- 详情/播放 -->
+    <string name="detail_play">播放</string>
+    <string name="detail_favorite">收藏</string>
+    <string name="detail_favorited">已收藏</string>
+    <string name="detail_favorite_added">已加入收藏</string>
+    <string name="detail_favorite_removed">已取消收藏</string>
+    <string name="detail_episodes">选集</string>
+    <string name="detail_episode_n">第%1$d集</string>
+    <string name="detail_info">详情</string>
+    <string name="detail_synopsis">简介</string>
+    <string name="detail_expand">查看更多</string>
+    <string name="detail_collapse">收起</string>
+    <string name="title_expand">更多</string>
+    <string name="detail_resolving">正在解析播放地址，请稍候…</string>
+    <string name="detail_resolve_failed">播放地址解析失败，请检查网络后重试</string>
+    <string name="detail_retry">重试</string>
+    <string name="detail_not_found">内容不存在或已下线</string>
+    <string name="detail_back">返回</string>
+    <string name="detail_share">分享视频链接</string>
+    <string name="detail_auto_next">正在播放下一集…</string>
+
+    <!-- 全局错误提示（错误类型归一化后统一文案，避免暴露英文异常信息） -->
+    <string name="common_retry">重试</string>
+    <string name="error_dns">无法连接服务器（域名解析失败），请检查网络后重试</string>
+    <string name="error_timeout">请求超时，当前网络状况不佳，请稍后重试</string>
+    <string name="error_ssl">安全连接建立失败（HTTPS 证书异常），请更换网络后重试</string>
+    <string name="error_network">网络连接失败，请检查网络设置后重试</string>
+    <string name="error_http_client">请求异常（HTTP %1$d），请稍后重试</string>
+    <string name="error_http_server">服务器暂时不可用（HTTP %1$d），请稍后重试</string>
+    <string name="error_parse">页面内容解析失败，数据源结构可能已更新</string>
+    <string name="error_unknown">加载失败，请稍后重试</string>
+
+    <!-- 通用控件 -->
+    <string name="common_play">播放</string>
+    <string name="common_pause">暂停</string>
+    <string name="common_cancel">取消</string>
+    <string name="common_close">关闭</string>
+
+    <!-- 播放器 -->
+    <string name="player_enter_fullscreen">全屏</string>
+    <string name="player_exit_fullscreen">退出全屏</string>
+    <string name="player_seek_back">后退 10 秒</string>
+    <string name="player_seek_forward">前进 10 秒</string>
+    <string name="player_seek_preview">拖动以快进 / 快退</string>
+    <string name="player_double_rewind">双击左侧后退 10 秒</string>
+    <string name="player_double_forward">双击右侧快进 10 秒</string>
+    <string name="player_mute">静音</string>
+    <string name="player_unmute">取消静音</string>
+    <string name="player_track_auto">自动</string>
+    <string name="player_settings">设置</string>
+    <string name="player_menu_stats">播放详情</string>
+    <string name="player_menu_url">播放链接</string>
+    <string name="detail_related_title">相关推荐</string>
+    <string name="related_load_more">加载更多</string>
+    <string name="detail_pane_close">关闭详情</string>
+    <string name="pane_empty_hint">选择一个视频开始播放</string>
+    <!-- 观看统计页 -->
+    <string name="stats_title">观看统计</string>
+    <string name="stats_back">返回</string>
+    <string name="stats_refresh">刷新</string>
+    <string name="stats_today_label">今日观看</string>
+    <string name="stats_7days_caption">近 7 天观看 %1$s</string>
+    <string name="stats_chart_title">近 7 天时长</string>
+    <string name="stats_weekday_today">今</string>
+    <string name="stats_total_videos">累计影片</string>
+    <string name="stats_finished">已看完</string>
+    <string name="stats_streak">连续观看</string>
+    <string name="stats_active_days">活跃天数</string>
+    <string name="stats_categories">分类偏好</string>
+    <string name="stats_unit_videos">%1$d 部</string>
+    <string name="stats_unit_days">%1$d 天</string>
+    <string name="stats_finished_value">%1$d 部 · %2$d%%</string>
+    <string name="stats_empty_title">还没有观看记录</string>
+    <string name="stats_empty_subtitle">观看影片后，这里会展示你的观看时长与习惯</string>
+    <string name="profile_watch_stats">观看统计</string>
+    <string name="profile_watch_stats_subtitle">今日 %1$s</string>
+    <!-- 应用锁 -->
+    <string name="profile_group_security">隐私与安全</string>
+    <string name="profile_app_lock">应用锁</string>
+    <string name="profile_app_lock_desc">冷启动时通过指纹、面容或屏幕锁验证</string>
+    <string name="app_lock_title">应用已锁定</string>
+    <string name="app_lock_prompt_title">身份验证</string>
+    <string name="app_lock_unlock">验证身份以继续观看</string>
+    <string name="app_lock_unlock_button">解锁</string>
+    <string name="app_lock_no_credential">无法开启应用锁</string>
+    <string name="app_lock_no_credential_msg">设备尚未设置屏幕锁定或录入生物识别，请先到系统设置中开启</string>
+    <string name="app_lock_no_credential_got_it">知道了</string>
+    <!-- 网络诊断页 -->
+    <string name="diagnostics_title">网络诊断</string>
+    <string name="diagnostics_back">返回</string>
+    <string name="diagnostics_refresh">刷新</string>
+    <string name="diagnostics_checking">正在检测站点与当前网络环境…</string>
+    <string name="diagnostics_section_network">网络信息</string>
+    <string name="diagnostics_section_device">设备环境</string>
+    <string name="diagnostics_total">总耗时</string>
+    <string name="diagnostics_seg_dns">DNS</string>
+    <string name="diagnostics_seg_tcp">TCP</string>
+    <string name="diagnostics_seg_tls">TLS</string>
+    <string name="diagnostics_seg_ttfb">首字节</string>
+    <string name="diagnostics_dash">—</string>
+    <string name="diagnostics_fail_reason">失败原因</string>
+    <string name="diagnostics_network_type">网络类型</string>
+    <string name="diagnostics_webview">WebView 内核</string>
+    <string name="diagnostics_app_version">应用版本</string>
+    <string name="diagnostics_android">Android 版本</string>
+    <string name="diagnostics_model">设备型号</string>
+    <string name="diagnostics_language">系统语言</string>
+    <string name="diagnostics_checked_at_label">检测时间</string>
+    <string name="diagnostics_copy">复制诊断报告</string>
+    <string name="diagnostics_copied">诊断报告已复制</string>
+    <!-- 探测失败归一化原因（数据层只上抛类别，文案在此映射） -->
+    <string name="diagnostics_fail_dns">DNS 域名解析失败</string>
+    <string name="diagnostics_fail_timeout">连接超时</string>
+    <string name="diagnostics_fail_ssl">HTTPS 证书校验失败</string>
+    <string name="diagnostics_fail_network">网络连接失败</string>
+    <string name="diagnostics_fail_other">请求失败</string>
+    <!-- 网络类型 -->
+    <string name="diagnostics_net_wifi">Wi-Fi</string>
+    <string name="diagnostics_net_cellular">蜂窝</string>
+    <string name="diagnostics_net_cellular_mbps">蜂窝（%1$d Mbps）</string>
+    <string name="diagnostics_net_ethernet">以太网</string>
+    <string name="diagnostics_net_vpn">VPN</string>
+    <string name="diagnostics_net_other">其他</string>
+    <string name="diagnostics_net_none">无网络</string>
+    <!-- 统计页周轴短标签：周一~周日顺序 -->
+    <string-array name="stats_weekdays">
+        <item>一</item>
+        <item>二</item>
+        <item>三</item>
+        <item>四</item>
+        <item>五</item>
+        <item>六</item>
+        <item>日</item>
+    </string-array>
+    <string name="player_resize_title">画面比例</string>
+    <string name="player_resize_fit">适应</string>
+    <string name="player_resize_fill">填充</string>
+    <string name="player_resize_zoom">裁切填满</string>
+    <string name="player_url_copy">复制链接</string>
+    <string name="player_url_copied">已复制</string>
+    <string name="player_error_title">播放失败</string>
+    <string name="player_stats_title">播放统计</string>
+    <string name="player_stat_video_codec">视频编码</string>
+    <string name="player_stat_resolution">分辨率</string>
+    <string name="player_stat_frame_rate">帧率</string>
+    <string name="player_stat_video_bitrate">视频码率</string>
+    <string name="player_stat_download_speed">下载网速</string>
+    <string name="player_stat_audio_codec">音频编码</string>
+    <string name="player_stat_audio_sample_rate">音频采样率</string>
+    <string name="player_stat_audio_channels">音频声道</string>
+    <string name="player_stat_buffer_health">缓冲健康</string>
+    <string name="player_stat_speed">播放倍速</string>
+    <string name="player_stat_state">状态</string>
+    <string name="player_audio_channels_fmt">%1$d 声道</string>
+    <string name="player_state_playing">播放中</string>
+    <string name="player_state_buffering">缓冲中</string>
+    <string name="player_state_ended">已结束</string>
+    <string name="player_state_idle">空闲</string>
+    <string name="player_state_paused">已暂停</string>
+
+    <!-- 首页 -->
+    <string name="home_continue_watching">继续观看</string>
+
+    <!-- 分页 -->
+    <string name="pagination_first_page">首页</string>
+    <string name="pagination_last_page">末页</string>
+    <string name="pagination_jump_title">跳转页码</string>
+    <string name="pagination_jump_hint">输入页码，共 %1$d 页</string>
+    <string name="pagination_jump_confirm">跳转</string>
+
+    <!-- 视频卡片 -->
+    <string name="video_preview">预览</string>
+    <string name="video_preview_unavailable">预览暂不可用</string>
+</resources>

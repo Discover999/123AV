@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动页背景（浅色）：与 Compose 浅色 background #FFF8F7 一致，无缝衔接 -->
+    <color name="splash_background">#FFF8F7</color>
+    <!-- 窗口背景（浅色）：Compose 首帧绘制前的底色，避免白屏闪烁 -->
+    <color name="window_background">#FFF8F7</color>
+    <!-- 启动页 Logo 色调（浅色）：品牌主题粉 -->
+    <color name="splash_logo_tint">#FF5B79</color>
+    <!-- 桌面图标背景：品牌粉 -->
+    <color name="ic_launcher_background">#FF5B79</color>
+</resources>

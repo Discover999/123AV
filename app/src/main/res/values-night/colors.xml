@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 启动页背景（深色）：与 Compose 深色 background #181113 一致，无缝衔接 -->
+    <color name="splash_background">#181113</color>
+    <!-- 窗口背景（深色）：Compose 首帧绘制前的底色，避免浅色闪烁 -->
+    <color name="window_background">#181113</color>
+    <!-- 启动页 Logo 色调（深色）：品牌亮粉 -->
+    <color name="splash_logo_tint">#FF5B79</color>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--  长按预览弹窗用 PlayerView：surface_type 只能通过 XML 属性设置
+      （media3 1.4.x 无代码 setSurfaceType 接口）；用 texture_view 保证
+      Android 12 以下也能被 view 自身的圆角 outline 裁剪（SurfaceView 独立
+      窗口渲染，低版本系统下裁剪对它无效） -->
+<androidx.media3.ui.PlayerView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:surface_type="texture_view"
+    app:use_controller="false"
+    app:resize_mode="zoom" />
