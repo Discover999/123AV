@@ -58,7 +58,9 @@ jobs:
 
       - name: Build signed release APK
         env:
-          KEYSTORE_PATH: app/release.jks
+          # 注意：Gradle 的 file() 在 app 模块内按模块目录解析，
+          # jks 解码于 <root>/app/release.jks，故此处用模块相对路径
+          KEYSTORE_PATH: release.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}

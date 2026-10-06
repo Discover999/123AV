@@ -21,8 +21,12 @@ fun signingValue(envName: String, propName: String): String? =
     System.getenv(envName) ?: keystoreProperties.getProperty(propName)
 
 val releaseStoreFilePath = signingValue("KEYSTORE_PATH", "storeFile")
-val hasReleaseSigning = releaseStoreFilePath != null &&
-    rootProject.file(releaseStoreFilePath).exists()
+// 路径解析：绝对路径（本地 keystore.properties）直接用；
+// 相对路径先按仓库根找，再按 app 模块目录找（CI 上 jks 解码在 app/ 下）
+val releaseStoreFile = releaseStoreFilePath?.let { path ->
+    rootProject.file(path).takeIf { it.exists() } ?: file(path).takeIf { it.exists() }
+}
+val hasReleaseSigning = releaseStoreFile != null
 
 android {
     namespace = "com.av123.video"
@@ -40,7 +44,7 @@ android {
     signingConfigs {
         create("release") {
             if (hasReleaseSigning) {
-                storeFile = file(releaseStoreFilePath!!)
+                storeFile = releaseStoreFile
                 storePassword = signingValue("KEYSTORE_PASSWORD", "storePassword")
                 keyAlias = signingValue("KEY_ALIAS", "keyAlias")
                 keyPassword = signingValue("KEY_PASSWORD", "keyPassword")
