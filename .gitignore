@@ -12,3 +12,8 @@ local.properties
 
 .kotlin
 /app/release
+
+# Release 签名凭据（严禁入库）
+keystore.properties
+*.jks
+*.keystore

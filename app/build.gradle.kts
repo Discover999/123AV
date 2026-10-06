@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +7,22 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+// Release 签名凭据：优先读环境变量（GitHub Actions 等 CI 环境），
+// 其次读仓库根目录的 keystore.properties（本地开发，已加入 .gitignore）
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties().apply {
+    if (keystorePropertiesFile.exists()) {
+        keystorePropertiesFile.inputStream().use { load(it) }
+    }
+}
+
+fun signingValue(envName: String, propName: String): String? =
+    System.getenv(envName) ?: keystoreProperties.getProperty(propName)
+
+val releaseStoreFilePath = signingValue("KEYSTORE_PATH", "storeFile")
+val hasReleaseSigning = releaseStoreFilePath != null &&
+    rootProject.file(releaseStoreFilePath).exists()
 
 android {
     namespace = "com.av123.video"
@@ -19,6 +37,17 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        create("release") {
+            if (hasReleaseSigning) {
+                storeFile = file(releaseStoreFilePath!!)
+                storePassword = signingValue("KEYSTORE_PASSWORD", "storePassword")
+                keyAlias = signingValue("KEY_ALIAS", "keyAlias")
+                keyPassword = signingValue("KEY_PASSWORD", "keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
             // R8 代码混淆/优化 + 无用资源压缩：本项目无自研反射/JNI 依赖，
@@ -29,6 +58,10 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // 凭据齐全（本地 keystore.properties 或 CI 环境变量）才启用正式签名
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
