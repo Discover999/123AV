@@ -141,6 +141,20 @@ interface PageCacheDao {
     @Query("SELECT * FROM page_cache")
     suspend fun getAll(): List<PageCacheEntity>
 
+    /** 冷启动水合只需要首页/列表页，不把详情缓存整包读进内存 */
+    @Query("SELECT * FROM page_cache WHERE cacheKey NOT LIKE 'det:%'")
+    suspend fun getAllForHydration(): List<PageCacheEntity>
+
+    /** 按最近使用排序，返回超出保留上限的详情缓存 key */
+    @Query(
+        "SELECT cacheKey FROM page_cache WHERE cacheKey LIKE 'det:%' " +
+            "ORDER BY cachedAt DESC LIMIT -1 OFFSET :keep"
+    )
+    suspend fun detailKeysBeyond(keep: Int): List<String>
+
+    @Query("DELETE FROM page_cache WHERE cacheKey IN (:cacheKeys)")
+    suspend fun deleteByKeys(cacheKeys: List<String>)
+
     @Query("SELECT COALESCE(SUM(LENGTH(payloadJson)), 0) FROM page_cache")
     suspend fun totalBytes(): Long
 

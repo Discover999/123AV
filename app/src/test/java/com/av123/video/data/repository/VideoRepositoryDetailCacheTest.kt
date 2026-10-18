@@ -27,6 +27,17 @@ class VideoRepositoryDetailCacheTest {
     private class FakePageCacheDao : PageCacheDao {
         val entries = mutableMapOf<String, PageCacheEntity>()
         override suspend fun getAll(): List<PageCacheEntity> = entries.values.toList()
+        override suspend fun getAllForHydration(): List<PageCacheEntity> =
+            entries.values.filterNot { it.cacheKey.startsWith(PageCacheStore.DET_KEY_PREFIX) }
+        override suspend fun detailKeysBeyond(keep: Int): List<String> =
+            entries.values
+                .filter { it.cacheKey.startsWith(PageCacheStore.DET_KEY_PREFIX) }
+                .sortedByDescending { it.cachedAt }
+                .drop(keep)
+                .map { it.cacheKey }
+        override suspend fun deleteByKeys(cacheKeys: List<String>) {
+            cacheKeys.forEach { entries.remove(it) }
+        }
         override suspend fun totalBytes(): Long =
             entries.values.sumOf { it.payloadJson.length.toLong() }
         override suspend fun get(cacheKey: String): PageCacheEntity? = entries[cacheKey]
@@ -154,5 +165,36 @@ class VideoRepositoryDetailCacheTest {
         val cached = repository.getVideo("v1") as DetailResult.Success
         assertEquals("刷新后的详情", cached.video.title)
         assertEquals("不再额外打网络", 2, dataSource.detailCalls)
+    }
+
+    @Test
+    fun hydration_excludesDetailEntries() = runBlocking {
+        dao.entries[PageCacheStore.FEED_KEY] =
+            PageCacheEntity(PageCacheStore.FEED_KEY, "{}", 1)
+        dao.entries[PageCacheStore.detailKey("v1")] =
+            PageCacheEntity(PageCacheStore.detailKey("v1"), "{}", 2)
+
+        val hydrated = PageCacheStore(dao).getForHydration()
+
+        assertTrue(hydrated.any { it.cacheKey == PageCacheStore.FEED_KEY })
+        assertTrue(hydrated.none { it.cacheKey.startsWith(PageCacheStore.DET_KEY_PREFIX) })
+    }
+
+    @Test
+    fun pruneDetailCache_keepsNewestEntries() = runBlocking {
+        val store = PageCacheStore(dao)
+        repeat(5) { i ->
+            val key = PageCacheStore.detailKey("v$i")
+            dao.entries[key] = PageCacheEntity(key, "{}", i.toLong())
+        }
+
+        store.pruneDetailCache(3)
+
+        val remaining = dao.entries.keys.filter {
+            it.startsWith(PageCacheStore.DET_KEY_PREFIX)
+        }
+        assertEquals(3, remaining.size)
+        assertTrue(remaining.contains(PageCacheStore.detailKey("v4")))
+        assertFalse(remaining.contains(PageCacheStore.detailKey("v0")))
     }
 }

@@ -330,7 +330,9 @@ fun DetailScreen(
                 // 错开页面首帧/封面图加载，避免进详情页时卡顿。
                 // 已有播放地址（缓存命中或本轮已抓到）时不再抓流：
                 // 缓存命中无需重复解析；刚抓到后也立即销毁隐藏页，省掉其后续分片流量
-                if (!isLoading && playback == null) {
+                // P3.1：同一时刻只允许一个隐藏 WebView。
+                // 播放地址解析完成或失败后，才启动相关推荐渲染，避免两个 Chromium 实例并行抢网络/内存。
+                if (!isLoading && playback == null && !resolveFailed) {
                     var captureReady by remember(video!!.id) { mutableStateOf(false) }
                     LaunchedEffect(video!!.id) {
                         kotlinx.coroutines.delay(CAPTURE_WEBVIEW_DELAY_MS.milliseconds)
@@ -356,7 +358,10 @@ fun DetailScreen(
                 }
                 // 相关推荐：详情就绪后另起一个无头 WebView 真渲染详情页，
                 // 提取前端动态渲染的 .card 推荐区；拿到结果后相关区显示、本组件卸载
-                if (relatedLoading && video!!.sourcePageUrl.isNotBlank()) {
+                if (relatedLoading &&
+                    video!!.sourcePageUrl.isNotBlank() &&
+                    (playback != null || resolveFailed)
+                ) {
                     RelatedExtractWebView(
                         pageUrl = video!!.sourcePageUrl,
                         onExtracted = detailViewModel::onRelatedHtml,

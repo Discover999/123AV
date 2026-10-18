@@ -28,8 +28,18 @@ internal data class CachedDetail(
  */
 class PageCacheStore(private val dao: PageCacheDao) {
 
-    /** 全部缓存条目，启动时一次性灌入内存状态 */
+    /** 全部缓存条目（诊断/兼容用途） */
     suspend fun getAll(): List<PageCacheEntity> = dao.getAll()
+
+    /** 冷启动水合：只取首页/列表页，避免把详情缓存整包读进内存 */
+    suspend fun getForHydration(): List<PageCacheEntity> = dao.getAllForHydration()
+
+    /** 详情缓存按最近使用保留上限，淘汰更早的条目 */
+    suspend fun pruneDetailCache(maxEntries: Int = DETAIL_CACHE_MAX_ENTRIES) {
+        if (maxEntries <= 0) return
+        val staleKeys = dao.detailKeysBeyond(maxEntries)
+        if (staleKeys.isNotEmpty()) dao.deleteByKeys(staleKeys)
+    }
 
     /** 缓存载荷占用字节数（用于设置页展示） */
     suspend fun totalBytes(): Long = dao.totalBytes()
@@ -113,6 +123,7 @@ class PageCacheStore(private val dao: PageCacheDao) {
                 cachedAt = System.currentTimeMillis()
             )
         )
+        pruneDetailCache()
     }
 
     companion object {
@@ -120,6 +131,10 @@ class PageCacheStore(private val dao: PageCacheDao) {
         const val CAT_KEY_PREFIX = "cat:"
         const val CH_KEY_PREFIX = "ch:"
         const val DET_KEY_PREFIX = "det:"
+
+        /** 详情缓存保留上限；超出后按 cachedAt 淘汰最旧条目 */
+        const val DETAIL_CACHE_MAX_ENTRIES = 200
+
         fun categoryKey(category: String) = "$CAT_KEY_PREFIX$category"
         fun channelKey(path: String) = "$CH_KEY_PREFIX$path"
         fun detailKey(videoId: String) = "$DET_KEY_PREFIX$videoId"

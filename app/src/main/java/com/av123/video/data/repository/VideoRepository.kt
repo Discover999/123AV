@@ -20,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 某个分类列表页的当前状态：已加载视频、分页信息、加载中标记与错误信息。
@@ -52,30 +51,6 @@ data class CategoryPageState(
     val diskCachedAt: Long = 0L,
     /** 最近一次加载错误（归一化类型）；无内容时整屏展示，有内容时由全局 Snackbar 提示 */
     val error: AppError? = null
-)
-
-/**
- * 搜索页状态：已提交关键词、当前页结果列表、页脚分页信息、
- * 页面头部声明的结果总数（.pagehead__count）、加载中标记与错误信息。
- */
-data class SearchState(
-    val keyword: String = "",
-    val videos: List<Video> = emptyList(),
-    val pagination: Pagination? = null,
-    val page: Int = 1,
-    val totalCount: Int? = null,
-    val isLoading: Boolean = false,
-    /** 最近一次搜索错误（归一化类型）；无结果时整屏展示，翻页失败由全局 Snackbar 提示 */
-    val error: AppError? = null
-)
-
-/**
- * 已验证可用的播放源：无头 WebView 拦截到的 m3u8 地址 + CDN 防盗链校验
- * 所需请求头（Referer/Origin/User-Agent 等）。
- */
-data class PlaybackSource(
-    val url: String,
-    val headers: Map<String, String> = emptyMap()
 )
 
 /**
@@ -125,25 +100,19 @@ class VideoRepository(
     private val _channelPages = MutableStateFlow<Map<String, CategoryPageState>>(emptyMap())
     val channelPages: StateFlow<Map<String, CategoryPageState>> = _channelPages.asStateFlow()
 
-    /** 搜索状态：最近一次关键词搜索的结果与加载情况 */
-    private val _searchState = MutableStateFlow(SearchState())
-    val searchState: StateFlow<SearchState> = _searchState.asStateFlow()
+    /** 搜索职责已拆到 SearchRepository；facade 保留 searchState 兼容现有 UI */
+    private val searchRepository = SearchRepository(dataSource, scope, errorReporter)
+    val searchState: StateFlow<SearchState> = searchRepository.state
 
-    /**
-     * 已验证可用播放源的进程内缓存（"videoId#选集下标" -> m3u8 地址+请求头）。
-     * 首集 key 不带后缀，兼容旧调用与阅读直觉。仅内存缓存、不持久化：
-     * m3u8 普遍带时效签名，落盘后跨进程复用极易 403；同一会话内退出播放页再
-     * 进入同一影片/同一集时直接复用，跳过 WebView 重新抓流。
-     */
-    private val playbackCache = ConcurrentHashMap<String, PlaybackSource>()
-
-    private fun playbackCacheKey(videoId: String, episodeIndex: Int): String =
-        if (episodeIndex <= 0) videoId else "$videoId#$episodeIndex"
+    /** 进程内播放源缓存，独立于仓库状态 */
+    private val playbackCache = PlaybackCache()
 
     init {
         scope.launch {
             // 冷启动：先把首页/列表页磁盘缓存灌入内存（先缓存后网络 SWR）
             val feedCachedAt = hydrateFromDisk()
+            // 顺带收敛详情缓存，避免观看历史增长后无限落盘
+            pageCacheStore.pruneDetailCache()
             val feed = _feed.value
             val stale = feed == null ||
                 System.currentTimeMillis() - feedCachedAt > FEED_STALE_MS
@@ -159,7 +128,7 @@ class VideoRepository(
         var feedCachedAt = 0L
         val categories = mutableMapOf<String, CategoryPageState>()
         val channels = mutableMapOf<String, CategoryPageState>()
-        pageCacheStore.getAll().forEach { entity ->
+        pageCacheStore.getForHydration().forEach { entity ->
             when {
                 entity.cacheKey == PageCacheStore.FEED_KEY -> {
                     runCatching {
@@ -388,54 +357,12 @@ class VideoRepository(
      * （sourcePageUrl/detailPath）。
      */
     fun search(keyword: String, page: Int = 1) {
-        val kw = keyword.trim()
-        if (kw.isBlank()) return
-        val state = _searchState.value
-        if (state.isLoading) return
-        val isNewQuery = kw != state.keyword
-        val targetPage = if (isNewQuery) 1 else page.coerceAtLeast(1)
-        scope.launch {
-            _searchState.update {
-                it.copy(
-                    keyword = kw,
-                    page = targetPage,
-                    videos = if (isNewQuery) emptyList() else it.videos,
-                    pagination = if (isNewQuery) null else it.pagination,
-                    totalCount = if (isNewQuery) null else it.totalCount,
-                    isLoading = true,
-                    error = null
-                )
-            }
-            runCatching { dataSource.search(kw, targetPage) }
-                .onSuccess { result ->
-                    _searchState.update {
-                        it.copy(
-                            videos = result.videos,
-                            pagination = result.pagination,
-                            totalCount = result.totalCount,
-                            page = targetPage,
-                            isLoading = false
-                        )
-                    }
-                }
-                .onFailure { e ->
-                    var hadContent = false
-                    _searchState.update {
-                        hadContent = it.videos.isNotEmpty()
-                        it.copy(isLoading = false, error = AppError.from(e))
-                    }
-                    // 新关键词首查失败：整屏错误态；翻页失败且已有结果：Snackbar 轻提示
-                    if (hadContent) errorReporter.report(e)
-                }
-        }
+        searchRepository.search(keyword, page)
     }
 
-    /**
-     * 清空搜索状态：回到未搜索的初始引导页（点击搜索框 X 时调用）。
-     * 同时清掉关键词、结果列表、分页与总数。
-     */
+    /** 清空搜索状态：回到未搜索的初始引导页（点击搜索框 X 时调用） */
     fun clearSearch() {
-        _searchState.value = SearchState()
+        searchRepository.clear()
     }
 
     /**
@@ -444,7 +371,7 @@ class VideoRepository(
      */
     private fun findCachedVideo(videoId: String): Video? =
         _feed.value?.allVideos?.firstOrNull { it.id == videoId }
-            ?: _searchState.value.videos.firstOrNull { it.id == videoId }
+            ?: searchRepository.cachedVideo(videoId)
             ?: _categoryPages.value.values.asSequence().flatMap { it.videos.asSequence() }
                 .firstOrNull { it.id == videoId }
             ?: _channelPages.value.values.asSequence().flatMap { it.videos.asSequence() }
@@ -461,14 +388,14 @@ class VideoRepository(
      * 详情页可直接起播，无需再次启动无头 WebView 抓流。
      */
     fun getCachedPlayback(videoId: String, episodeIndex: Int = 0): PlaybackSource? =
-        playbackCache[playbackCacheKey(videoId, episodeIndex)]
+        playbackCache.get(videoId, episodeIndex)
 
     /**
      * 缓存某集播放源。仅在播放器确认地址可用（ExoPlayer 进入 STATE_READY，
      * 主播放列表与分片都能正常加载）后调用，避免把 403/失效地址写入缓存。
      */
     fun savePlayback(videoId: String, episodeIndex: Int, playback: PlaybackSource) {
-        playbackCache[playbackCacheKey(videoId, episodeIndex)] = playback
+        playbackCache.put(videoId, episodeIndex, playback)
     }
 
     /**
@@ -476,7 +403,7 @@ class VideoRepository(
      * 让详情页回退到 WebView 重新抓流。
      */
     fun invalidatePlayback(videoId: String, episodeIndex: Int = 0) {
-        playbackCache.remove(playbackCacheKey(videoId, episodeIndex))
+        playbackCache.invalidate(videoId, episodeIndex)
     }
 
     /**
