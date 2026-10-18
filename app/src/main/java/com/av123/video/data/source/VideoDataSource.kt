@@ -5,12 +5,15 @@ import com.av123.video.data.model.HomeFeed
 import com.av123.video.data.model.Video
 
 /**
- * 视频数据源抽象。
+ * 站点数据契约（P2 起仓库层只依赖此接口）。
  *
  * 本 App 没有官方 API，所有数据都需要从网页读取/解析后填充，
- * 当前实现为 [JsoupVideoDataSource]：用 Jsoup 抓取网页并映射为 [Video]。
+ * 当前由 [JsoupSiteAdapter] 包装 [JsoupVideoDataSource] 实现。
  */
-interface VideoDataSource {
+interface VideoSite {
+
+    /** 当前站点配置标识，如 "123av@1"，诊断页展示用 */
+    val configVersion: String get() = "unknown"
 
     /** 拉取首页聚合数据（分类 / 精选 / 热门 / 最新） */
     suspend fun fetchHomeFeed(): HomeFeed
@@ -62,6 +65,12 @@ interface VideoDataSource {
      */
     suspend fun parseRelatedFromRenderedHtml(html: String, baseUrlHint: String): List<Video>
 }
+
+/**
+ * 兼容层：P2.2 之前的部分 ViewModel/测试仍使用这个类型。
+ * 新代码应优先依赖 [VideoSite]，后续阶段再逐步移除。
+ */
+interface VideoDataSource : VideoSite
 
 /**
  * 详情页抓取结果：

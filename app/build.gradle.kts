@@ -13,6 +13,12 @@ val appVersionCode = providers.gradleProperty("versionCode").orNull?.toIntOrNull
 val appVersionName = providers.gradleProperty("versionName").orNull
     ?.takeIf { it.isNotBlank() } ?: "0.1.0"
 
+// 远程站点配置地址；默认指向仓库内的 assets JSON，可用 -PsiteConfigUrl= 覆盖，
+// 传空字符串可完全关闭远程刷新。
+val siteConfigUrl = providers.gradleProperty("siteConfigUrl").orNull
+    ?: "https://raw.githubusercontent.com/Discover999/123AV/main/app/src/main/assets/site-config.json"
+val escapedSiteConfigUrl = siteConfigUrl.replace("\\", "\\\\").replace("\"", "\\\"")
+
 // Release 签名凭据：优先读环境变量（GitHub Actions 等 CI 环境），
 // 其次读仓库根目录的 keystore.properties（本地开发，已加入 .gitignore）
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -44,6 +50,7 @@ android {
         versionCode = appVersionCode
         versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField("String", "SITE_CONFIG_URL", "\"$escapedSiteConfigUrl\"")
     }
 
     signingConfigs {

@@ -11,7 +11,7 @@ import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
 import com.av123.video.data.net.AppErrorKind
 import com.av123.video.data.net.ErrorReporter
-import com.av123.video.data.source.VideoDataSource
+import com.av123.video.data.source.VideoSite
 import com.av123.video.data.source.VideoDetail
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -103,7 +103,7 @@ sealed interface DetailResult {
  * 视频仓库：UI 只与仓库交互，不关心数据来自示例还是网页。
  */
 class VideoRepository(
-    private val dataSource: VideoDataSource,
+    private val dataSource: VideoSite,
     private val scope: CoroutineScope,
     private val errorReporter: ErrorReporter,
     private val pageCacheStore: PageCacheStore

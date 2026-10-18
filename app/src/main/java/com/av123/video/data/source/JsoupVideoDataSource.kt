@@ -18,6 +18,7 @@ import com.av123.video.data.model.VideoInfoRow
 import com.av123.video.data.net.HttpClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
@@ -1017,14 +1018,32 @@ class JsoupVideoDataSource(
  * 网页站点配置。选择器默认值对应常见的 BEM 风格列表页
  * （.featured 轮播 / .card 卡片 / .card__img 封面 / .card__meta 元信息）。
  * 接入新站时按实际 DOM 覆盖对应字段即可。
+ *
+ * P2 起这份配置是唯一站点契约来源：内置 assets/site-config.json 覆盖默认值，
+ * 后续 P2.3 再接入远程配置与回退。新增字段必须带默认值，保证旧配置可读。
  */
+@Serializable
 data class JsoupSiteConfig(
+    /** 配置结构版本，与 App versionName 无关 */
+    val schemaVersion: Int = 1,
+    /** 站点标识，用于多站点扩展与诊断 */
+    val id: String = "123av",
+    /** 配置内容版本，远程更新时递增 */
+    val version: Int = 1,
     val baseUrl: String = "https://example.com",
     /** 语言路径前缀，如 "/cn"；没有则留空 */
     val localePath: String = "",
     val userAgent: String = "Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 " +
         "(KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36",
     val timeoutMs: Int = 15_000,
+    /** Embed 站点白名单（P3 抓流使用；支持精确 host 或 *.example.com） */
+    val embedHosts: List<String> = listOf("sadie-shop.site"),
+    /** 媒体 CDN 白名单（P3 抓流使用；支持精确 host 或 *.example.com） */
+    val mediaHosts: List<String> = listOf("*.true*.site"),
+    /** 远程配置开关；远程配置本身可下发 false 作为 kill switch */
+    val remoteEnabled: Boolean = true,
+    /** 远程配置最短刷新间隔（小时） */
+    val remoteRefreshHours: Int = 6,
     // —— 精选轮播 ——
     val featuredItem: String = ".featured",
     val featuredImg: String = ".featured__img",

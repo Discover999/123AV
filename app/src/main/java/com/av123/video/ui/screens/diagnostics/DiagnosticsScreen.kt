@@ -57,7 +57,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.data.net.DataSourceProbeResult
@@ -67,6 +69,7 @@ import com.av123.video.data.net.NetworkType
 import com.av123.video.data.net.ProbeFailureKind
 import com.av123.video.data.net.ProbeTimings
 import com.av123.video.data.net.SiteProbe
+import com.av123.video.data.source.SiteConfigSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -92,6 +95,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val configState by container.siteConfigStore.state.collectAsStateWithLifecycle()
 
     var epoch by remember { mutableIntStateOf(0) }
     var loading by remember { mutableStateOf(true) }
@@ -162,14 +166,56 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
         val siteFailText = (snapshot.result.site as? SiteProbe.Failed)?.kind?.failureText()
         val ipFailText = (snapshot.result.ip as? IpProbe.Failed)?.kind?.failureText()
 
+        val configSourceLabel = configState.source.label()
+        val configVersionText = "${configState.config.id}@${configState.config.version}"
+        val configUpdatedText = configState.cachedAt
+            ?.let { timeFormatter.format(Date(it)) }
+            ?: stringResource(R.string.diagnostics_dash)
+        val configCheckedText = configState.lastCheckedAt
+            ?.let { timeFormatter.format(Date(it)) }
+            ?: stringResource(R.string.diagnostics_config_never)
+        val configEtagText = configState.etag
+            ?.takeIf { it.isNotBlank() }
+            ?: stringResource(R.string.diagnostics_dash)
+        val configRemoteText = if (configState.config.remoteEnabled) {
+            stringResource(
+                R.string.diagnostics_config_remote_on,
+                configState.config.remoteRefreshHours
+            )
+        } else {
+            stringResource(R.string.diagnostics_config_remote_off)
+        }
+        val siteConfigLines = buildList {
+            add("${context.getString(R.string.diagnostics_config_source)}：$configSourceLabel")
+            add("${context.getString(R.string.diagnostics_config_version)}：$configVersionText")
+            add("${context.getString(R.string.diagnostics_config_updated)}：$configUpdatedText")
+            add("${context.getString(R.string.diagnostics_config_checked)}：$configCheckedText")
+            add("${context.getString(R.string.diagnostics_config_etag)}：$configEtagText")
+            add("${context.getString(R.string.diagnostics_config_remote)}：$configRemoteText")
+            configState.lastError?.let {
+                add(context.getString(R.string.diagnostics_config_last_error, it))
+            }
+        }
+
         LazyColumn(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { SiteDiagnosticsCard(result = snapshot.result) }
+            item {
+                SiteConfigCard(
+                    source = configState.source,
+                    version = configVersionText,
+                    updatedText = configUpdatedText,
+                    checkedText = configCheckedText,
+                    etagText = configEtagText,
+                    remoteText = configRemoteText,
+                    error = configState.lastError
+                )
+            }
             item { NetworkDiagnosticsCard(result = snapshot.result, env = snapshot.env) }
             item { DeviceEnvironmentCard(env = snapshot.env, checkedAtText = checkedAtText) }
             item {
@@ -181,7 +227,8 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                             checkedAtText = checkedAtText,
                             networkTypeText = networkTypeText,
                             siteFailReasonText = siteFailText,
-                            ipFailReasonText = ipFailText
+                            ipFailReasonText = ipFailText,
+                            siteConfigLines = siteConfigLines
                         )
                         val clipboard =
                             context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
@@ -256,6 +303,97 @@ private fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
             }
         }
     }
+}
+
+/** 站点配置只读卡：配置来源、版本、缓存/检查时间、ETag、远程刷新与最近错误 */
+@Composable
+private fun SiteConfigCard(
+    source: SiteConfigSource,
+    version: String,
+    updatedText: String,
+    checkedText: String,
+    etagText: String,
+    remoteText: String,
+    error: String?
+) {
+    DiagnosticsCard(title = stringResource(R.string.diagnostics_section_site_config)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = version,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            ConfigSourceChip(source)
+        }
+        Spacer(Modifier.height(12.dp))
+        InfoLine(
+            label = stringResource(R.string.diagnostics_config_updated),
+            value = updatedText
+        )
+        Spacer(Modifier.height(10.dp))
+        InfoLine(
+            label = stringResource(R.string.diagnostics_config_checked),
+            value = checkedText
+        )
+        Spacer(Modifier.height(10.dp))
+        InfoLine(
+            label = stringResource(R.string.diagnostics_config_etag),
+            value = etagText,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+        Spacer(Modifier.height(10.dp))
+        InfoLine(
+            label = stringResource(R.string.diagnostics_config_remote),
+            value = remoteText
+        )
+        if (error != null) {
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.diagnostics_config_last_error, error),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+    }
+}
+
+@Composable
+private fun ConfigSourceChip(source: SiteConfigSource) {
+    val background = when (source) {
+        SiteConfigSource.BUNDLED -> MaterialTheme.colorScheme.primaryContainer
+        SiteConfigSource.CACHE -> MaterialTheme.colorScheme.tertiaryContainer
+        SiteConfigSource.FALLBACK -> MaterialTheme.colorScheme.errorContainer
+    }
+    val content = when (source) {
+        SiteConfigSource.BUNDLED -> MaterialTheme.colorScheme.onPrimaryContainer
+        SiteConfigSource.CACHE -> MaterialTheme.colorScheme.onTertiaryContainer
+        SiteConfigSource.FALLBACK -> MaterialTheme.colorScheme.onErrorContainer
+    }
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(background)
+            .padding(horizontal = 10.dp, vertical = 4.dp)
+    ) {
+        Text(
+            text = source.label(),
+            style = MaterialTheme.typography.labelSmall,
+            color = content
+        )
+    }
+}
+
+@Composable
+private fun SiteConfigSource.label(): String = when (this) {
+    SiteConfigSource.BUNDLED -> stringResource(R.string.diagnostics_config_source_bundled)
+    SiteConfigSource.CACHE -> stringResource(R.string.diagnostics_config_source_cache)
+    SiteConfigSource.FALLBACK -> stringResource(R.string.diagnostics_config_source_fallback)
 }
 
 /** 四分段等宽数字行：DNS / TCP / TLS / 首字节（TTFB），无值显示"—" */
@@ -446,9 +584,14 @@ private fun DiagnosticsCard(
     }
 }
 
-/** 标签 + 值信息行 */
+/** 标签 + 值信息行；长文本（ETag 等）按调用方指定单行省略 */
 @Composable
-private fun InfoLine(label: String, value: String) {
+private fun InfoLine(
+    label: String,
+    value: String,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = label,
@@ -460,7 +603,9 @@ private fun InfoLine(label: String, value: String) {
             text = value,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.weight(0.58f)
+            modifier = Modifier.weight(0.58f),
+            maxLines = maxLines,
+            overflow = overflow
         )
     }
 }
@@ -529,7 +674,9 @@ internal fun buildDiagnosticsReport(
     /** 以下动态文案由组合期从 strings.xml 映射后传入，保证数据层/报告均不内置中文 */
     networkTypeText: String,
     siteFailReasonText: String?,
-    ipFailReasonText: String?
+    ipFailReasonText: String?,
+    /** 由组合期从 SiteConfigStore 组装；空列表时不输出该段 */
+    siteConfigLines: List<String> = emptyList()
 ): String {
     val host = result.siteUrl.toUri().host?.takeIf { it.isNotBlank() }
         ?: result.siteUrl
@@ -582,6 +729,11 @@ internal fun buildDiagnosticsReport(
         appendLine("TLS：${seg?.tlsMs.toMsOrDash()}")
         appendLine("首字节：${seg?.ttfbMs.toMsOrDash()}")
         appendLine("")
+        if (siteConfigLines.isNotEmpty()) {
+            appendLine("【站点配置】")
+            siteConfigLines.forEach { appendLine(it) }
+            appendLine("")
+        }
         appendLine("【网络信息】")
         appendLine("网络类型：$networkTypeText")
         ipLines.forEach { appendLine(it) }

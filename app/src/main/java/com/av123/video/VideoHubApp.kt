@@ -22,11 +22,16 @@ import com.av123.video.data.repository.HistoryRepository
 import com.av123.video.data.repository.PageCacheStore
 import com.av123.video.data.repository.SearchHistoryRepository
 import com.av123.video.data.repository.VideoRepository
+import com.av123.video.data.source.JsoupSiteAdapter
 import com.av123.video.data.source.JsoupSiteConfig
 import com.av123.video.data.source.JsoupVideoDataSource
+import com.av123.video.data.source.SiteConfigLoader
+import com.av123.video.data.source.SiteConfigStore
+import com.av123.video.data.source.VideoSite
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 /**
@@ -75,33 +80,33 @@ class AppContainer(context: Context) {
     private val appContext = context.applicationContext
     private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
-    /** 当前数据源站点地址（“我的-数据源检测”、分享链接兜底共用） */
-    val siteBaseUrl = "https://123av.com/"
-
     /** Room 数据库 + 首页/列表磁盘缓存 */
     val database = VideoHubDatabase.get(appContext)
     val pageCacheStore = PageCacheStore(database.pageCacheDao())
 
-    /** 编译期内置站点配置（远程配置缺失/失败时的最终兜底） */
-    private val defaultSiteConfig = JsoupSiteConfig(
-        baseUrl = siteBaseUrl,
-        localePath = "/cn",
-        categoryPaths = mapOf(
-            "新发布" to "/new",
-            "最近添加" to "/recent"
-        ),
-        // 搜索地址：{baseUrl}/cn/search?keyword=<关键词>
-        searchQueryParam = "keyword"
+    /** 内置 → 本地缓存 → 代码兜底的站点配置；远程刷新暂未启用 */
+    val siteConfigStore: SiteConfigStore = SiteConfigStore(
+        bundled = SiteConfigLoader.loadBundled(appContext),
+        cacheFile = java.io.File(appContext.filesDir, "site-config-cache.json")
     )
 
+    /** 当前生效的站点契约（缓存版本高于内置时使用缓存） */
+    val siteConfig: JsoupSiteConfig = siteConfigStore.current
+
+    /** 当前数据源站点地址（“我的-数据源检测”、分享链接兜底共用） */
+    val siteBaseUrl: String = siteConfig.baseUrl
+
     /** 当前数据源：从网页解析真实数据 */
-    val dataSource: JsoupVideoDataSource = JsoupVideoDataSource(defaultSiteConfig)
+    val dataSource: JsoupVideoDataSource = JsoupVideoDataSource(siteConfig)
+
+    /** 仓库层唯一依赖的站点契约；后续替换解析实现不影响 UI/仓库 */
+    val videoSite: VideoSite = JsoupSiteAdapter(dataSource, siteConfig)
 
     /** 全局瞬时错误事件总线（页面有内容时的网络失败经此发全局 Snackbar） */
     val errorReporter: ErrorReporter = ErrorReporter()
 
     val videoRepository: VideoRepository =
-        VideoRepository(dataSource, appScope, errorReporter, pageCacheStore)
+        VideoRepository(videoSite, appScope, errorReporter, pageCacheStore)
     val backupRepository: BackupRepository = BackupRepository(database)
     val cacheManager: CacheManager = CacheManager(appContext, pageCacheStore)
     val historyRepository: HistoryRepository =
@@ -119,6 +124,11 @@ class AppContainer(context: Context) {
         appScope.launch {
             // 旧 DataStore 历史/收藏/搜索词一次性迁入 Room（幂等）
             LegacyDataMigrator(appContext, database).migrateIfNeeded()
+        }
+        appScope.launch {
+            // 错开首页首帧与抓取；远程配置只落缓存，下次冷启动生效
+            delay(2_000)
+            siteConfigStore.refreshFromNetwork(BuildConfig.SITE_CONFIG_URL)
         }
     }
 }

@@ -13,7 +13,9 @@ class HttpStatusException(val code: Int) : IOException("HTTP $code")
 /** 一次 HTTP 调用的结果；4xx/5xx 不抛异常，由调用方决定语义（如站点探测） */
 data class HttpResponse(
     val code: Int,
-    val body: String
+    val body: String,
+    /** 响应头（保留原始大小写）；远程配置用 ETag 做条件请求 */
+    val headers: Map<String, String> = emptyMap()
 )
 
 /**
@@ -106,9 +108,15 @@ object HttpClient {
         for (attempt in 0 until MAX_ATTEMPTS) {
             try {
                 httpClient.newCall(request).execute().use { response ->
+                    val responseHeaders = buildMap {
+                        response.headers.names().forEach { name ->
+                            put(name, response.header(name).orEmpty())
+                        }
+                    }
                     return HttpResponse(
                         code = response.code,
-                        body = response.body?.string().orEmpty()
+                        body = response.body?.string().orEmpty(),
+                        headers = responseHeaders
                     )
                 }
             } catch (e: IOException) {
