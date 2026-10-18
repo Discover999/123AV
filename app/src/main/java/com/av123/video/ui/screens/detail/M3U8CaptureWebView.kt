@@ -198,6 +198,32 @@ internal fun M3U8CaptureWebView(
                 }
             }
 
+            /**
+             * JS hook 命中的兜底回调：shouldInterceptRequest 并非百分百命中
+             * （Service Worker、缓存、页面内 fetch 由网络进程直连等场景都可能漏掉），
+             * 只写日志会让 UI 永远停在“正在解析播放地址”。这里把日志里的地址
+             * 真正交给 ViewModel，并按发起 fetch 的嵌入页补 Referer/Origin。
+             */
+            fun reportCapturedFromJs(url: String) {
+                if (!reported.compareAndSet(false, true)) return
+                val capturedHeaders = buildMap {
+                    if (primaryUrl.isNotBlank()) {
+                        put("Referer", primaryUrl)
+                        runCatching { java.net.URI(primaryUrl) }.getOrNull()?.let { uri ->
+                            if (uri.scheme != null && uri.authority != null) {
+                                put("Origin", "${uri.scheme}://${uri.authority}")
+                            }
+                        }
+                    }
+                    put("User-Agent", userAgent)
+                }
+                AppLog.i(
+                    M3U8_TAG,
+                    "JS hook 抓到的播放地址回调 Media3/ExoPlayer: $url\n请求头: $capturedHeaders"
+                )
+                onCaptured(url, capturedHeaders)
+            }
+
             // 嵌入页抓不到时回退加载详情页整页（超时或主帧错误共用，只回退一次）；
             // 没有可回退地址或已回退过，则直接判定解析失败
             fun fallbackToDetailPage(reason: String) {
@@ -207,9 +233,9 @@ internal fun M3U8CaptureWebView(
                     detailUrl.isNotBlank() && detailUrl != embedUrl
                 if (canFallback && fallbackDone.compareAndSet(false, true)) {
                     AppLog.w(M3U8_TAG, "$reason，回退加载详情页整页: $detailUrl")
-                    val headers = mutableMapOf<String, String>()
-                    if (detailUrl.isNotBlank()) headers["Referer"] = detailUrl
-                    loadUrl(detailUrl, headers)
+                    // 详情页是主文档，浏览器不会给它带 Referer；带自身 Referer 等于声明
+                    // “自己引用自己”，部分反爬/防盗链会直接返回 403
+                    loadUrl(detailUrl)
                 } else if (!canFallback || fallbackDone.get()) {
                     reportFailed(reason)
                 }
@@ -221,6 +247,12 @@ internal fun M3U8CaptureWebView(
                     if (msg.contains("[M3U8-JS]")) {
                         onCaptured()
                         AppLog.i(M3U8_TAG, "===== JS hook 发现 m3u8 =====\n$msg")
+                        // 日志里可能同时有 API 请求地址与响应中的 m3u8，取第一个含 .m3u8 的
+                        val m3u8Url = Regex("""https?://[^\s"'<>()\\]+""")
+                            .findAll(msg)
+                            .map { it.value }
+                            .firstOrNull { it.contains(".m3u8", ignoreCase = true) }
+                        if (m3u8Url != null) reportCapturedFromJs(m3u8Url)
                     } else {
                         AppLog.d(
                             M3U8_TAG,
@@ -297,9 +329,12 @@ internal fun M3U8CaptureWebView(
             }
 
             // iframe 嵌入页正常运行时 Referer 是父页面（站点详情页），
-            // 部分播放源校验 Referer，缺失会直接返回“无法抓取播放地址”
+            // 部分播放源校验 Referer，缺失会直接返回“无法抓取播放地址”。
+            // 直接加载详情页主文档时不能带自身 Referer，否则可能被反爬判定为盗链。
             val headers = mutableMapOf<String, String>()
-            if (detailUrl.isNotBlank()) headers["Referer"] = detailUrl
+            if (detailUrl.isNotBlank() && primaryUrl != detailUrl) {
+                headers["Referer"] = detailUrl
+            }
             val targetDesc = if (allowDetailFallback) "首集" else "选集直连(禁回退)"
             AppLog.i(
                 M3U8_TAG,

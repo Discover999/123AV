@@ -5,6 +5,7 @@ import android.app.PictureInPictureParams
 import android.content.ComponentCallbacks
 import android.content.Context
 import android.content.res.Configuration
+import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
@@ -56,24 +57,36 @@ class MainActivity : FragmentActivity() {
     @Volatile
     var pipModeChangedListener: ((Boolean) -> Unit)? = null
 
+    /** 播放画面在屏幕上的可见区域，供系统做进入/退出小窗的缩放动画（null 表示暂不可用） */
+    @Volatile
+    var pipSourceRectProvider: (() -> Rect?)? = null
+
+    private fun buildPipParams(eligible: Boolean): PictureInPictureParams {
+        val builder = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+        // 源区域提示：Android 12+ 无缝缩放动画的起点/终点
+        pipSourceRectProvider?.invoke()?.let { builder.setSourceRectHint(it) }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(eligible)
+            builder.setSeamlessResizeEnabled(true)
+        }
+        return builder.build()
+    }
+
     /**
      * 用户按 Home 离开（而非直接返回桌面的其他路径）：全屏播放中自动进入画中画。
-     * minSdk 26，无需版本判断；部分机型（低内存/不支持）可能抛异常，静默兜底。
+     * Android 12+ 已通过 [PictureInPictureParams.Builder.setAutoEnterEnabled] 交给系统处理
+     * 手势 Home 的自动进入，此处不再主动调用——否则分享/跳转浏览器等场景也会误触发小窗，
+     * 且可能与系统转场重复进入。旧版本仍走手动进入；异常静默兜底。
      */
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) return
         if (!isInPictureInPictureMode &&
             runCatching { pipEligibilityProvider() }.getOrDefault(false)
         ) {
             runCatching {
-                val builder = PictureInPictureParams.Builder()
-                    .setAspectRatio(Rational(16, 9))
-                // Android 12+：手势上滑回桌面也自动进入 PiP（无缝缩放）
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    builder.setAutoEnterEnabled(true)
-                    builder.setSeamlessResizeEnabled(true)
-                }
-                enterPictureInPictureMode(builder.build())
+                enterPictureInPictureMode(buildPipParams(eligible = true))
             }.onFailure { AppLog.w(TAG_PIP, "进入画中画失败: ${it.message}") }
         }
     }
@@ -92,15 +105,7 @@ class MainActivity : FragmentActivity() {
      * 在手势 Home 发生前通过 setPictureInPictureParams 注册才生效。
      */
     fun updatePipParams(eligible: Boolean) {
-        runCatching {
-            val builder = PictureInPictureParams.Builder()
-                .setAspectRatio(Rational(16, 9))
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                builder.setAutoEnterEnabled(eligible)
-                builder.setSeamlessResizeEnabled(true)
-            }
-            setPictureInPictureParams(builder.build())
-        }
+        runCatching { setPictureInPictureParams(buildPipParams(eligible)) }
     }
 
     override fun attachBaseContext(newBase: Context) {

@@ -382,13 +382,34 @@ class DetailViewModel(
         _relatedLoading.value = false
     }
 
-    /** 用户点击重试：清除失败标记并递增代次，触发拦截 WebView 重建重新抓流 */
+    /**
+     * 用户点击重试：播放页地址可能一次性或带时效，先重新拉详情刷新 embedUrl，
+     * 再清空播放源并递增代次，触发拦截 WebView 用新地址重建抓流。
+     */
     fun retryResolve() {
+        if (retryInFlight) return
+        retryInFlight = true
         _resolveFailed.value = false
         playbackFromCache = false
         _playback.value = null
-        _captureEpoch.value += 1
+        viewModelScope.launch {
+            try {
+                when (val fresh = videoRepository.refreshDetail(
+                    videoId,
+                    reportFailureSnackbar = false
+                )) {
+                    is DetailResult.Success -> applyDetail(fresh)
+                    is DetailResult.Failure -> Unit
+                }
+                _captureEpoch.value += 1
+            } finally {
+                retryInFlight = false
+            }
+        }
     }
+
+    /** 防止连点重试并发刷新详情、重复重建抓流 WebView */
+    private var retryInFlight = false
 
     /** 收藏 / 取消收藏当前视频；返回操作后是否为收藏态，便于 UI 弹提示 */
     fun toggleFavorite(): Boolean {

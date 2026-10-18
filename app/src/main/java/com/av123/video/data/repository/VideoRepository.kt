@@ -445,7 +445,9 @@ class VideoRepository(
     private fun findCachedVideo(videoId: String): Video? =
         _feed.value?.allVideos?.firstOrNull { it.id == videoId }
             ?: _searchState.value.videos.firstOrNull { it.id == videoId }
-            ?: _channelPages.value.values.flatMap { it.videos }
+            ?: _categoryPages.value.values.asSequence().flatMap { it.videos.asSequence() }
+                .firstOrNull { it.id == videoId }
+            ?: _channelPages.value.values.asSequence().flatMap { it.videos.asSequence() }
                 .firstOrNull { it.id == videoId }
 
     /**

@@ -39,6 +39,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.core.net.toUri
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -208,7 +209,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
 @Composable
 private fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
     val host = remember(result.siteUrl) {
-        android.net.Uri.parse(result.siteUrl).host?.takeIf { it.isNotBlank() } ?: result.siteUrl
+        result.siteUrl.toUri().host?.takeIf { it.isNotBlank() } ?: result.siteUrl
     }
     DiagnosticsCard(title = host) {
         when (val site = result.site) {
@@ -530,7 +531,7 @@ internal fun buildDiagnosticsReport(
     siteFailReasonText: String?,
     ipFailReasonText: String?
 ): String {
-    val host = android.net.Uri.parse(result.siteUrl).host?.takeIf { it.isNotBlank() }
+    val host = result.siteUrl.toUri().host?.takeIf { it.isNotBlank() }
         ?: result.siteUrl
 
     var statusText: String

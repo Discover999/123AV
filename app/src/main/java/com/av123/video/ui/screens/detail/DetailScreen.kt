@@ -424,12 +424,12 @@ private fun DetailContent(
     onPlaybackError: () -> Unit,
     startPositionMs: Long,
     onPlaybackProgress: (Int, Long, Long) -> Unit,
+    modifier: Modifier = Modifier,
     onPlayingElapsed: (Long) -> Unit = {},
     pipEnabled: Boolean = true,
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
-    onEpisodeEnded: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onEpisodeEnded: () -> Unit = {}
 ) {
     // 列表状态提升在全屏分支之外：进入全屏 LazyColumn 退出组合后，
     // 回到竖屏仍保持原滚动位置
@@ -1045,12 +1045,12 @@ private fun PlayerArea(
     onPlaybackError: () -> Unit,
     startPositionMs: Long,
     onPlaybackProgress: (Int, Long, Long) -> Unit,
+    modifier: Modifier = Modifier,
     onPlayingElapsed: (Long) -> Unit = {},
     pipEnabled: Boolean = true,
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
-    onEpisodeEnded: () -> Unit = {},
-    modifier: Modifier = Modifier
+    onEpisodeEnded: () -> Unit = {}
 ) {
     val detailCode = video.detailCodeFromInfoRows()
 

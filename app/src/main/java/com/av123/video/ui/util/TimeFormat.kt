@@ -1,5 +1,7 @@
 package com.av123.video.ui.util
 
+import java.util.Locale
+
 /** 相对时间：刚刚 / x分钟前 / x小时前 / x天前 */
 fun relativeTime(timestamp: Long): String {
     val diff = System.currentTimeMillis() - timestamp
@@ -40,8 +42,8 @@ fun formatDuration(positionMs: Long): String {
     val minutes = (totalSeconds % 3600L) / 60L
     val seconds = totalSeconds % 60L
     return if (hours > 0L) {
-        String.format("%d:%02d:%02d", hours, minutes, seconds)
+        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
     } else {
-        String.format("%02d:%02d", minutes, seconds)
+        String.format(Locale.ROOT, "%02d:%02d", minutes, seconds)
     }
 }

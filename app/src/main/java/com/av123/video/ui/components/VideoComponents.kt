@@ -96,7 +96,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import android.graphics.Path
 import android.graphics.RectF
+import android.os.Build
 import android.view.LayoutInflater
+import android.widget.FrameLayout
 import android.view.View
 import android.view.ViewOutlineProvider
 import coil.compose.AsyncImage
@@ -630,7 +632,6 @@ private fun pageWindow(current: Int, total: Int, windowSize: Int = 5): List<Int>
  * 进入对应播放页。
  */
 @androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(UnstableApi::class)
 @Composable
 fun VideoPreviewDialog(
     video: Video,
@@ -733,7 +734,7 @@ fun VideoPreviewDialog(
                                 // 从 XML inflate：surface_type 只能通过布局属性设置，
                                 // TextureView 保证圆角 outline 裁剪在 Android 12 以下也生效
                                 (LayoutInflater.from(ctx)
-                                    .inflate(R.layout.preview_player_view, null) as PlayerView)
+                                    .inflate(R.layout.preview_player_view, FrameLayout(ctx), false) as PlayerView)
                                     .apply {
                                         // Compose 的 Modifier.clip 裁剪不到原生 PlayerView 画面，
                                         // 必须直接在 view 上按顶部圆角 outline 裁剪（只圆顶部两角）
@@ -753,7 +754,14 @@ fun VideoPreviewDialog(
                                                         Path.Direction.CW
                                                     )
                                                 }
-                                                viewOutline.setConvexPath(path)
+                                                // API 30 起改用 setPath（setConvexPath 已弃用），
+                                                // 旧系统保留凸路径版本以维持圆角裁剪
+                                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                                                    viewOutline.setPath(path)
+                                                } else {
+                                                    @Suppress("DEPRECATION")
+                                                    viewOutline.setConvexPath(path)
+                                                }
                                             }
                                         }
                                         clipToOutline = true

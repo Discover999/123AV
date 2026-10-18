@@ -97,13 +97,16 @@ fun HomeScreen(
     val viewModel: HomeViewModel = viewModel { HomeViewModel(container.videoRepository) }
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val refreshTick by viewModel.refreshFinishTick.collectAsStateWithLifecycle()
-    // “继续观看”：有进度（>0）且未看完（<95%）的最近 10 条历史
-    val continueWatching by container.historyRepository.records
-        .map { records ->
+    // “继续观看”：有进度（>0）且未看完（<95%）的最近 10 条历史。
+    // map 必须 remember，否则每次重组都会新建 Flow，collect 反复重订阅
+    val continueWatchingFlow = remember(container.historyRepository) {
+        container.historyRepository.records.map { records ->
             records
                 .filter { it.positionMs > 0L && it.progress in 0.01f..0.95f }
                 .take(CONTINUE_WATCHING_MAX)
         }
+    }
+    val continueWatching by continueWatchingFlow
         .collectAsStateWithLifecycle(initialValue = emptyList())
 
     // 下拉刷新完成后的瞬间反馈：内容快速压暗再淡入（约 380ms），

@@ -17,6 +17,7 @@ import com.av123.video.data.playback.MediaCache
  * 持有 [ExoPlayer] 实例，跨 Activity 配置变更（旋转、分屏等）时保持播放状态，
  * 避免切换横竖屏时重新加载 m3u8。
  */
+@androidx.annotation.OptIn(UnstableApi::class)
 class PlayerViewModel : ViewModel() {
 
     private var player: ExoPlayer? = null
@@ -25,10 +26,8 @@ class PlayerViewModel : ViewModel() {
 
     /** 当前带宽估算（bit/s），<=0 表示尚无估算；用于播放器左上角网速显示 */
     val bitrateEstimate: Long
-        @UnstableApi
         get() = bandwidthMeter?.bitrateEstimate ?: Long.MIN_VALUE
 
-    @OptIn(UnstableApi::class)
     fun initialize(context: Context, url: String, headers: Map<String, String>): ExoPlayer {
         val existing = player
         if (existing != null && initializedUrl == url) {

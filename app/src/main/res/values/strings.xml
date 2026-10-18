@@ -89,8 +89,6 @@
     <string name="favorites_deleted_single">已取消收藏</string>
     <string name="favorites_undo">撤销</string>
     <!-- 收藏分组（收藏夹） -->
-    <string name="favorites_filter_all">全部 %1$d</string>
-    <string name="favorites_filter_ungrouped">未分组 %1$d</string>
     <string name="favorites_new_group">新建收藏夹</string>
     <string name="favorites_rename_group">重命名收藏夹</string>
     <string name="favorites_delete_group">删除收藏夹</string>
@@ -216,8 +214,6 @@
     <string name="player_seek_back">后退 10 秒</string>
     <string name="player_seek_forward">前进 10 秒</string>
     <string name="player_seek_preview">拖动以快进 / 快退</string>
-    <string name="player_double_rewind">双击左侧后退 10 秒</string>
-    <string name="player_double_forward">双击右侧快进 10 秒</string>
     <string name="player_mute">静音</string>
     <string name="player_unmute">取消静音</string>
     <string name="player_track_auto">自动</string>

@@ -6,8 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.database.ContentObserver
+import android.graphics.Rect
 import android.media.AudioManager
-import android.net.Uri
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -119,6 +119,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import androidx.core.net.toUri
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -155,6 +156,7 @@ private const val CONTROLLER_AUTO_HIDE_MS = 3_000L
 private const val POSITION_POLL_MS = 200L
 
 /** 应用内画面比例枚举 → media3 AspectRatioFrameLayout 常量 */
+@androidx.annotation.OptIn(UnstableApi::class)
 private fun ResizeModeOption.toMedia3ResizeMode(): Int = when (this) {
     ResizeModeOption.FIT -> AspectRatioFrameLayout.RESIZE_MODE_FIT
     ResizeModeOption.FILL -> AspectRatioFrameLayout.RESIZE_MODE_FILL
@@ -208,7 +210,6 @@ private const val DOUBLE_TAP_FEEDBACK_MS = 600L
  * @param pipEnabled 是否允许画中画（用户设置开关）；关闭时 Home/手势回桌面不进入小窗
  */
 @androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayer(
     url: String,
@@ -216,6 +217,7 @@ fun VideoPlayer(
     title: String,
     isFullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
     onPlaybackReady: () -> Unit = {},
     onPlaybackError: () -> Unit = {},
     startPositionMs: Long = 0L,
@@ -225,8 +227,7 @@ fun VideoPlayer(
     onEpisodeEnded: () -> Unit = {},
     pipEnabled: Boolean = true,
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
-    onResizeModeChange: (ResizeModeOption) -> Unit = {},
-    modifier: Modifier = Modifier
+    onResizeModeChange: (ResizeModeOption) -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -237,6 +238,10 @@ fun VideoPlayer(
     val player = remember(url, headers) {
         playerViewModel.initialize(context.applicationContext, url, headers)
     }
+
+    // PiP 源区域：AndroidView factory 创建后持有 PlayerView 引用，
+    // 供 MainActivity 计算小窗动画的起止矩形（不参与重组，用普通数组做持有器）
+    val playerViewHolder = remember { arrayOfNulls<PlayerView>(1) }
 
     // 用 rememberUpdatedState 持有最新进度回调，周期协程不必因回调变化重启
     val progressCallback by rememberUpdatedState(onPlaybackProgress)
@@ -337,11 +342,20 @@ fun VideoPlayer(
                 pipEnabled && isFullscreen && error == null &&
                     playbackState != Player.STATE_ENDED
             }
+            mainActivity.pipSourceRectProvider = {
+                val view = playerViewHolder[0]
+                if (view == null || !view.isAttachedToWindow) {
+                    null
+                } else {
+                    Rect().takeIf { view.getGlobalVisibleRect(it) }
+                }
+            }
         }
         onDispose {
             mainActivity?.let {
                 it.pipModeChangedListener = null
                 it.pipEligibilityProvider = { false }
+                it.pipSourceRectProvider = null
                 it.updatePipParams(false)
             }
         }
@@ -481,7 +495,7 @@ fun VideoPlayer(
                     // 参数名 resizeMode 与 PlayerView 属性同名，显式 this 消歧
                     this.resizeMode = resizeMode.toMedia3ResizeMode()
                     this.player = player
-                }
+                }.also { playerViewHolder[0] = it }
             },
             // 切换画面比例只走 update：同一 PlayerView 改 resizeMode，
             // 绝不重新 factory 或重绑 player（防止 SurfaceView 重建黑帧）
@@ -490,7 +504,10 @@ fun VideoPlayer(
             },
             // 离开组合（如全屏/竖屏切换导致分支重建）时解绑 player，
             // 避免销毁的 PlayerView 继续持有 surface；重建时由 factory 重新绑定
-            onRelease = { it.player = null },
+            onRelease = {
+                playerViewHolder[0] = null
+                it.player = null
+            },
             modifier = Modifier.fillMaxSize()
         )
 
@@ -1861,7 +1878,7 @@ private fun PlaybackUrlContent(
     fun openInBrowser() {
         runCatching {
             context.startActivity(
-                Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                Intent(Intent.ACTION_VIEW, url.toUri())
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             )
         }
@@ -2170,7 +2187,6 @@ private data class VideoTrack(
 )
 
 @androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(UnstableApi::class)
 private fun parseVideoTracks(tracks: Tracks): List<VideoTrack> {
     val result = mutableListOf<VideoTrack>()
     tracks.groups.forEachIndexed { groupIndex, group ->
@@ -2197,7 +2213,6 @@ private fun parseVideoTracks(tracks: Tracks): List<VideoTrack> {
 }
 
 @androidx.annotation.OptIn(UnstableApi::class)
-@OptIn(UnstableApi::class)
 private fun applyTrackSelection(player: ExoPlayer, track: VideoTrack?) {
     val trackSelector = player.trackSelector as? DefaultTrackSelector ?: return
     val builder = trackSelector.parameters.buildUpon()
