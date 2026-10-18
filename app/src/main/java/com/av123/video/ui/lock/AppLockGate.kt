@@ -1,5 +1,6 @@
 package com.av123.video.ui.lock
 
+import android.os.SystemClock
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
 import androidx.compose.foundation.background
@@ -92,55 +93,84 @@ internal fun authenticateAppLock(
 }
 
 /**
- * 应用锁门禁：仅按冷启动快照 [enabledAtLaunch] 决定本进程是否加锁
- * （运行时才开启不锁当前进程、运行时关闭本进程也不改变已解锁状态，符合"仅冷启动验证"）。
- *
- * 未启用时直接渲染 [content]；启用时 [content] 始终保留在组合中，上方盖品牌锁屏，
- * 验证成功后移除锁屏。取消/报错时把任务切到后台，回前台（ON_RESUME）自动重弹。
+ * 应用锁门禁：
+ * - 冷启动按 [enabledAtLaunch] 决定是否启用；启用后本进程解锁；
+ * - 离开超过 [relockAfterMs] 后回前台重新验证（0 表示立即）；
+ * - 未解锁时不组合 [content]，避免内容在锁屏下被截图或无障碍读取；
+ * - 取消/报错切到后台，回前台自动重弹。
  */
 @Composable
 fun AppLockGate(
     enabledAtLaunch: Boolean,
+    relockAfterMs: Long,
     content: @Composable () -> Unit
 ) {
-    content()
-
-    if (!enabledAtLaunch) return
+    if (!enabledAtLaunch) {
+        content()
+        return
+    }
 
     val context = LocalContext.current
     val activity = remember(context) { context.findActivity() as? FragmentActivity }
-    // 解锁态只在本进程内存中；true 后锁屏移除，进程被杀重启重新验证
+    // 解锁态只在本进程内存中；true 后渲染 content，进程被杀重启重新验证
     var unlocked by remember { androidx.compose.runtime.mutableStateOf(false) }
-    // 认证触发计数：进入即 1（首次 ON_RESUME 可能已过），之后每次 ON_RESUME +1
+    // 认证触发计数：进入即 1（首次 ON_RESUME 可能已过），之后每次需要验证时 +1
     var promptTick by remember { mutableIntStateOf(1) }
+    // 进入后台的时间点（elapsedRealtime），0 表示当前不在“离开待判定”状态
+    var backgroundedAt by remember { androidx.compose.runtime.mutableStateOf(0L) }
 
     val lifecycleOwner = LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner) {
+    DisposableEffect(lifecycleOwner, relockAfterMs) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME && !unlocked) promptTick++
+            when (event) {
+                Lifecycle.Event.ON_STOP -> {
+                    // 画中画仍属于前台可见播放，不算离开应用
+                    if (unlocked && activity?.isInPictureInPictureMode != true) {
+                        backgroundedAt = SystemClock.elapsedRealtime()
+                    }
+                }
+
+                Lifecycle.Event.ON_RESUME -> {
+                    if (!unlocked) {
+                        promptTick++
+                    } else if (backgroundedAt > 0L) {
+                        val awayMs = SystemClock.elapsedRealtime() - backgroundedAt
+                        if (relockAfterMs <= 0L || awayMs >= relockAfterMs) {
+                            unlocked = false
+                            promptTick++
+                        }
+                        backgroundedAt = 0L
+                    }
+                }
+
+                else -> Unit
+            }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
-    if (!unlocked) {
-        val title = stringResource(R.string.app_lock_prompt_title)
-        val subtitle = stringResource(R.string.app_lock_unlock)
-        // 计数变化（进入与每次回前台）自动弹系统验证
-        androidx.compose.runtime.LaunchedEffect(promptTick, activity) {
-            val act = activity ?: return@LaunchedEffect
-            authenticateAppLock(
-                activity = act,
-                title = title,
-                subtitle = subtitle,
-                onSuccess = { unlocked = true },
-                onError = { _, _ ->
-                    // 取消/报错：切到后台，避免停留在未验证界面；回前台自动重弹
-                    act.moveTaskToBack(true)
-                }
-            )
-        }
+    val title = stringResource(R.string.app_lock_prompt_title)
+    val subtitle = stringResource(R.string.app_lock_unlock)
+    // 计数变化（进入、超时回前台）自动弹系统验证；已解锁时不弹
+    androidx.compose.runtime.LaunchedEffect(promptTick, activity, unlocked) {
+        if (unlocked) return@LaunchedEffect
+        val act = activity ?: return@LaunchedEffect
+        authenticateAppLock(
+            activity = act,
+            title = title,
+            subtitle = subtitle,
+            onSuccess = { unlocked = true },
+            onError = { _, _ ->
+                // 取消/报错：切到后台，避免停留在未验证界面；回前台自动重弹
+                act.moveTaskToBack(true)
+            }
+        )
+    }
 
+    if (unlocked) {
+        content()
+    } else {
         AppLockOverlay(
             onUnlockClick = {
                 val act = activity ?: return@AppLockOverlay

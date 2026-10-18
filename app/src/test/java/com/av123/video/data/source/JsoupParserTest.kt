@@ -88,6 +88,35 @@ class JsoupParserTest {
         assertNull(page.pagination)
     }
 
+    @Test
+    fun parseSearchDocument_parsesCardsCountAndPagination() {
+        val html = """
+            <div class="pagehead">
+              <span class="pagehead__count">1,234 个视频</span>
+            </div>
+            <div class="card">
+              <a class="card__cover" href="/cn/v/search-001">
+                <img class="card__img" src="/covers/search.jpg">
+              </a>
+              <div class="card__title"><a href="/cn/v/search-001">SEARCH-001 — 搜索结果</a></div>
+            </div>
+            <div class="pager">
+              <div class="pager__pages">
+                <a class="is-on" href="/cn/search?q=x&page=1">1</a>
+                <a rel="last" href="/cn/search?q=x&page=7">7</a>
+              </div>
+            </div>
+        """.trimIndent()
+
+        val page = source.parseSearchDocument(parse(html), page = 1)
+
+        assertEquals(1, page.videos.size)
+        assertEquals("search-001", page.videos.first().id)
+        assertEquals("搜索", page.videos.first().category)
+        assertEquals(1234, page.totalCount)
+        assertEquals(7, page.pagination?.totalPages)
+    }
+
     // ---------- 首页 ----------
 
     @Test

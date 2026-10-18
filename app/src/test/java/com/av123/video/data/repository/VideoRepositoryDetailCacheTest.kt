@@ -27,6 +27,8 @@ class VideoRepositoryDetailCacheTest {
     private class FakePageCacheDao : PageCacheDao {
         val entries = mutableMapOf<String, PageCacheEntity>()
         override suspend fun getAll(): List<PageCacheEntity> = entries.values.toList()
+        override suspend fun totalBytes(): Long =
+            entries.values.sumOf { it.payloadJson.length.toLong() }
         override suspend fun get(cacheKey: String): PageCacheEntity? = entries[cacheKey]
         override suspend fun upsert(entity: PageCacheEntity) {
             entries[entity.cacheKey] = entity

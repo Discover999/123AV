@@ -1,13 +1,17 @@
 package com.av123.video.ui.screens.detail
 
 import android.annotation.SuppressLint
+import android.net.http.SslError
 import android.os.Handler
 import android.os.Looper
+import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.av123.video.ui.util.AppLog
 import java.net.URLDecoder
@@ -95,6 +99,7 @@ internal fun RelatedExtractWebView(
 ) {
     if (pageUrl.isBlank()) return
     val appContext = LocalContext.current.applicationContext
+    val allowedOrigins = remember(pageUrl) { setOfNotNull(originOf(pageUrl)) }
 
     DisposableEffect(pageUrl) {
         val mainHandler = Handler(Looper.getMainLooper())
@@ -159,9 +164,32 @@ internal fun RelatedExtractWebView(
                 domStorageEnabled = true
                 mediaPlaybackRequiresUserGesture = false
                 cacheMode = android.webkit.WebSettings.LOAD_DEFAULT
+                hardenForHeadlessWebView()
             }
             webChromeClient = WebChromeClient()
             webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
+                    if (request?.isForMainFrame != true) return false
+                    val url = request.url.toString()
+                    if (!isAllowedPage(url, allowedOrigins)) {
+                        AppLog.w(RELATED_TAG, "阻止跳到非白名单页面: $url")
+                        return true
+                    }
+                    return false
+                }
+
+                override fun onReceivedSslError(
+                    view: WebView?,
+                    handler: SslErrorHandler?,
+                    error: SslError?
+                ) {
+                    AppLog.w(RELATED_TAG, "SSL 校验失败，拒绝加载: ${error?.url}")
+                    handler?.cancel()
+                }
+
                 override fun onPageFinished(view: WebView?, url: String?) {
                     // iframe/异步跳转可能多次回调；只启动一次轮询链
                     if (pollCount == 0 && !delivered.get()) {

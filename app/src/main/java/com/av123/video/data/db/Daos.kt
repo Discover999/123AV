@@ -22,6 +22,9 @@ interface HistoryDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: HistoryEntity)
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(entities: List<HistoryEntity>)
+
     @Query("DELETE FROM watch_history WHERE videoId = :videoId")
     suspend fun delete(videoId: String)
 
@@ -55,6 +58,9 @@ interface WatchDailyDao {
     @Query("SELECT * FROM watch_daily ORDER BY day ASC")
     suspend fun all(): List<WatchDailyEntity>
 
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(entities: List<WatchDailyEntity>)
+
     /** 观察某天的墙钟时长（无行时为 0）；用于"我的"页入口副标题实时显示今日时长 */
     @Query("SELECT COALESCE((SELECT playMs FROM watch_daily WHERE day = :day), 0)")
     fun observeDayPlayMs(day: String): Flow<Long>
@@ -84,6 +90,9 @@ interface FavoriteDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertAll(entities: List<FavoriteEntity>)
 
+    @Query("SELECT * FROM favorites ORDER BY favoritedAt DESC")
+    suspend fun getAll(): List<FavoriteEntity>
+
     @Query("DELETE FROM favorites")
     suspend fun clear()
 }
@@ -99,6 +108,12 @@ interface SearchKeywordDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: SearchKeywordEntity)
+
+    @Query("SELECT * FROM search_keywords ORDER BY searchedAt DESC")
+    suspend fun getAll(): List<SearchKeywordEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(entities: List<SearchKeywordEntity>)
 
     @Query("DELETE FROM search_keywords WHERE keyword = :keyword")
     suspend fun delete(keyword: String)
@@ -126,6 +141,9 @@ interface PageCacheDao {
     @Query("SELECT * FROM page_cache")
     suspend fun getAll(): List<PageCacheEntity>
 
+    @Query("SELECT COALESCE(SUM(LENGTH(payloadJson)), 0) FROM page_cache")
+    suspend fun totalBytes(): Long
+
     @Query("SELECT * FROM page_cache WHERE cacheKey = :cacheKey")
     suspend fun get(cacheKey: String): PageCacheEntity?
 
@@ -147,6 +165,12 @@ interface FavoriteGroupDao {
 
     @Query("SELECT * FROM favorite_group_items")
     fun observeItems(): Flow<List<FavoriteGroupItemEntity>>
+
+    @Query("SELECT * FROM favorite_groups ORDER BY createdAt ASC")
+    suspend fun getAll(): List<FavoriteGroupEntity>
+
+    @Query("SELECT * FROM favorite_group_items")
+    suspend fun getAllItems(): List<FavoriteGroupItemEntity>
 
     @Query("SELECT * FROM favorite_groups WHERE name = :name LIMIT 1")
     suspend fun findByName(name: String): FavoriteGroupEntity?
@@ -184,8 +208,14 @@ interface FollowedActressDao {
     @Query("SELECT * FROM followed_actresses WHERE path = :path LIMIT 1")
     suspend fun get(path: String): FollowedActressEntity?
 
+    @Query("SELECT * FROM followed_actresses ORDER BY followedAt DESC")
+    suspend fun getAll(): List<FollowedActressEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: FollowedActressEntity)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertAll(entities: List<FollowedActressEntity>)
 
     @Query("DELETE FROM followed_actresses WHERE path = :path")
     suspend fun delete(path: String)

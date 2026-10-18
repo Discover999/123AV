@@ -31,6 +31,12 @@ class PageCacheStore(private val dao: PageCacheDao) {
     /** 全部缓存条目，启动时一次性灌入内存状态 */
     suspend fun getAll(): List<PageCacheEntity> = dao.getAll()
 
+    /** 缓存载荷占用字节数（用于设置页展示） */
+    suspend fun totalBytes(): Long = dao.totalBytes()
+
+    /** 清空首页/列表/详情缓存 */
+    suspend fun clearAll() = dao.clear()
+
     suspend fun getFeed(): HomeFeed? = dao.get(FEED_KEY)?.let { entity ->
         runCatching { AppJson.decodeFromString<HomeFeed>(entity.payloadJson) }.getOrNull()
     }

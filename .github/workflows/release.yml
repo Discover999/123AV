@@ -37,10 +37,15 @@ jobs:
         id: ver
         run: |
           if [ -n "${{ github.event.inputs.version }}" ]; then
-            echo "version=${{ github.event.inputs.version }}" >> "$GITHUB_OUTPUT"
+            tag="${{ github.event.inputs.version }}"
           else
-            echo "version=${{ github.ref_name }}" >> "$GITHUB_OUTPUT"
+            tag="${GITHUB_REF_NAME}"
           fi
+          # 版本名去掉 v 前缀；versionCode 用 workflow run number，保证每次发布递增
+          name="${tag#v}"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "code=${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
 
       - name: Verify signing secrets
         env:
@@ -66,15 +71,18 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
           chmod +x ./gradlew
-          ./gradlew assembleRelease --stacktrace
+          # 发布前强制跑 lint + 单测，避免带病发版
+          ./gradlew lintDebug testDebugUnitTest assembleRelease --stacktrace \
+            -PversionCode=${{ steps.ver.outputs.code }} \
+            -PversionName=${{ steps.ver.outputs.name }}
 
       - name: Rename APK with version
-        run: cp app/build/outputs/apk/release/app-release.apk "123AV-${{ steps.ver.outputs.version }}.apk"
+        run: cp app/build/outputs/apk/release/app-release.apk "123AV-${{ steps.ver.outputs.name }}.apk"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.version }}
-          name: 123AV ${{ steps.ver.outputs.version }}
+          tag_name: ${{ steps.ver.outputs.tag }}
+          name: 123AV ${{ steps.ver.outputs.name }}
           generate_release_notes: true
           files: 123AV-*.apk

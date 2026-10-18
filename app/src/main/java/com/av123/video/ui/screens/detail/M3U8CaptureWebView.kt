@@ -2,9 +2,12 @@ package com.av123.video.ui.screens.detail
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
+import android.net.Uri
+import android.net.http.SslError
 import android.os.Handler
 import android.os.Looper
 import android.webkit.ConsoleMessage
+import android.webkit.SslErrorHandler
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -14,7 +17,12 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import androidx.webkit.JavaScriptReplyProxy
+import androidx.webkit.WebMessageCompat
+import androidx.webkit.WebViewCompat
+import androidx.webkit.WebViewFeature
 import com.av123.video.BuildConfig
 import com.av123.video.data.model.Video
 import com.av123.video.ui.util.AppLog
@@ -22,6 +30,7 @@ import java.util.Collections
 import java.util.concurrent.atomic.AtomicBoolean
 
 private const val M3U8_TAG = "M3U8Interceptor"
+private const val WEB_MESSAGE_OBJECT = "M3U8Bridge"
 
 /** 详情内容渲染后，延迟多久再创建拦截 WebView（错开首帧/封面加载，避免卡顿） */
 internal const val CAPTURE_WEBVIEW_DELAY_MS = 500L
@@ -63,7 +72,13 @@ private const val M3U8_HOOK_JS = """
       var re = /https?:[^\s"'<>()\\]*?\.m3u8[^\s"'<>()\\]*/gi;
       var m;
       while ((m = re.exec(s)) !== null) {
-        console.log('[M3U8-JS] ' + src + ': ' + abs(m[0]));
+        var u = abs(m[0]);
+        try {
+          if (window.M3U8Bridge && window.M3U8Bridge.postMessage) {
+            window.M3U8Bridge.postMessage(u);
+          }
+        } catch (e) {}
+        console.log('[M3U8-JS] ' + src + ': ' + u);
       }
     } catch (e) {}
   }
@@ -148,6 +163,9 @@ internal fun M3U8CaptureWebView(
     val allowDetailFallback = targetUrl == null
 
     val appContext = LocalContext.current.applicationContext
+    val allowedOrigins = remember(primaryUrl, detailUrl) {
+        listOf(primaryUrl, detailUrl).mapNotNull { originOf(it) }.toSet()
+    }
 
     // epoch 变化（用户重试）时销毁旧 WebView 并重新加载播放页
     DisposableEffect(video.id, epoch) {
@@ -175,6 +193,9 @@ internal fun M3U8CaptureWebView(
         // UA 在主线程提前取好：shouldInterceptRequest 运行在 Chromium 后台线程，
         // 其中严禁调用任何 WebView 实例方法（settings 等），否则线程检查崩溃
         val userAgent = WebSettings.getDefaultUserAgent(appContext)
+        // WebMessageListener 需要较新的 WebView；旧内核保留 console 文本兜底
+        val webMessageSupported =
+            WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)
 
         // headless WebView：applicationContext 创建、不加入任何视图层级
         val webView = WebView(appContext).apply {
@@ -183,6 +204,7 @@ internal fun M3U8CaptureWebView(
                 domStorageEnabled = true
                 mediaPlaybackRequiresUserGesture = false
                 cacheMode = WebSettings.LOAD_DEFAULT
+                hardenForHeadlessWebView()
             }
             // 仅 debug 包允许 chrome://inspect 远程调试播放页，release 关闭避免泄露抓流过程
             WebView.setWebContentsDebuggingEnabled(BuildConfig.DEBUG)
@@ -224,6 +246,34 @@ internal fun M3U8CaptureWebView(
                 onCaptured(url, capturedHeaders)
             }
 
+            // 新内核优先走 WebMessage 通道：只接受白名单来源、主帧消息，
+            // 避免把页面 console 文本当作可信数据源（旧内核保留 console 兜底）
+            if (webMessageSupported && allowedOrigins.isNotEmpty()) {
+                WebViewCompat.addWebMessageListener(
+                    this,
+                    WEB_MESSAGE_OBJECT,
+                    allowedOrigins,
+                    object : WebViewCompat.WebMessageListener {
+                        override fun onPostMessage(
+                            webView: WebView,
+                            message: WebMessageCompat,
+                            sourceOrigin: Uri,
+                            isMainFrame: Boolean,
+                            replyProxy: JavaScriptReplyProxy
+                        ) {
+                            if (!isMainFrame) return
+                            val url = message.data?.trim().orEmpty()
+                            if (!url.contains(".m3u8", ignoreCase = true)) return
+                            AppLog.d(M3U8_TAG, "WebMessage 收到播放地址: $url")
+                            mainHandler.post {
+                                onCaptured()
+                                reportCapturedFromJs(url)
+                            }
+                        }
+                    }
+                )
+            }
+
             // 嵌入页抓不到时回退加载详情页整页（超时或主帧错误共用，只回退一次）；
             // 没有可回退地址或已回退过，则直接判定解析失败
             fun fallbackToDetailPage(reason: String) {
@@ -247,12 +297,14 @@ internal fun M3U8CaptureWebView(
                     if (msg.contains("[M3U8-JS]")) {
                         onCaptured()
                         AppLog.i(M3U8_TAG, "===== JS hook 发现 m3u8 =====\n$msg")
-                        // 日志里可能同时有 API 请求地址与响应中的 m3u8，取第一个含 .m3u8 的
-                        val m3u8Url = Regex("""https?://[^\s"'<>()\\]+""")
-                            .findAll(msg)
-                            .map { it.value }
-                            .firstOrNull { it.contains(".m3u8", ignoreCase = true) }
-                        if (m3u8Url != null) reportCapturedFromJs(m3u8Url)
+                        // 旧内核没有 WebMessageListener，只能从日志文本兜底解析
+                        if (!webMessageSupported) {
+                            val m3u8Url = Regex("""https?://[^\s"'<>()\\]+""")
+                                .findAll(msg)
+                                .map { it.value }
+                                .firstOrNull { it.contains(".m3u8", ignoreCase = true) }
+                            if (m3u8Url != null) reportCapturedFromJs(m3u8Url)
+                        }
                     } else {
                         AppLog.d(
                             M3U8_TAG,
@@ -263,6 +315,19 @@ internal fun M3U8CaptureWebView(
                 }
             }
             webViewClient = object : WebViewClient() {
+                override fun shouldOverrideUrlLoading(
+                    view: WebView?,
+                    request: WebResourceRequest?
+                ): Boolean {
+                    if (request?.isForMainFrame != true) return false
+                    val url = request.url.toString()
+                    if (!isAllowedPage(url, allowedOrigins)) {
+                        AppLog.w(M3U8_TAG, "阻止跳转到非白名单页面: $url")
+                        return true
+                    }
+                    return false
+                }
+
                 override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                     AppLog.d(M3U8_TAG, "页面开始加载: $url")
                     view?.evaluateJavascript(M3U8_HOOK_JS, null)
@@ -283,6 +348,15 @@ internal fun M3U8CaptureWebView(
                         "HTTP ${errorResponse?.statusCode} ${errorResponse?.reasonPhrase} " +
                             "-> ${request?.url}"
                     )
+                }
+
+                override fun onReceivedSslError(
+                    view: WebView?,
+                    handler: SslErrorHandler?,
+                    error: SslError?
+                ) {
+                    AppLog.w(M3U8_TAG, "SSL 校验失败，拒绝加载: ${error?.url}")
+                    handler?.cancel()
                 }
 
                 override fun onReceivedError(
@@ -368,6 +442,11 @@ internal fun M3U8CaptureWebView(
 
         onDispose {
             mainHandler.removeCallbacksAndMessages(null)
+            if (webMessageSupported) {
+                runCatching {
+                    WebViewCompat.removeWebMessageListener(webView, WEB_MESSAGE_OBJECT)
+                }
+            }
             webView.stopLoading()
             webView.destroy()
         }

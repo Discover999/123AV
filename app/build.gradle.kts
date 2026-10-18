@@ -8,6 +8,11 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+// 版本号由 CI 注入（tag / run_number），本地构建保留默认值，避免每次发版手改文件。
+val appVersionCode = providers.gradleProperty("versionCode").orNull?.toIntOrNull() ?: 1
+val appVersionName = providers.gradleProperty("versionName").orNull
+    ?.takeIf { it.isNotBlank() } ?: "0.1.0"
+
 // Release 签名凭据：优先读环境变量（GitHub Actions 等 CI 环境），
 // 其次读仓库根目录的 keystore.properties（本地开发，已加入 .gitignore）
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -36,8 +41,8 @@ android {
         applicationId = "com.av123.video"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = appVersionCode
+        versionName = appVersionName
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -80,6 +85,16 @@ android {
         compose = true
         buildConfig = true
     }
+
+    // 把导出的 Room schema 放进 androidTest assets，迁移测试可直接读取
+    sourceSets {
+        getByName("androidTest").assets.srcDir("$projectDir/schemas")
+    }
+}
+
+ksp {
+    // 导出 Room schema，后续迁移测试与版本演进依赖它
+    arg("room.schemaLocation", "$projectDir/schemas")
 }
 
 dependencies {
@@ -131,9 +146,17 @@ dependencies {
     implementation(libs.jsoup)
     implementation(libs.okhttp)
 
+    // 隐藏 WebView 的 WebMessageListener 通道（替代 console 文本解析）
+    implementation(libs.androidx.webkit)
+
     // ExoPlayer 分片缓存索引（SimpleCache 的 StandaloneDatabaseProvider）
     implementation(libs.media3.database)
 
     // 解析器单元测试（Jsoup 为纯 JVM 实现，可直接跑 JUnit）
     testImplementation(libs.junit)
+
+    // Room 迁移测试（真机/模拟器 androidTest）
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.core)
 }

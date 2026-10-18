@@ -78,10 +78,14 @@ class PlayerViewModel : ViewModel() {
 
         player = newPlayer
         initializedUrl = url
+        MediaCache.onPlayerCreated()
         return newPlayer
     }
 
     fun releasePlayer() {
+        if (player != null) {
+            MediaCache.onPlayerReleased()
+        }
         player?.release()
         player = null
         initializedUrl = null

@@ -8,6 +8,7 @@ import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import java.io.File
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * ExoPlayer 媒体分片缓存（m3u8 的 ts/fmp4 分片与播放列表）。
@@ -27,6 +28,30 @@ object MediaCache {
 
     @Volatile
     private var cache: SimpleCache? = null
+
+    /** 活跃播放器计数：播放/画中画期间禁止释放 SimpleCache */
+    private val activePlayers = AtomicInteger(0)
+
+    fun onPlayerCreated() {
+        activePlayers.incrementAndGet()
+    }
+
+    fun onPlayerReleased() {
+        activePlayers.updateAndGet { current -> maxOf(0, current - 1) }
+    }
+
+    /**
+     * 清理媒体缓存。正在播放（含画中画）时直接放弃，返回 false；
+     * 无播放器时释放 SimpleCache、删除缓存目录，返回 true。
+     */
+    @Synchronized
+    fun tryClear(context: Context): Boolean {
+        if (activePlayers.get() > 0) return false
+        runCatching { cache?.release() }
+        cache = null
+        File(context.applicationContext.cacheDir, CACHE_DIR_NAME).deleteRecursively()
+        return true
+    }
 
     @Synchronized
     fun get(context: Context): SimpleCache {

@@ -206,6 +206,7 @@
     <string name="common_play">播放</string>
     <string name="common_pause">暂停</string>
     <string name="common_cancel">取消</string>
+    <string name="common_confirm">确认</string>
     <string name="common_close">关闭</string>
 
     <!-- 播放器 -->
@@ -245,9 +246,36 @@
     <string name="profile_watch_stats">观看统计</string>
     <string name="profile_watch_stats_subtitle">今日 %1$s</string>
     <!-- 应用锁 -->
+    <string name="profile_group_data_management">数据与备份</string>
+    <string name="profile_export_data">导出数据</string>
+    <string name="profile_export_data_desc">导出历史、收藏、关注与搜索记录</string>
+    <string name="profile_import_data">导入数据</string>
+    <string name="profile_import_data_desc">从 JSON 备份合并数据</string>
+    <string name="profile_clear_cache">清理缓存</string>
+    <string name="profile_cache_computing">计算中…</string>
+    <string name="profile_cache_size">占用 %1$s</string>
+    <string name="profile_export_success">数据已导出</string>
+    <string name="profile_export_failed">导出失败</string>
+    <string name="profile_import_confirm_title">导入数据</string>
+    <string name="profile_import_confirm_msg">将合并备份中的历史、收藏、关注与搜索记录，同 ID 记录以备份为准。</string>
+    <string name="profile_import_success">导入完成</string>
+    <string name="profile_import_failed">导入失败：%1$s</string>
+    <string name="profile_clear_cache_confirm_title">清理缓存</string>
+    <string name="profile_clear_cache_confirm_msg">将清理图片、页面与媒体分片缓存。播放中的媒体缓存会跳过。</string>
+    <string name="profile_cache_cleared">缓存已清理</string>
+    <string name="profile_cache_cleared_media_busy">缓存已清理（播放中，媒体缓存已跳过）</string>
+    <string name="profile_cache_clear_failed">缓存清理失败</string>
     <string name="profile_group_security">隐私与安全</string>
     <string name="profile_app_lock">应用锁</string>
-    <string name="profile_app_lock_desc">冷启动时通过指纹、面容或屏幕锁验证</string>
+    <string name="profile_app_lock_desc">冷启动或离开后通过指纹、面容或屏幕锁验证</string>
+    <string name="profile_app_lock_relock">自动重新上锁</string>
+    <string name="profile_app_lock_relock_off">应用锁关闭时不生效</string>
+    <string name="profile_secure_screen">防截屏</string>
+    <string name="profile_secure_screen_desc">阻止截屏/录屏，并在最近任务中隐藏预览</string>
+    <string name="app_lock_timeout_immediate">立即</string>
+    <string name="app_lock_timeout_30s">30 秒后</string>
+    <string name="app_lock_timeout_1m">1 分钟后</string>
+    <string name="app_lock_timeout_5m">5 分钟后</string>
     <string name="app_lock_title">应用已锁定</string>
     <string name="app_lock_prompt_title">身份验证</string>
     <string name="app_lock_unlock">验证身份以继续观看</string>

@@ -21,6 +21,14 @@ enum class DarkMode { SYSTEM, LIGHT, DARK }
  */
 enum class ResizeModeOption { FIT, FILL, ZOOM }
 
+/** 应用锁离开后多久重新验证 */
+enum class AppLockTimeout(val millis: Long) {
+    IMMEDIATE(0L),
+    THIRTY_SECONDS(30_000L),
+    ONE_MINUTE(60_000L),
+    FIVE_MINUTES(300_000L)
+}
+
 /** 全局外观与播放设置 */
 data class AppSettings(
     val dynamicColor: Boolean = true,
@@ -32,7 +40,11 @@ data class AppSettings(
     /** 播放器画面比例（适应/填充/裁切填满），全局默认、跨影片持久化 */
     val videoResizeMode: ResizeModeOption = ResizeModeOption.FIT,
     /** 冷启动是否需要生物识别/设备凭据解锁 */
-    val appLockEnabled: Boolean = false
+    val appLockEnabled: Boolean = false,
+    /** 离开应用超过该时长后重新上锁 */
+    val appLockTimeout: AppLockTimeout = AppLockTimeout.THIRTY_SECONDS,
+    /** 阻止截屏/录屏，并在最近任务中隐藏预览 */
+    val secureScreenEnabled: Boolean = true
 )
 
 /** 用户偏好仓库（动态取色开关、深色模式、画中画开关） */
@@ -51,7 +63,13 @@ class SettingsStore(context: Context) {
             videoResizeMode = runCatching {
                 ResizeModeOption.valueOf(prefs[KEY_VIDEO_RESIZE_MODE] ?: ResizeModeOption.FIT.name)
             }.getOrDefault(ResizeModeOption.FIT),
-            appLockEnabled = prefs[KEY_APP_LOCK_ENABLED] ?: false
+            appLockEnabled = prefs[KEY_APP_LOCK_ENABLED] ?: false,
+            appLockTimeout = runCatching {
+                AppLockTimeout.valueOf(
+                    prefs[KEY_APP_LOCK_TIMEOUT] ?: AppLockTimeout.THIRTY_SECONDS.name
+                )
+            }.getOrDefault(AppLockTimeout.THIRTY_SECONDS),
+            secureScreenEnabled = prefs[KEY_SECURE_SCREEN] ?: true
         )
     }
 
@@ -79,6 +97,14 @@ class SettingsStore(context: Context) {
         store.edit { it[KEY_APP_LOCK_ENABLED] = enabled }
     }
 
+    suspend fun setAppLockTimeout(timeout: AppLockTimeout) {
+        store.edit { it[KEY_APP_LOCK_TIMEOUT] = timeout.name }
+    }
+
+    suspend fun setSecureScreenEnabled(enabled: Boolean) {
+        store.edit { it[KEY_SECURE_SCREEN] = enabled }
+    }
+
     private companion object {
         val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val KEY_DARK_MODE = stringPreferencesKey("dark_mode")
@@ -86,5 +112,7 @@ class SettingsStore(context: Context) {
         val KEY_AUTO_PLAY_NEXT = booleanPreferencesKey("auto_play_next")
         val KEY_VIDEO_RESIZE_MODE = stringPreferencesKey("video_resize_mode")
         val KEY_APP_LOCK_ENABLED = booleanPreferencesKey("app_lock_enabled")
+        val KEY_APP_LOCK_TIMEOUT = stringPreferencesKey("app_lock_timeout")
+        val KEY_SECURE_SCREEN = booleanPreferencesKey("secure_screen")
     }
 }

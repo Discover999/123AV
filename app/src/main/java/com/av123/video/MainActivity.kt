@@ -8,6 +8,7 @@ import android.content.res.Configuration
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.view.WindowManager
 import android.os.Handler
 import android.os.Looper
 import android.util.Rational
@@ -108,6 +109,15 @@ class MainActivity : FragmentActivity() {
         runCatching { setPictureInPictureParams(buildPipParams(eligible)) }
     }
 
+    /** 防截屏/录屏与最近任务预览：FLAG_SECURE 由设置页实时切换 */
+    private fun applySecureScreenFlag(enabled: Boolean) {
+        if (enabled) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        } else {
+            window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+        }
+    }
+
     override fun attachBaseContext(newBase: Context) {
         // Application.onCreate 先于 Activity 创建，容器已就绪
         val app = newBase.applicationContext as VideoHubApp
@@ -139,6 +149,8 @@ class MainActivity : FragmentActivity() {
         super.onCreate(savedInstanceState)
         // 边到边布局，MD3 推荐
         enableEdgeToEdge()
+        // 冷启动首帧就应用防截屏，避免启动阶段最近任务预览泄露内容
+        applySecureScreenFlag(initialSettings.secureScreenEnabled)
 
         val container = (application as VideoHubApp).container
 
@@ -163,6 +175,11 @@ class MainActivity : FragmentActivity() {
                 val view = LocalView.current
                 SideEffect {
                     val window = view.context.findActivity()?.window ?: return@SideEffect
+                    if (settings.secureScreenEnabled) {
+                        window.addFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    } else {
+                        window.clearFlags(WindowManager.LayoutParams.FLAG_SECURE)
+                    }
                     val controller = WindowCompat.getInsetsController(window, view)
                     controller.isAppearanceLightStatusBars = !darkTheme
                     controller.isAppearanceLightNavigationBars = !darkTheme
@@ -176,8 +193,11 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        // 应用锁：仅按冷启动快照决定本进程是否加锁，不随后续设置 Flow 变化
-                        AppLockGate(enabledAtLaunch = initialSettings.appLockEnabled) {
+                        // 应用锁：是否启用按冷启动快照决定；离开超时时间实时读取设置
+                        AppLockGate(
+                            enabledAtLaunch = initialSettings.appLockEnabled,
+                            relockAfterMs = settings.appLockTimeout.millis
+                        ) {
                             VideoHubApp()
                         }
                     }

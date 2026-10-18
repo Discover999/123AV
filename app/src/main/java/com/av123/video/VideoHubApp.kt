@@ -14,6 +14,8 @@ import com.av123.video.data.net.DataSourceProbe
 import com.av123.video.data.net.ErrorReporter
 import com.av123.video.data.net.HttpClient
 import com.av123.video.data.prefs.SettingsStore
+import com.av123.video.data.repository.BackupRepository
+import com.av123.video.data.repository.CacheManager
 import com.av123.video.data.repository.FavoriteRepository
 import com.av123.video.data.repository.FollowedActressRepository
 import com.av123.video.data.repository.HistoryRepository
@@ -78,7 +80,7 @@ class AppContainer(context: Context) {
 
     /** Room 数据库 + 首页/列表磁盘缓存 */
     val database = VideoHubDatabase.get(appContext)
-    private val pageCacheStore = PageCacheStore(database.pageCacheDao())
+    val pageCacheStore = PageCacheStore(database.pageCacheDao())
 
     /** 编译期内置站点配置（远程配置缺失/失败时的最终兜底） */
     private val defaultSiteConfig = JsoupSiteConfig(
@@ -100,6 +102,8 @@ class AppContainer(context: Context) {
 
     val videoRepository: VideoRepository =
         VideoRepository(dataSource, appScope, errorReporter, pageCacheStore)
+    val backupRepository: BackupRepository = BackupRepository(database)
+    val cacheManager: CacheManager = CacheManager(appContext, pageCacheStore)
     val historyRepository: HistoryRepository =
         HistoryRepository(database.historyDao(), database.watchDailyDao())
     val favoriteRepository: FavoriteRepository =

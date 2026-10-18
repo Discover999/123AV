@@ -9,6 +9,7 @@ composeBom = "2024.12.01"
 navigationCompose = "2.8.5"
 coil = "2.7.0"
 media3 = "1.4.1"
+webkit = "1.12.1"
 jsoup = "1.18.3"
 okhttp = "4.12.0"
 material = "1.12.0"
@@ -20,6 +21,9 @@ room = "2.8.5"
 ksp = "2.1.20-2.0.0"
 serializationJson = "1.7.3"
 junit = "4.13.2"
+androidxTestCore = "1.6.1"
+androidxTestRunner = "1.6.2"
+androidxTestExtJunit = "1.2.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +54,8 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 # ExoPlayer 分片缓存所需的独立索引库（SimpleCache 元数据）
 media3-database = { group = "androidx.media3", name = "media3-database", version.ref = "media3" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+# WebView 安全通信（WebMessageListener）与特性检测
+androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 # 统一网络层：网页抓取 / 站点探测 / Coil 图片共用连接池
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 # Room 本地数据库（历史/收藏/搜索词/列表页磁盘缓存）
@@ -60,6 +66,10 @@ room-compiler = { group = "androidx.room", name = "room-compiler", version.ref =
 kotlinx-serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serializationJson" }
 # 解析器单元测试
 junit = { group = "junit", name = "junit", version.ref = "junit" }
+# Room 迁移测试（androidTest）
+androidx-test-core = { group = "androidx.test", name = "core-ktx", version.ref = "androidxTestCore" }
+androidx-test-runner = { group = "androidx.test", name = "runner", version.ref = "androidxTestRunner" }
+androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidxTestExtJunit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

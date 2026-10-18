@@ -23,7 +23,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         WatchDailyEntity::class
     ],
     version = 3,
-    exportSchema = false
+    exportSchema = true
 )
 abstract class VideoHubDatabase : RoomDatabase() {
 
@@ -114,18 +114,24 @@ abstract class VideoHubDatabase : RoomDatabase() {
             }
         }
 
+        private const val DATABASE_NAME = "videohub.db"
+
+        /**
+         * 指定库名创建实例（迁移测试使用，应用内统一走 [get]）。
+         * 只注册已知迁移；未识别版本让 Room 显式失败，绝不静默删库。
+         */
+        fun create(context: Context, databaseName: String): VideoHubDatabase =
+            Room.databaseBuilder(
+                context.applicationContext,
+                VideoHubDatabase::class.java,
+                databaseName
+            )
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .build()
+
         fun get(context: Context): VideoHubDatabase =
             instance ?: synchronized(this) {
-                instance ?: Room.databaseBuilder(
-                    context.applicationContext,
-                    VideoHubDatabase::class.java,
-                    "videohub.db"
-                )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    // 迁移路径之外的意外版本兜底销毁重建（缓存可重建、收藏/历史丢失风险极小）
-                    .fallbackToDestructiveMigration(dropAllTables = true)
-                    .build()
-                    .also { instance = it }
+                instance ?: create(context, DATABASE_NAME).also { instance = it }
             }
     }
 }

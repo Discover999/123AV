@@ -4,12 +4,14 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * 观看历史（按 watchedAt 倒序）。
  * 完整 Video 以 JSON 落盘（videoJson），列表卡片/详情恢复时可拿到全部字段；
  * position/duration/episode 为结构化列，续播查询无需反序列化。
  */
+@Serializable
 @Entity(tableName = "watch_history")
 data class HistoryEntity(
     @PrimaryKey val videoId: String,
@@ -21,6 +23,7 @@ data class HistoryEntity(
 )
 
 /** 收藏记录（按 favoritedAt 倒序），videoJson 为完整 Video */
+@Serializable
 @Entity(tableName = "favorites")
 data class FavoriteEntity(
     @PrimaryKey val videoId: String,
@@ -29,6 +32,7 @@ data class FavoriteEntity(
 )
 
 /** 搜索历史关键词（按 searchedAt 倒序，同词去重置顶） */
+@Serializable
 @Entity(tableName = "search_keywords")
 data class SearchKeywordEntity(
     @PrimaryKey val keyword: String,
@@ -39,6 +43,7 @@ data class SearchKeywordEntity(
  * 收藏夹（文件夹）：名称唯一。一个收藏视频可属于 0..n 个收藏夹，
  * 不属于任何收藏夹的收藏即“未分组”。
  */
+@Serializable
 @Entity(
     tableName = "favorite_groups",
     indices = [Index(value = ["name"], unique = true)]
@@ -53,6 +58,7 @@ data class FavoriteGroupEntity(
  * 收藏夹-收藏视频多对多成员关系。
  * 删除收藏夹或取消视频收藏时通过外键级联清理成员关系。
  */
+@Serializable
 @Entity(
     tableName = "favorite_group_items",
     primaryKeys = ["groupId", "videoId"],
@@ -83,6 +89,7 @@ data class FavoriteGroupItemEntity(
  * path 为女演员个人页站点相对路径（如 /cn/actresses/aiko），兼作身份主键；
  * 头像/名称/资料行为关注时的快照，个人中心聚合新片时直接展示无需再抓。
  */
+@Serializable
 @Entity(tableName = "followed_actresses")
 data class FollowedActressEntity(
     @PrimaryKey val path: String,
@@ -97,6 +104,7 @@ data class FollowedActressEntity(
  * 播放墙钟秒数增量累计（暂停/缓冲/seek 不计时），供观看统计页使用。
  * 该表 v3 才引入，历史版本无法回填，上线前的观看时长不可追溯。
  */
+@Serializable
 @Entity(tableName = "watch_daily")
 data class WatchDailyEntity(
     @PrimaryKey val day: String,

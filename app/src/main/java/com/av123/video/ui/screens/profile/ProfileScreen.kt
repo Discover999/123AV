@@ -1,6 +1,9 @@
 package com.av123.video.ui.screens.profile
 
 import android.os.Build
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
@@ -25,8 +28,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ChevronRight
+import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Favorite
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
@@ -36,6 +42,8 @@ import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.QueryStats
 import androidx.compose.material.icons.rounded.Stars
+import androidx.compose.material.icons.rounded.Timer
+import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,6 +63,7 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -71,14 +80,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.data.prefs.AppLockTimeout
 import com.av123.video.data.prefs.AppSettings
 import com.av123.video.data.prefs.DarkMode
+import com.av123.video.data.repository.BackupImportResult
+import com.av123.video.data.repository.formatCacheSize
 import com.av123.video.ui.lock.authenticateAppLock
 import com.av123.video.ui.lock.canAuthenticateAppLock
 import com.av123.video.ui.util.findActivity
 import com.av123.video.ui.util.formatWatchDurationMs
 import androidx.fragment.app.FragmentActivity
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -106,6 +121,61 @@ fun ProfileScreen(
     var showDarkModeSheet by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showLockUnavailableDialog by remember { mutableStateOf(false) }
+    var showLockTimeoutSheet by remember { mutableStateOf(false) }
+    var showImportConfirm by remember { mutableStateOf(false) }
+    var showClearCacheConfirm by remember { mutableStateOf(false) }
+    var cacheSizeBytes by remember { mutableStateOf<Long?>(null) }
+    var cacheRefreshTick by remember { mutableIntStateOf(0) }
+
+    LaunchedEffect(cacheRefreshTick) {
+        cacheSizeBytes = runCatching { container.cacheManager.sizeBytes() }.getOrNull()
+    }
+    val cacheSummary = cacheSizeBytes?.let { formatCacheSize(it) }
+
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val exported = runCatching {
+                val json = container.backupRepository.exportJson()
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openOutputStream(uri)?.use {
+                        it.write(json.toByteArray())
+                    } ?: error("无法写入文件")
+                }
+            }.isSuccess
+            Toast.makeText(
+                context,
+                if (exported) R.string.profile_export_success else R.string.profile_export_failed,
+                Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
+
+    val importLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.OpenDocument()
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            val result = runCatching {
+                val text = withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader()?.use {
+                        it.readText()
+                    } ?: error("无法读取文件")
+                }
+                container.backupRepository.importJson(text)
+            }.getOrElse { BackupImportResult.Failure(it.message ?: "读取失败") }
+            val message = when (result) {
+                is BackupImportResult.Success -> context.getString(R.string.profile_import_success)
+                is BackupImportResult.Failure -> context.getString(
+                    R.string.profile_import_failed,
+                    result.message
+                )
+            }
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
 
     val dynamicColorSupported = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     val versionName = remember {
@@ -232,6 +302,68 @@ fun ProfileScreen(
                 }
             }
 
+            // —— 数据与备份 ——
+            item {
+                SettingsSection(
+                    title = stringResource(R.string.profile_group_data_management),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                ) {
+                    SettingsItem(
+                        icon = Icons.Rounded.FileUpload,
+                        iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        title = stringResource(R.string.profile_export_data),
+                        subtitle = stringResource(R.string.profile_export_data_desc),
+                        trailing = {
+                            Icon(
+                                Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = {
+                            exportLauncher.launch("123AV-backup-${LocalDate.now()}.json")
+                        }
+                    )
+                    SettingsDivider()
+                    SettingsItem(
+                        icon = Icons.Rounded.FileDownload,
+                        iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        title = stringResource(R.string.profile_import_data),
+                        subtitle = stringResource(R.string.profile_import_data_desc),
+                        trailing = {
+                            Icon(
+                                Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = { showImportConfirm = true }
+                    )
+                    SettingsDivider()
+                    SettingsItem(
+                        icon = Icons.Rounded.CleaningServices,
+                        iconContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        title = stringResource(R.string.profile_clear_cache),
+                        subtitle = if (cacheSummary != null) {
+                            stringResource(R.string.profile_cache_size, cacheSummary)
+                        } else {
+                            stringResource(R.string.profile_cache_computing)
+                        },
+                        trailing = {
+                            Icon(
+                                Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = { showClearCacheConfirm = true }
+                    )
+                }
+            }
+
             // —— 隐私与安全 ——
             item {
                 SettingsSection(
@@ -279,6 +411,45 @@ fun ProfileScreen(
                                             // 取消/失败：开关保持关闭（绑定状态，不乐观更新）
                                             onError = { _, _ -> }
                                         )
+                                    }
+                                }
+                            )
+                        }
+                    )
+                    SettingsDivider()
+                    SettingsItem(
+                        icon = Icons.Rounded.Timer,
+                        iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        title = stringResource(R.string.profile_app_lock_relock),
+                        subtitle = if (settings.appLockEnabled) {
+                            appLockTimeoutLabel(settings.appLockTimeout)
+                        } else {
+                            stringResource(R.string.profile_app_lock_relock_off)
+                        },
+                        trailing = {
+                            Icon(
+                                Icons.Rounded.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        enabled = settings.appLockEnabled,
+                        onClick = { showLockTimeoutSheet = true }
+                    )
+                    SettingsDivider()
+                    SettingsItem(
+                        icon = Icons.Rounded.VisibilityOff,
+                        iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        title = stringResource(R.string.profile_secure_screen),
+                        subtitle = stringResource(R.string.profile_secure_screen_desc),
+                        trailing = {
+                            Switch(
+                                checked = settings.secureScreenEnabled,
+                                onCheckedChange = { enabled ->
+                                    scope.launch {
+                                        container.settingsStore.setSecureScreenEnabled(enabled)
                                     }
                                 }
                             )
@@ -423,6 +594,72 @@ fun ProfileScreen(
             onSelect = { mode ->
                 scope.launch { container.settingsStore.setDarkMode(mode) }
                 showDarkModeSheet = false
+            }
+        )
+    }
+
+    if (showLockTimeoutSheet) {
+        AppLockTimeoutSheet(
+            current = settings.appLockTimeout,
+            onDismiss = { showLockTimeoutSheet = false },
+            onSelect = { timeout ->
+                scope.launch { container.settingsStore.setAppLockTimeout(timeout) }
+                showLockTimeoutSheet = false
+            }
+        )
+    }
+
+    if (showImportConfirm) {
+        AlertDialog(
+            onDismissRequest = { showImportConfirm = false },
+            title = { Text(stringResource(R.string.profile_import_confirm_title)) },
+            text = { Text(stringResource(R.string.profile_import_confirm_msg)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showImportConfirm = false
+                        importLauncher.launch(arrayOf("application/json"))
+                    }
+                ) {
+                    Text(stringResource(R.string.common_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showImportConfirm = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            }
+        )
+    }
+
+    if (showClearCacheConfirm) {
+        AlertDialog(
+            onDismissRequest = { showClearCacheConfirm = false },
+            title = { Text(stringResource(R.string.profile_clear_cache_confirm_title)) },
+            text = { Text(stringResource(R.string.profile_clear_cache_confirm_msg)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showClearCacheConfirm = false
+                        scope.launch {
+                            val result = runCatching { container.cacheManager.clear() }.getOrNull()
+                            cacheRefreshTick++
+                            val message = when {
+                                result == null -> R.string.profile_cache_clear_failed
+                                result.mediaCacheCleared -> R.string.profile_cache_cleared
+                                else -> R.string.profile_cache_cleared_media_busy
+                            }
+                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                ) {
+                    Text(stringResource(R.string.common_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showClearCacheConfirm = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
             }
         )
     }
@@ -732,6 +969,57 @@ private fun darkModeDesc(mode: DarkMode): String = when (mode) {
     DarkMode.SYSTEM -> stringResource(R.string.profile_dark_mode_system_desc)
     DarkMode.LIGHT -> stringResource(R.string.profile_dark_mode_light_desc)
     DarkMode.DARK -> stringResource(R.string.profile_dark_mode_dark_desc)
+}
+
+@Composable
+private fun appLockTimeoutLabel(timeout: AppLockTimeout): String = when (timeout) {
+    AppLockTimeout.IMMEDIATE -> stringResource(R.string.app_lock_timeout_immediate)
+    AppLockTimeout.THIRTY_SECONDS -> stringResource(R.string.app_lock_timeout_30s)
+    AppLockTimeout.ONE_MINUTE -> stringResource(R.string.app_lock_timeout_1m)
+    AppLockTimeout.FIVE_MINUTES -> stringResource(R.string.app_lock_timeout_5m)
+}
+
+/** 应用锁离开后重新验证的时长选择 */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AppLockTimeoutSheet(
+    current: AppLockTimeout,
+    onDismiss: () -> Unit,
+    onSelect: (AppLockTimeout) -> Unit
+) {
+    val sheetState = rememberModalBottomSheetState()
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Text(
+            text = stringResource(R.string.profile_app_lock_relock),
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 8.dp)
+        )
+        AppLockTimeout.entries.forEach { timeout ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSelect(timeout) }
+                    .padding(horizontal = 12.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                RadioButton(
+                    selected = current == timeout,
+                    onClick = { onSelect(timeout) }
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = appLockTimeoutLabel(timeout),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+    }
 }
 
 
