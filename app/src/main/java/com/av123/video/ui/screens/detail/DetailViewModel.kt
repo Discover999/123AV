@@ -19,7 +19,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 class DetailViewModel(
     private val videoRepository: VideoRepository,
@@ -156,21 +155,18 @@ class DetailViewModel(
         if (pendingPlayMs >= flushIntervalMs) flushPending(pendingDay)
     }
 
-    /** 把指定日期的待写增量异步落库并清零（清零在 launch 前同步完成，不阻塞后续累计） */
+    /** 把指定日期的待写增量交给应用作用域异步落库并清零（不阻塞调用线程） */
     private fun flushPending(day: String) {
         val ms = pendingPlayMs
         if (ms <= 0L) return
         pendingPlayMs = 0L
-        viewModelScope.launch { historyRepository.addPlayTime(day, ms) }
+        historyRepository.addPlayTimeAsync(day, ms)
     }
 
     override fun onCleared() {
         super.onCleared()
-        // viewModelScope 已取消，最后不足 30s 的零头同步落库，避免退出详情丢时长
-        val ms = pendingPlayMs
-        if (ms > 0L) {
-            runCatching { runBlocking { historyRepository.addPlayTime(pendingDay, ms) } }
-        }
+        // viewModelScope 已取消；剩余零头交给应用作用域，避免主线程 runBlocking
+        flushPending(pendingDay)
     }
 
     /** 拉取（或重试拉取）详情数据；成功后补全页面并写入观看历史 */

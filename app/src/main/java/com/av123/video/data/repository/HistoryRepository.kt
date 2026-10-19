@@ -7,8 +7,10 @@ import com.av123.video.data.db.WatchDailyDao
 import com.av123.video.data.db.WatchDailyEntity
 import com.av123.video.data.model.Video
 import com.av123.video.data.model.WatchRecord
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -20,7 +22,9 @@ import java.time.format.DateTimeFormatter
  */
 class HistoryRepository(
     private val historyDao: HistoryDao,
-    private val dailyDao: WatchDailyDao
+    private val dailyDao: WatchDailyDao,
+    /** 应用级作用域：ViewModel 清理后仍能完成最后一次播放时长落库 */
+    private val externalScope: CoroutineScope
 ) {
 
     val records: Flow<List<WatchRecord>> =
@@ -97,6 +101,15 @@ class HistoryRepository(
             WatchDailyEntity(day = day, playMs = 0L, updatedAt = System.currentTimeMillis())
         )
         dailyDao.addPlayTime(day, deltaMs, System.currentTimeMillis())
+    }
+
+    /**
+     * 非阻塞落库：把播放墙钟增量交给应用作用域。
+     * ViewModel 清理时 viewModelScope 已取消，这条路径仍能完成写入。
+     */
+    fun addPlayTimeAsync(day: String, deltaMs: Long) {
+        if (deltaMs <= 0L) return
+        externalScope.launch { addPlayTime(day, deltaMs) }
     }
 
     /** 观看统计页一次性快照：每日时长全表 + 历史记录，经纯函数聚合 */

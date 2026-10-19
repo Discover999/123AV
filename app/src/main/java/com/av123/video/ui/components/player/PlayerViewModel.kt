@@ -21,16 +21,24 @@ import com.av123.video.data.playback.MediaCache
 class PlayerViewModel : ViewModel() {
 
     private var player: ExoPlayer? = null
-    private var initializedUrl: String? = null
+
+    /** 播放源身份：URL 相同但 Referer/UA 等请求头变化时必须重建播放器 */
+    private var initializedKey: MediaKey? = null
     private var bandwidthMeter: BandwidthMeter? = null
+
+    private data class MediaKey(
+        val url: String,
+        val headers: Map<String, String>
+    )
 
     /** 当前带宽估算（bit/s），<=0 表示尚无估算；用于播放器左上角网速显示 */
     val bitrateEstimate: Long
         get() = bandwidthMeter?.bitrateEstimate ?: Long.MIN_VALUE
 
     fun initialize(context: Context, url: String, headers: Map<String, String>): ExoPlayer {
+        val key = MediaKey(url, headers.toMap())
         val existing = player
-        if (existing != null && initializedUrl == url) {
+        if (existing != null && initializedKey == key) {
             return existing
         }
 
@@ -77,7 +85,7 @@ class PlayerViewModel : ViewModel() {
             }
 
         player = newPlayer
-        initializedUrl = url
+        initializedKey = key
         MediaCache.onPlayerCreated()
         return newPlayer
     }
@@ -88,7 +96,7 @@ class PlayerViewModel : ViewModel() {
         }
         player?.release()
         player = null
-        initializedUrl = null
+        initializedKey = null
         bandwidthMeter = null
     }
 

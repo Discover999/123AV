@@ -125,7 +125,7 @@ class AppContainer(context: Context) {
     val backupRepository: BackupRepository = BackupRepository(database)
     val cacheManager: CacheManager = CacheManager(appContext, pageCacheStore)
     val historyRepository: HistoryRepository =
-        HistoryRepository(database.historyDao(), database.watchDailyDao())
+        HistoryRepository(database.historyDao(), database.watchDailyDao(), appScope)
     val favoriteRepository: FavoriteRepository =
         FavoriteRepository(database.favoriteDao(), database.favoriteGroupDao())
     val followedActressRepository: FollowedActressRepository =
