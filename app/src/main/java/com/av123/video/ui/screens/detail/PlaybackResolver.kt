@@ -49,7 +49,7 @@ private const val M3U8_HOOK_JS = """
   function abs(u) {
     try { return new URL(u, location.href).href; } catch (e) { return u; }
   }
-  function report(src, text) {
+  function report(src, text, requestUrl) {
     try {
       if (!text) return;
       var s = String(text).replace(/\\\//g, '/').replace(/\\u0026/gi, '&');
@@ -59,7 +59,12 @@ private const val M3U8_HOOK_JS = """
         var u = abs(m[0]);
         try {
           if (window.M3U8Bridge && window.M3U8Bridge.postMessage) {
-            window.M3U8Bridge.postMessage(u);
+            window.M3U8Bridge.postMessage(JSON.stringify({
+              url: u,
+              source: src,
+              requestUrl: requestUrl ? abs(requestUrl) : '',
+              page: location.href
+            }));
           }
         } catch (e) {}
         console.log('[M3U8-JS] ' + src + ': ' + u);
@@ -69,7 +74,7 @@ private const val M3U8_HOOK_JS = """
   var origOpen = XMLHttpRequest.prototype.open;
   XMLHttpRequest.prototype.open = function(method, url) {
     this.__m3u8Url = url;
-    report('xhr-url', url);
+    report('xhr-url', url, url);
     return origOpen.apply(this, arguments);
   };
   var origSend = XMLHttpRequest.prototype.send;
@@ -77,7 +82,7 @@ private const val M3U8_HOOK_JS = """
     var xhr = this;
     this.addEventListener('readystatechange', function() {
       if (xhr.readyState === 4) {
-        report('xhr-resp(' + xhr.__m3u8Url + ')', xhr.responseText);
+        report('xhr-resp(' + xhr.__m3u8Url + ')', xhr.responseText, xhr.__m3u8Url);
       }
     });
     return origSend.apply(this, arguments);
@@ -86,11 +91,11 @@ private const val M3U8_HOOK_JS = """
   if (origFetch) {
     window.fetch = function() {
       var reqUrl = arguments[0] && (arguments[0].url || arguments[0]);
-      report('fetch-url', reqUrl);
+      report('fetch-url', reqUrl, reqUrl);
       return origFetch.apply(this, arguments).then(function(resp) {
         try {
           resp.clone().text().then(function(t) {
-            report('fetch-resp(' + reqUrl + ')', t);
+            report('fetch-resp(' + reqUrl + ')', t, reqUrl);
           });
         } catch (e) {}
         return resp;
@@ -98,7 +103,7 @@ private const val M3U8_HOOK_JS = """
     };
   }
   function scanHtml() {
-    report('html', document.documentElement ? document.documentElement.innerHTML : '');
+    report('html', document.documentElement ? document.documentElement.innerHTML : '', location.href);
   }
   scanHtml();
   setTimeout(scanHtml, 1500);
@@ -200,10 +205,39 @@ internal class PlaybackResolver(
                 }
             }
 
-            fun reportCapturedFromJs(url: String) {
-                if (!allowlist.isAllowedMedia(url)) {
-                    AppLog.w(M3U8_TAG, "忽略非媒体白名单地址: $url")
+            fun trustedRequestOrigin(request: WebResourceRequest?): String? {
+                val headers = request?.requestHeaders ?: return null
+                return listOf("Referer", "Origin")
+                    .mapNotNull { name ->
+                        headers.entries.firstOrNull {
+                            it.key.equals(name, ignoreCase = true)
+                        }?.value
+                    }
+                    .mapNotNull(::originOf)
+                    .firstOrNull { allowlist.isAllowedEmbed(it) }
+            }
+
+            fun reportCapturedFromJs(
+                url: String,
+                source: String,
+                trustedPageOrigin: String?,
+                requestUrl: String = ""
+            ) {
+                val message = CapturedMediaMessage(
+                    url = url,
+                    source = source,
+                    requestUrl = requestUrl
+                )
+                if (!isAllowedCapturedMedia(allowlist, message, trustedPageOrigin)) {
+                    AppLog.w(
+                        M3U8_TAG,
+                        "忽略非媒体白名单地址或不可信来源: $url " +
+                            "(source=${source.ifBlank { "legacy" }})"
+                    )
                     return
+                }
+                if (!allowlist.isAllowedConfiguredMedia(url)) {
+                    AppLog.i(M3U8_TAG, "来源信任放行动态媒体 host: $url (source=$source)")
                 }
                 if (!reported.compareAndSet(false, true)) return
                 markCaptured()
@@ -254,10 +288,22 @@ internal class PlaybackResolver(
                             replyProxy: JavaScriptReplyProxy
                         ) {
                             if (!isMainFrame) return
-                            val url = message.data?.trim().orEmpty()
-                            if (!url.contains(".m3u8", ignoreCase = true)) return
-                            AppLog.d(M3U8_TAG, "WebMessage 收到播放地址: $url")
-                            postCallback { reportCapturedFromJs(url) }
+                            val payload = parseCapturedMediaMessage(message.data) ?: return
+                            if (!payload.url.contains(".m3u8", ignoreCase = true)) return
+                            val pageOrigin = sourceOrigin.toString()
+                            AppLog.d(
+                                M3U8_TAG,
+                                "WebMessage 收到播放地址: ${payload.url} " +
+                                    "(source=${payload.source.ifBlank { "legacy" }})"
+                            )
+                            postCallback {
+                                reportCapturedFromJs(
+                                    url = payload.url,
+                                    source = payload.source,
+                                    trustedPageOrigin = pageOrigin,
+                                    requestUrl = payload.requestUrl
+                                )
+                            }
                         }
                     }
                 )
@@ -272,11 +318,23 @@ internal class PlaybackResolver(
                             val m3u8Url = Regex("""https?://[^\s"'<>()\\]+""")
                                 .findAll(msg)
                                 .map { it.value }
-                                .firstOrNull {
-                                    it.contains(".m3u8", ignoreCase = true) &&
-                                        allowlist.isAllowedMedia(it)
-                                }
-                            if (m3u8Url != null) reportCapturedFromJs(m3u8Url)
+                                .firstOrNull { it.contains(".m3u8", ignoreCase = true) }
+                            if (m3u8Url != null) {
+                                val source = msg.removePrefix("[M3U8-JS]")
+                                    .trim()
+                                    .substringBefore(": ")
+                                    .trim()
+                                val requestUrl = Regex(
+                                    """^(?:xhr|fetch)-resp\((https?://.+)\)$"""
+                                ).find(source)?.groupValues?.get(1).orEmpty()
+                                reportCapturedFromJs(
+                                    url = m3u8Url,
+                                    source = source,
+                                    trustedPageOrigin = consoleMessage.sourceId()
+                                        ?.let(::originOf),
+                                    requestUrl = requestUrl
+                                )
+                            }
                         }
                     } else {
                         AppLog.d(
@@ -354,7 +412,7 @@ internal class PlaybackResolver(
                 ): WebResourceResponse? {
                     val url = request?.url?.toString().orEmpty()
                     if (url.contains(".m3u8", ignoreCase = true) &&
-                        allowlist.isAllowedMedia(url) &&
+                        allowlist.isAllowedMedia(url, trustedRequestOrigin(request)) &&
                         seenM3U8.add(url)
                     ) {
                         markCaptured()

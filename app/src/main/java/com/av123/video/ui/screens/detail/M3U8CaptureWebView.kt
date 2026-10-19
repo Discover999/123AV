@@ -26,7 +26,12 @@ internal fun M3U8CaptureWebView(
     val context = LocalContext.current
     val siteConfig = LocalAppContainer.current.siteConfig
     val allowlist = remember(siteConfig) {
-        HostAllowlist(siteConfig.baseUrl, siteConfig.embedHosts, siteConfig.mediaHosts)
+        HostAllowlist(
+            baseUrl = siteConfig.baseUrl,
+            embedHosts = siteConfig.embedHosts,
+            mediaHosts = siteConfig.mediaHosts,
+            allowDynamicMediaHosts = siteConfig.allowDynamicMediaHosts
+        )
     }
     val resolver = remember(video.id, epoch, targetUrl, allowlist) {
         PlaybackResolver(

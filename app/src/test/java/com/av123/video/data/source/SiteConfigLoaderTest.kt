@@ -52,5 +52,7 @@ class SiteConfigLoaderTest {
         assertEquals("/cn", config.localePath)
         assertEquals("keyword", config.searchQueryParam)
         assertEquals("/new", config.categoryPaths["新发布"])
+        assertTrue(config.mediaHosts.contains("*.realpuremind.site"))
+        assertTrue(config.allowDynamicMediaHosts)
     }
 }

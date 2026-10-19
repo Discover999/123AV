@@ -43,7 +43,7 @@ data class JsoupSiteConfig(
     /** 站点标识，用于多站点扩展与诊断 */
     val id: String = "123av",
     /** 配置内容版本，远程更新时递增 */
-    val version: Int = 1,
+    val version: Int = 2,
     val baseUrl: String = "https://example.com",
     /** 语言路径前缀，如 "/cn"；没有则留空 */
     val localePath: String = "",
@@ -53,7 +53,12 @@ data class JsoupSiteConfig(
     /** Embed 站点白名单（P3 抓流使用；支持精确 host 或 *.example.com） */
     val embedHosts: List<String> = listOf("sadie-shop.site"),
     /** 媒体 CDN 白名单（P3 抓流使用；支持精确 host 或 *.example.com） */
-    val mediaHosts: List<String> = listOf("*.true*.site"),
+    val mediaHosts: List<String> = listOf("*.true*.site", "*.realpuremind.site"),
+    /**
+     * 允许从可信 embed 页的真实播放请求动态放行未列入 [mediaHosts] 的 HTTPS 媒体 host。
+     * 关闭后只认静态 [mediaHosts]，用于远程 kill switch。
+     */
+    val allowDynamicMediaHosts: Boolean = true,
     /** 远程配置开关；远程配置本身可下发 false 作为 kill switch */
     val remoteEnabled: Boolean = true,
     /** 远程配置最短刷新间隔（小时） */
