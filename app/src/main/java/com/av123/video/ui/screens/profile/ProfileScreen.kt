@@ -81,7 +81,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.data.prefs.AppLockTimeout
-import com.av123.video.data.prefs.AppSettings
 import com.av123.video.data.prefs.DarkMode
 import com.av123.video.data.repository.BackupImportResult
 import com.av123.video.data.repository.formatCacheSize
@@ -106,8 +105,7 @@ fun ProfileScreen(
 ) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
-    val settings by container.settingsStore.settings
-        .collectAsStateWithLifecycle(initialValue = AppSettings())
+    val settings by container.appSettings.collectAsStateWithLifecycle()
     val historyRecords by container.historyRepository.records
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val favoriteRecords by container.favoriteRepository.favorites

@@ -156,8 +156,7 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
-                val settings by container.settingsStore.settings
-                    .collectAsStateWithLifecycle(initialValue = initialSettings)
+                val settings by container.appSettings.collectAsStateWithLifecycle()
 
                 // 注意：attachBaseContext 为防启动闪烁强制覆盖了 Activity 的 uiMode，
                 // 故 isSystemInDarkTheme() 读到的是被覆盖后的配置，不能用于“跟随系统”。

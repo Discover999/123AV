@@ -52,6 +52,10 @@ class SettingsStore(context: Context) {
 
     private val store = context.applicationContext.settingsDataStore
 
+    /**
+     * DataStore 冷流。页面请使用 `AppContainer.appSettings`（进程内热 StateFlow），
+     * 避免每个页面各自订阅、重复读盘。
+     */
     val settings: Flow<AppSettings> = store.data.map { prefs ->
         AppSettings(
             dynamicColor = prefs[KEY_DYNAMIC_COLOR] ?: true,

@@ -13,6 +13,7 @@ import com.av123.video.data.db.VideoHubDatabase
 import com.av123.video.data.net.DataSourceProbe
 import com.av123.video.data.net.ErrorReporter
 import com.av123.video.data.net.HttpClient
+import com.av123.video.data.prefs.AppSettings
 import com.av123.video.data.prefs.SettingsStore
 import com.av123.video.data.repository.BackupRepository
 import com.av123.video.data.repository.CacheManager
@@ -32,6 +33,9 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -119,6 +123,13 @@ class AppContainer(context: Context) {
         SearchHistoryRepository(database.searchKeywordDao())
     val dataSourceProbe: DataSourceProbe = DataSourceProbe(siteUrl = siteBaseUrl)
     val settingsStore: SettingsStore = SettingsStore(appContext)
+
+    /**
+     * 全局设置热流：DataStore 只订阅一次并在 App 进程内保持活跃，
+     * 各页面共享同一份内存状态，避免每页各自冷订阅、重复读盘。
+     */
+    val appSettings: StateFlow<AppSettings> = settingsStore.settings
+        .stateIn(appScope, SharingStarted.Eagerly, AppSettings())
 
     init {
         appScope.launch {
