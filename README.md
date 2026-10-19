@@ -129,6 +129,8 @@
 ./gradlew assembleRelease
 ```
 
+> 发布前请按 [docs/p5-release-checklist.md](docs/p5-release-checklist.md) 执行真机冒烟与回滚检查。
+
 > 首次在 Android Studio 打开时等待 Gradle Sync 完成即可；SDK 路径由本地 `local.properties` 配置，该文件不纳入版本管理。
 
 ---

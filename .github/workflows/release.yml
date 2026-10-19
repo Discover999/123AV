@@ -76,6 +76,11 @@ jobs:
             -PversionCode=${{ steps.ver.outputs.code }} \
             -PversionName=${{ steps.ver.outputs.name }}
 
+      - name: Verify signed APK
+        run: |
+          APKSIGNER=$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -name apksigner | sort -V | tail -1)
+          "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk
+
       - name: Rename APK with version
         run: cp app/build/outputs/apk/release/app-release.apk "123AV-${{ steps.ver.outputs.name }}.apk"
 
