@@ -2,6 +2,7 @@ package com.av123.video.data.repository
 
 import com.av123.video.data.db.AppJson
 import com.av123.video.data.db.PageCacheEntity
+import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.HomeFeed
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
@@ -66,6 +67,7 @@ class FeedRepository(
             }
             .onFailure { e ->
                 val error = AppError.from(e)
+                DiagnosticsMetrics.recordLoadFailure(error.kind)
                 if (_feed.value == null) {
                     _error.value = error
                 } else if (reportFailureSnackbar) {

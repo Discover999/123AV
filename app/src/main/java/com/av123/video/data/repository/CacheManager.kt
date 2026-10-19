@@ -11,6 +11,15 @@ import java.util.Locale
 
 data class CacheClearResult(val mediaCacheCleared: Boolean)
 
+/** 诊断页缓存占用明细（图片 / ExoPlayer 分片 / 页面 JSON） */
+data class CacheUsage(
+    val imageBytes: Long,
+    val mediaBytes: Long,
+    val pageBytes: Long
+) {
+    val totalBytes: Long get() = imageBytes + mediaBytes + pageBytes
+}
+
 /**
  * 设置页缓存管理：统计图片、媒体分片、页面缓存占用，并提供安全清理。
  * 媒体缓存由 SimpleCache 持有，播放中（含画中画）不能释放，清理时跳过。
@@ -19,11 +28,15 @@ class CacheManager(
     private val context: Context,
     private val pageCacheStore: PageCacheStore
 ) {
-    suspend fun sizeBytes(): Long = withContext(Dispatchers.IO) {
-        directorySize(File(context.cacheDir, IMAGE_CACHE_DIR)) +
-            directorySize(File(context.cacheDir, MEDIA_CACHE_DIR)) +
-            pageCacheStore.totalBytes()
+    suspend fun usage(): CacheUsage = withContext(Dispatchers.IO) {
+        CacheUsage(
+            imageBytes = directorySize(File(context.cacheDir, IMAGE_CACHE_DIR)),
+            mediaBytes = directorySize(File(context.cacheDir, MEDIA_CACHE_DIR)),
+            pageBytes = pageCacheStore.totalBytes()
+        )
     }
+
+    suspend fun sizeBytes(): Long = usage().totalBytes
 
     @androidx.annotation.OptIn(UnstableApi::class)
     @OptIn(coil.annotation.ExperimentalCoilApi::class)

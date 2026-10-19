@@ -1,5 +1,6 @@
 package com.av123.video.data.repository
 
+import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
 import com.av123.video.data.net.AppErrorKind
@@ -89,6 +90,7 @@ class DetailRepository(
             )
         } catch (e: Exception) {
             val error = AppError.from(e)
+            DiagnosticsMetrics.recordLoadFailure(error.kind)
             if (cached != null && reportFailureSnackbar) errorReporter.report(error)
             return DetailResult.Failure(error, cached)
         }
@@ -108,6 +110,7 @@ class DetailRepository(
             DetailResult.Success(merged, related)
         } else {
             val error = AppError(AppErrorKind.PARSE)
+            DiagnosticsMetrics.recordLoadFailure(error.kind)
             DetailResult.Failure(error, null)
         }
     }

@@ -1,5 +1,6 @@
 package com.av123.video.data.repository
 
+import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.Pagination
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
@@ -65,11 +66,13 @@ class SearchRepository(
                         )
                     }
                 }
-                .onFailure { error ->
+                .onFailure { throwable ->
+                    val error = AppError.from(throwable)
+                    DiagnosticsMetrics.recordLoadFailure(error.kind)
                     var hadContent = false
                     _state.update {
                         hadContent = it.videos.isNotEmpty()
-                        it.copy(isLoading = false, error = AppError.from(error))
+                        it.copy(isLoading = false, error = error)
                     }
                     if (hadContent) errorReporter.report(error)
                 }

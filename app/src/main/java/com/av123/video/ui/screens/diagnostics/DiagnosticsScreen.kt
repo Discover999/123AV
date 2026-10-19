@@ -1,8 +1,10 @@
 package com.av123.video.ui.screens.diagnostics
 
+import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.os.Process
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -62,6 +64,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.data.diagnostics.DiagnosticsMetrics
+import com.av123.video.data.diagnostics.DiagnosticsMetricsSnapshot
+import com.av123.video.data.net.AppErrorKind
 import com.av123.video.data.net.DataSourceProbeResult
 import com.av123.video.data.net.IpProbe
 import com.av123.video.data.net.NetworkEnvironment
@@ -69,6 +74,8 @@ import com.av123.video.data.net.NetworkType
 import com.av123.video.data.net.ProbeFailureKind
 import com.av123.video.data.net.ProbeTimings
 import com.av123.video.data.net.SiteProbe
+import com.av123.video.data.repository.CacheUsage
+import com.av123.video.data.repository.formatCacheSize
 import com.av123.video.data.source.SiteConfigSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -80,7 +87,10 @@ import java.util.Locale
 /** 诊断页一屏的数据快照 */
 private data class DiagnosticsData(
     val result: DataSourceProbeResult,
-    val env: NetworkEnvironment
+    val env: NetworkEnvironment,
+    val cache: CacheUsage,
+    val metrics: DiagnosticsMetricsSnapshot,
+    val webViewProcesses: Int?
 )
 
 /**
@@ -106,7 +116,10 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
         val snapshot = withContext(Dispatchers.IO) {
             val result = container.dataSourceProbe.probe()
             val env = NetworkEnvironment.collect(context.applicationContext)
-            DiagnosticsData(result, env)
+            val cache = container.cacheManager.usage()
+            val metrics = DiagnosticsMetrics.snapshot()
+            val webViewProcesses = countWebViewProcesses(context.applicationContext)
+            DiagnosticsData(result, env, cache, metrics, webViewProcesses)
         }
         data = snapshot
         loading = false
@@ -196,6 +209,17 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                 add(context.getString(R.string.diagnostics_config_last_error, it))
             }
         }
+        val runtimeText = runtimeMetricText(snapshot)
+        val runtimeLines = listOf(
+            "${context.getString(R.string.diagnostics_runtime_capture)}：" +
+                "${runtimeText.captureValue}（${runtimeText.captureDetail}）",
+            "${context.getString(R.string.diagnostics_runtime_failures)}：" +
+                "${runtimeText.failureValue}（${runtimeText.failureDetail}）",
+            "${context.getString(R.string.diagnostics_runtime_cache)}：" +
+                "${runtimeText.cacheValue}（${runtimeText.cacheDetail}）",
+            "${context.getString(R.string.diagnostics_runtime_webview)}：" +
+                "${runtimeText.webViewValue}（${runtimeText.webViewDetail}）"
+        )
 
         LazyColumn(
             modifier = Modifier
@@ -216,6 +240,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     error = configState.lastError
                 )
             }
+            item { RuntimeDiagnosticsCard(runtimeText) }
             item { NetworkDiagnosticsCard(result = snapshot.result, env = snapshot.env) }
             item { DeviceEnvironmentCard(env = snapshot.env, checkedAtText = checkedAtText) }
             item {
@@ -228,7 +253,8 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                             networkTypeText = networkTypeText,
                             siteFailReasonText = siteFailText,
                             ipFailReasonText = ipFailText,
-                            siteConfigLines = siteConfigLines
+                            siteConfigLines = siteConfigLines,
+                            runtimeLines = runtimeLines
                         )
                         val clipboard =
                             context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
@@ -480,6 +506,172 @@ private fun NetworkDiagnosticsCard(result: DataSourceProbeResult, env: NetworkEn
     }
 }
 
+private data class RuntimeMetricText(
+    val captureValue: String,
+    val captureDetail: String,
+    val failureValue: String,
+    val failureDetail: String,
+    val cacheValue: String,
+    val cacheDetail: String,
+    val webViewValue: String,
+    val webViewDetail: String
+)
+
+@Composable
+private fun runtimeMetricText(data: DiagnosticsData): RuntimeMetricText {
+    val metrics = data.metrics
+    val dash = stringResource(R.string.diagnostics_dash)
+
+    val captureValue = metrics.captureSuccessPercent?.let { "$it%" } ?: dash
+    val captureDetail = if (metrics.captureAttempts == 0) {
+        stringResource(R.string.diagnostics_runtime_no_capture)
+    } else {
+        stringResource(
+            R.string.diagnostics_runtime_capture_detail,
+            metrics.captureSuccesses,
+            metrics.captureAttempts
+        )
+    }
+
+    val failureValue = metrics.failureTotal.toString()
+    val failureDetail = if (metrics.failureTotal == 0) {
+        stringResource(R.string.diagnostics_runtime_no_failure)
+    } else {
+        val parts = mutableListOf<String>()
+        for (kind in AppErrorKind.entries) {
+            val count = metrics.failuresByKind[kind] ?: continue
+            parts += "${kind.label()} $count"
+        }
+        parts.joinToString(" · ")
+    }
+
+    val cacheValue = formatCacheSize(data.cache.totalBytes)
+    val cacheDetail = stringResource(
+        R.string.diagnostics_runtime_cache_detail,
+        formatCacheSize(data.cache.pageBytes),
+        formatCacheSize(data.cache.mediaBytes),
+        formatCacheSize(data.cache.imageBytes)
+    )
+
+    val webViewValue = data.webViewProcesses?.let {
+        stringResource(R.string.diagnostics_runtime_process_count, it)
+    } ?: dash
+
+    return RuntimeMetricText(
+        captureValue = captureValue,
+        captureDetail = captureDetail,
+        failureValue = failureValue,
+        failureDetail = failureDetail,
+        cacheValue = cacheValue,
+        cacheDetail = cacheDetail,
+        webViewValue = webViewValue,
+        webViewDetail = stringResource(R.string.diagnostics_runtime_process_caption)
+    )
+}
+
+@Composable
+private fun AppErrorKind.label(): String = when (this) {
+    AppErrorKind.DNS -> stringResource(R.string.diagnostics_kind_dns)
+    AppErrorKind.TIMEOUT -> stringResource(R.string.diagnostics_kind_timeout)
+    AppErrorKind.SSL -> stringResource(R.string.diagnostics_kind_ssl)
+    AppErrorKind.NETWORK -> stringResource(R.string.diagnostics_kind_network)
+    AppErrorKind.HTTP_CLIENT -> stringResource(R.string.diagnostics_kind_http_client)
+    AppErrorKind.HTTP_SERVER -> stringResource(R.string.diagnostics_kind_http_server)
+    AppErrorKind.PARSE -> stringResource(R.string.diagnostics_kind_parse)
+    AppErrorKind.UNKNOWN -> stringResource(R.string.diagnostics_kind_unknown)
+}
+
+@Composable
+private fun RuntimeDiagnosticsCard(text: RuntimeMetricText) {
+    DiagnosticsCard(title = stringResource(R.string.diagnostics_section_runtime)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            RuntimeMetricTile(
+                modifier = Modifier.weight(1f),
+                value = text.captureValue,
+                label = stringResource(R.string.diagnostics_runtime_capture),
+                detail = text.captureDetail
+            )
+            RuntimeMetricTile(
+                modifier = Modifier.weight(1f),
+                value = text.failureValue,
+                label = stringResource(R.string.diagnostics_runtime_failures),
+                detail = text.failureDetail
+            )
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            RuntimeMetricTile(
+                modifier = Modifier.weight(1f),
+                value = text.cacheValue,
+                label = stringResource(R.string.diagnostics_runtime_cache),
+                detail = text.cacheDetail
+            )
+            RuntimeMetricTile(
+                modifier = Modifier.weight(1f),
+                value = text.webViewValue,
+                label = stringResource(R.string.diagnostics_runtime_webview),
+                detail = text.webViewDetail
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        Text(
+            text = stringResource(R.string.diagnostics_runtime_session_note),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun RuntimeMetricTile(
+    modifier: Modifier,
+    value: String,
+    label: String,
+    detail: String
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(2.dp))
+        Text(
+            text = detail,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+private fun countWebViewProcesses(context: Context): Int? {
+    val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as? ActivityManager
+        ?: return null
+    val processes = manager.runningAppProcesses ?: return null
+    val uid = Process.myUid()
+    return processes.count { info ->
+        info.uid == uid && (
+            info.processName.contains("sandboxed_process") ||
+                info.processName.contains(":webview")
+        )
+    }
+}
+
 /** 设备环境卡：WebView 内核/App/Android/机型/语言 + 检测时间 */
 @Composable
 private fun DeviceEnvironmentCard(env: NetworkEnvironment, checkedAtText: String) {
@@ -676,7 +868,9 @@ internal fun buildDiagnosticsReport(
     siteFailReasonText: String?,
     ipFailReasonText: String?,
     /** 由组合期从 SiteConfigStore 组装；空列表时不输出该段 */
-    siteConfigLines: List<String> = emptyList()
+    siteConfigLines: List<String> = emptyList(),
+    /** 由组合期从运行指标组装；空列表时不输出该段 */
+    runtimeLines: List<String> = emptyList()
 ): String {
     val host = result.siteUrl.toUri().host?.takeIf { it.isNotBlank() }
         ?: result.siteUrl
@@ -732,6 +926,11 @@ internal fun buildDiagnosticsReport(
         if (siteConfigLines.isNotEmpty()) {
             appendLine("【站点配置】")
             siteConfigLines.forEach { appendLine(it) }
+            appendLine("")
+        }
+        if (runtimeLines.isNotEmpty()) {
+            appendLine("【运行指标】")
+            runtimeLines.forEach { appendLine(it) }
             appendLine("")
         }
         appendLine("【网络信息】")

@@ -21,6 +21,7 @@ import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import com.av123.video.BuildConfig
+import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.Video
 import com.av123.video.ui.util.AppLog
 import java.util.Collections
@@ -139,6 +140,7 @@ class PlaybackResolver(
 
     fun start() {
         if (!started.compareAndSet(false, true) || primaryUrl.isBlank()) return
+        DiagnosticsMetrics.recordCaptureAttempt()
 
         val seenM3U8 = Collections.synchronizedSet(HashSet<String>())
         val captured = AtomicBoolean(false)
@@ -176,6 +178,7 @@ class PlaybackResolver(
                 if (captured.compareAndSet(false, true) &&
                     pauseScheduled.compareAndSet(false, true)
                 ) {
+                    DiagnosticsMetrics.recordCaptureSuccess()
                     mainHandler.postDelayed({
                         if (disposed.get()) return@postDelayed
                         AppLog.d(M3U8_TAG, "已抓到 m3u8，暂停隐藏播放页的自动播放")

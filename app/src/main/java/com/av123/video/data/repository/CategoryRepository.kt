@@ -1,6 +1,7 @@
 package com.av123.video.data.repository
 
 import com.av123.video.data.db.PageCacheEntity
+import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.ActressProfile
 import com.av123.video.data.model.FilterGroup
 import com.av123.video.data.model.FilterSearchField
@@ -156,15 +157,17 @@ class CategoryRepository(
                 }
             }
             .onFailure { e ->
+                val error = AppError.from(e)
+                DiagnosticsMetrics.recordLoadFailure(error.kind)
                 var hadContent = false
                 _categoryPages.update { states ->
                     val prev = states[category]
                     hadContent = prev?.videos?.isNotEmpty() == true
                     states + (category to (prev ?: CategoryPageState())
-                        .copy(isLoading = false, error = AppError.from(e)))
+                        .copy(isLoading = false, error = error))
                 }
                 // 翻页失败但列表已有内容：错误态不可见，用全局 Snackbar 补提示
-                if (hadContent) errorReporter.report(e)
+                if (hadContent) errorReporter.report(error)
             }
     }
 
@@ -236,16 +239,18 @@ class CategoryRepository(
                 }
             }
             .onFailure { e ->
+                val error = AppError.from(e)
+                DiagnosticsMetrics.recordLoadFailure(error.kind)
                 var hadContent = false
                 _channelPages.update { states ->
                     val prev = states[path]
                     hadContent = prev?.let { it.videos.isNotEmpty() || it.entries.isNotEmpty() } == true
                     states + (path to (prev ?: CategoryPageState())
-                        .copy(isLoading = false, error = AppError.from(e)))
+                        .copy(isLoading = false, error = error))
                 }
                 // 翻页/切换筛选失败但页面已有内容：保留筛选栏与旧列表，全局 Snackbar 轻提示，
                 // 用户可直接改筛选条件或再次翻页，不会被困在错误页
-                if (hadContent) errorReporter.report(e)
+                if (hadContent) errorReporter.report(error)
             }
     }
 
