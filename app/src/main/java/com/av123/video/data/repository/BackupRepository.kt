@@ -15,6 +15,10 @@ import kotlinx.serialization.json.Json
 /** 备份格式版本：新增字段保持兼容，破坏性变更时递增并拒绝旧客户端导入 */
 internal const val BACKUP_SCHEMA_VERSION = 1
 
+/** 导入上限：避免超大 JSON 或恶意备份造成 OOM/长时间占用 */
+internal const val MAX_BACKUP_CHARS = 20 * 1024 * 1024
+internal const val MAX_BACKUP_ITEMS = 50_000
+
 @Serializable
 internal data class BackupData(
     val schemaVersion: Int = BACKUP_SCHEMA_VERSION,
@@ -80,11 +84,24 @@ class BackupRepository(private val database: VideoHubDatabase) {
 
     suspend fun importJson(raw: String): BackupImportResult {
         if (raw.isBlank()) return BackupImportResult.Failure("备份内容为空")
+        if (raw.length > MAX_BACKUP_CHARS) {
+            return BackupImportResult.Failure("备份文件过大（上限 20 MB）")
+        }
         val data = runCatching { decodeBackup(raw) }.getOrElse {
             return BackupImportResult.Failure("JSON 解析失败: ${it.message ?: "未知错误"}")
         }
         if (data.schemaVersion > BACKUP_SCHEMA_VERSION) {
             return BackupImportResult.Failure("备份版本过新，请升级 App 后再导入")
+        }
+        val totalItems = data.history.size +
+            data.favorites.size +
+            data.favoriteGroups.size +
+            data.favoriteGroupItems.size +
+            data.followedActresses.size +
+            data.searchKeywords.size +
+            data.watchDaily.size
+        if (totalItems > MAX_BACKUP_ITEMS) {
+            return BackupImportResult.Failure("备份条目过多（上限 $MAX_BACKUP_ITEMS）")
         }
 
         return runCatching {

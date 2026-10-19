@@ -5,6 +5,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -50,7 +51,7 @@ class HttpClientTest {
 
     @Test
     fun execute_retriesOn429ThenSucceeds() = runBlocking {
-        server.enqueue(MockResponse().setResponseCode(429))
+        server.enqueue(MockResponse().setResponseCode(429).addHeader("Retry-After", "0"))
         server.enqueue(MockResponse().setResponseCode(200).setBody("ok"))
 
         val response = HttpClient.execute(server.url("/page").toString())
@@ -80,6 +81,13 @@ class HttpClientTest {
         assertEquals(403, response.code)
         assertEquals("forbidden", response.body)
         assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun retryAfter_secondsParsedAndCapped() {
+        assertEquals(0L, HttpClient.retryAfterDelayMs("0"))
+        assertEquals(5_000L, HttpClient.retryAfterDelayMs("60"))
+        assertNull(HttpClient.retryAfterDelayMs("not-a-number"))
     }
 
     @Test

@@ -9,6 +9,8 @@ import okhttp3.ConnectionPool
 import okhttp3.EventListener
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.ResponseBody
+import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -49,6 +51,12 @@ object HttpClient {
     private const val CONNECT_TIMEOUT_MS = 10_000L
     private const val READ_TIMEOUT_MS = 20_000L
     private const val CALL_TIMEOUT_MS = 30_000L
+
+    /** 单次响应体上限：异常大页面/错误页不应占满内存 */
+    internal const val MAX_RESPONSE_BYTES = 8L * 1024 * 1024
+
+    /** Retry-After 上限：避免被站点要求超长等待 */
+    internal const val MAX_RETRY_AFTER_MS = 5_000L
 
     val client: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(CONNECT_TIMEOUT_MS, TimeUnit.MILLISECONDS)
@@ -125,8 +133,9 @@ object HttpClient {
 
             // 429/5xx 有限重试：丢弃本次响应体，退避后再试
             if (isRetryableStatus(response.code) && attempt < MAX_ATTEMPTS - 1) {
+                val retryAfter = retryAfterDelayMs(response.header("Retry-After"))
                 response.close()
-                delay(retryDelayMs(attempt))
+                delay(retryAfter ?: retryDelayMs(attempt))
                 continue
             }
 
@@ -138,13 +147,42 @@ object HttpClient {
                 }
                 HttpResponse(
                     code = r.code,
-                    body = r.body?.string().orEmpty(),
+                    body = readBodyCapped(r.body),
                     headers = responseHeaders
                 )
             }
         }
         throw lastError ?: IOException("网络请求失败")
     }
+
+    private fun readBodyCapped(body: ResponseBody?): String {
+        if (body == null) return ""
+        if (body.contentLength() > MAX_RESPONSE_BYTES) {
+            throw IOException("响应体超过 ${MAX_RESPONSE_BYTES / 1024 / 1024}MB 上限")
+        }
+        val output = ByteArrayOutputStream()
+        val buffer = ByteArray(8 * 1024)
+        var total = 0L
+        body.byteStream().use { input ->
+            while (true) {
+                val read = input.read(buffer)
+                if (read < 0) break
+                total += read
+                if (total > MAX_RESPONSE_BYTES) {
+                    throw IOException("响应体超过 ${MAX_RESPONSE_BYTES / 1024 / 1024}MB 上限")
+                }
+                output.write(buffer, 0, read)
+            }
+        }
+        return output.toString(Charsets.UTF_8.name())
+    }
+
+    /** 仅解析秒数形式；超过 [MAX_RETRY_AFTER_MS] 按上限等待 */
+    internal fun retryAfterDelayMs(header: String?): Long? =
+        header?.trim()
+            ?.toLongOrNull()
+            ?.takeIf { it >= 0 }
+            ?.let { (it * 1000L).coerceAtMost(MAX_RETRY_AFTER_MS) }
 
     /**
      * 期望成功（2xx/3xx）响应的 GET：返回响应体文本；
