@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
+import com.av123.video.data.repository.DetailRepository
 import com.av123.video.data.repository.DetailResult
 import com.av123.video.data.repository.FavoriteRepository
 import com.av123.video.data.repository.HistoryRepository
@@ -231,7 +232,7 @@ class DetailViewModel(
         visibleRelatedCount = relatedNextVisible(
             currentVisible = visibleRelatedCount,
             total = allRelated.size,
-            pageSize = VideoRepository.RELATED_PAGE_SIZE
+            pageSize = DetailRepository.RELATED_PAGE_SIZE
         )
         publishRelated()
     }
@@ -239,7 +240,7 @@ class DetailViewModel(
     /** 用新的完整池替换数据：首次只展示第一页；刷新时保留已展开条数（夹在一页与总量之间） */
     private fun replaceRelated(items: List<Video>, preserveExpanded: Boolean) {
         allRelated = items
-        val firstPage = minOf(VideoRepository.RELATED_PAGE_SIZE, items.size)
+        val firstPage = minOf(DetailRepository.RELATED_PAGE_SIZE, items.size)
         visibleRelatedCount = if (preserveExpanded) {
             visibleRelatedCount.coerceIn(firstPage, items.size)
         } else {
