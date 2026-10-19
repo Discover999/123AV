@@ -35,6 +35,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -78,6 +80,15 @@ class VideoHubApp : Application(), ImageLoaderFactory {
             .build()
     }
 }
+
+/**
+ * 全局设置状态：`loaded = false` 时内容区必须保持空白，
+ * 避免应用锁开关尚未读出就渲染页面。
+ */
+data class AppSettingsState(
+    val settings: AppSettings = AppSettings(),
+    val loaded: Boolean = false
+)
 
 class AppContainer(context: Context) {
 
@@ -127,9 +138,13 @@ class AppContainer(context: Context) {
     /**
      * 全局设置热流：DataStore 只订阅一次并在 App 进程内保持活跃，
      * 各页面共享同一份内存状态，避免每页各自冷订阅、重复读盘。
+     * `loaded` 与设置值在同一状态里原子发布，内容区据此决定何时可以渲染。
      */
-    val appSettings: StateFlow<AppSettings> = settingsStore.settings
-        .stateIn(appScope, SharingStarted.Eagerly, AppSettings())
+    val appSettingsState: StateFlow<AppSettingsState> = settingsStore.settings
+        .map { AppSettingsState(settings = it, loaded = true) }
+        // 读取失败时退回默认设置并放行，避免启动屏一直遮挡
+        .catch { emit(AppSettingsState(loaded = true)) }
+        .stateIn(appScope, SharingStarted.Eagerly, AppSettingsState())
 
     init {
         appScope.launch {

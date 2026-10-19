@@ -157,7 +157,8 @@ fun DetailScreen(
     val canLoadMoreRelated by detailViewModel.canLoadMoreRelated
         .collectAsStateWithLifecycle()
     // 画中画开关：控制全屏回桌面时是否自动进入小窗
-    val appSettings by container.appSettings.collectAsStateWithLifecycle()
+    val appSettingsState by container.appSettingsState.collectAsStateWithLifecycle()
+    val appSettings = appSettingsState.settings
     // 用户点击播放后才交给播放器播放，不自动播放
     var playbackStarted by remember(videoId) { mutableStateOf(false) }
     // 全屏状态：播放器组件内部同步系统栏与 Activity 方向

@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 
 private val Context.settingsDataStore by preferencesDataStore(name = "app_settings")
 
@@ -47,14 +48,44 @@ data class AppSettings(
     val secureScreenEnabled: Boolean = true
 )
 
+/**
+ * 启动早期同步读取的最小设置快照：只覆盖首帧主题与防截屏。
+ * DataStore 是唯一事实源，这里只是给 `attachBaseContext` 用的镜像。
+ */
+data class StartupSettings(
+    val darkMode: DarkMode = DarkMode.SYSTEM,
+    val secureScreenEnabled: Boolean = true
+)
+
 /** 用户偏好仓库（动态取色开关、深色模式、画中画开关） */
 class SettingsStore(context: Context) {
 
-    private val store = context.applicationContext.settingsDataStore
+    private val appContext = context.applicationContext
+    private val store = appContext.settingsDataStore
+
+    /** 极小的启动镜像：避免 Activity 创建时阻塞读取 DataStore */
+    private val startupPrefs =
+        appContext.getSharedPreferences(STARTUP_PREFS, Context.MODE_PRIVATE)
 
     /**
-     * DataStore 冷流。页面请使用 `AppContainer.appSettings`（进程内热 StateFlow），
+     * 同步读取启动快照（只读 SharedPreferences，不触碰 DataStore），
+     * 供 `MainActivity.attachBaseContext` 在 Compose 初始化前确定首帧主题。
+     */
+    fun readStartupSettings(): StartupSettings {
+        val storedMode = startupPrefs.getString(STARTUP_KEY_DARK_MODE, null)
+        val darkMode = storedMode
+            ?.let { runCatching { DarkMode.valueOf(it) }.getOrNull() }
+            ?: DarkMode.SYSTEM
+        return StartupSettings(
+            darkMode = darkMode,
+            secureScreenEnabled = startupPrefs.getBoolean(STARTUP_KEY_SECURE_SCREEN, true)
+        )
+    }
+
+    /**
+     * DataStore 冷流。页面请使用 `AppContainer.appSettingsState`（进程内热 StateFlow），
      * 避免每个页面各自订阅、重复读盘。
+     * 每次设置变化顺带刷新启动镜像，供下次冷启动同步读取。
      */
     val settings: Flow<AppSettings> = store.data.map { prefs ->
         AppSettings(
@@ -75,6 +106,14 @@ class SettingsStore(context: Context) {
             }.getOrDefault(AppLockTimeout.THIRTY_SECONDS),
             secureScreenEnabled = prefs[KEY_SECURE_SCREEN] ?: true
         )
+    }.onEach { writeStartupMirror(it) }
+
+    /** 每次设置变化刷新启动镜像；下次冷启动由 [readStartupSettings] 同步读取 */
+    private fun writeStartupMirror(settings: AppSettings) {
+        startupPrefs.edit()
+            .putString(STARTUP_KEY_DARK_MODE, settings.darkMode.name)
+            .putBoolean(STARTUP_KEY_SECURE_SCREEN, settings.secureScreenEnabled)
+            .apply()
     }
 
     suspend fun setDynamicColor(enabled: Boolean) {
@@ -110,6 +149,10 @@ class SettingsStore(context: Context) {
     }
 
     private companion object {
+        const val STARTUP_PREFS = "startup_settings"
+        const val STARTUP_KEY_DARK_MODE = "dark_mode"
+        const val STARTUP_KEY_SECURE_SCREEN = "secure_screen"
+
         val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
         val KEY_DARK_MODE = stringPreferencesKey("dark_mode")
         val KEY_PIP_ENABLED = booleanPreferencesKey("pip_enabled")

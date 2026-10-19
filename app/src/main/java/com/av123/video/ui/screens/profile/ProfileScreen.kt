@@ -105,7 +105,8 @@ fun ProfileScreen(
 ) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
-    val settings by container.appSettings.collectAsStateWithLifecycle()
+    val settingsState by container.appSettingsState.collectAsStateWithLifecycle()
+    val settings = settingsState.settings
     val historyRecords by container.historyRepository.records
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val favoriteRecords by container.favoriteRepository.favorites

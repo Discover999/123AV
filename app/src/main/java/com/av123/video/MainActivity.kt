@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.view.WindowManager
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Rational
 import android.webkit.WebView
 import androidx.activity.compose.setContent
@@ -32,20 +33,18 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.av123.video.data.prefs.AppSettings
 import com.av123.video.data.prefs.DarkMode
+import com.av123.video.data.prefs.StartupSettings
 import com.av123.video.ui.lock.AppLockGate
 import com.av123.video.ui.navigation.VideoHubApp
 import com.av123.video.ui.theme.VideoHubTheme
 import com.av123.video.ui.util.AppLog
 import com.av123.video.ui.util.findActivity
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 
 class MainActivity : FragmentActivity() {
 
-    /** 启动时同步读取的外观设置：决定启动屏/窗口底色与 Compose 首帧，避免深浅色闪烁 */
-    private lateinit var initialSettings: AppSettings
+    /** 启动时同步读取的最小设置快照：决定启动屏/窗口底色与首帧防截屏 */
+    private lateinit var startupSettings: StartupSettings
 
     /**
      * 播放器注册的画中画准入判断：仅全屏播放态才允许 Home 时进入 PiP。
@@ -121,13 +120,13 @@ class MainActivity : FragmentActivity() {
     override fun attachBaseContext(newBase: Context) {
         // Application.onCreate 先于 Activity 创建，容器已就绪
         val app = newBase.applicationContext as VideoHubApp
-        // 同步读取一次持久化设置（DataStore 首帧，文件很小，耗时可忽略）
-        initialSettings = runBlocking { app.container.settingsStore.settings.first() }
+        // 只读极小的 SharedPreferences 启动镜像，不阻塞等待 DataStore
+        startupSettings = app.container.settingsStore.readStartupSettings()
 
         val systemDark =
             (newBase.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK) ==
                 Configuration.UI_MODE_NIGHT_YES
-        val appNight = when (initialSettings.darkMode) {
+        val appNight = when (startupSettings.darkMode) {
             DarkMode.SYSTEM -> systemDark
             DarkMode.LIGHT -> false
             DarkMode.DARK -> true
@@ -144,19 +143,25 @@ class MainActivity : FragmentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // 启动屏（androidx core-splashscreen），必须在 super.onCreate 前安装
-        installSplashScreen()
+        val container = (application as VideoHubApp).container
+
+        // 启动屏保持到设置首帧就绪；超时兜底，避免 DataStore 异常时永久遮挡
+        val splashStartedAt = SystemClock.uptimeMillis()
+        installSplashScreen().setKeepOnScreenCondition {
+            !container.appSettingsState.value.loaded &&
+                SystemClock.uptimeMillis() - splashStartedAt < SPLASH_SETTINGS_TIMEOUT_MS
+        }
+
         super.onCreate(savedInstanceState)
         // 边到边布局，MD3 推荐
         enableEdgeToEdge()
         // 冷启动首帧就应用防截屏，避免启动阶段最近任务预览泄露内容
-        applySecureScreenFlag(initialSettings.secureScreenEnabled)
-
-        val container = (application as VideoHubApp).container
+        applySecureScreenFlag(startupSettings.secureScreenEnabled)
 
         setContent {
             CompositionLocalProvider(LocalAppContainer provides container) {
-                val settings by container.appSettings.collectAsStateWithLifecycle()
+                val settingsState by container.appSettingsState.collectAsStateWithLifecycle()
+                val settings = settingsState.settings
 
                 // 注意：attachBaseContext 为防启动闪烁强制覆盖了 Activity 的 uiMode，
                 // 故 isSystemInDarkTheme() 读到的是被覆盖后的配置，不能用于“跟随系统”。
@@ -192,12 +197,17 @@ class MainActivity : FragmentActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        // 应用锁：是否启用按冷启动快照决定；离开超时时间实时读取设置
-                        AppLockGate(
-                            enabledAtLaunch = initialSettings.appLockEnabled,
-                            relockAfterMs = settings.appLockTimeout.millis
-                        ) {
-                            VideoHubApp()
+                        // 设置未加载完不渲染内容：应用锁开关未知时宁可保持空白
+                        if (settingsState.loaded) {
+                            // 应用锁：按设置加载完成时的开关快照决定；
+                            // 运行期修改开关不改变本进程冷启动判定
+                            val appLockAtLaunch = remember { settings.appLockEnabled }
+                            AppLockGate(
+                                enabledAtLaunch = appLockAtLaunch,
+                                relockAfterMs = settings.appLockTimeout.millis
+                            ) {
+                                VideoHubApp()
+                            }
                         }
                     }
                 }
@@ -239,6 +249,9 @@ object WebViewWarmer {
 
 /** 启动后延迟预热的时间，确保首页首帧/封面加载已完成，不与启动争抢资源 */
 private const val WEBVIEW_WARM_UP_DELAY_MS = 2_000L
+
+/** 设置首帧加载的启动屏兜底时长；超时后先撤启动屏，内容区继续等待 loaded */
+private const val SPLASH_SETTINGS_TIMEOUT_MS = 800L
 
 private const val TAG_PIP = "MainActivity"
 
