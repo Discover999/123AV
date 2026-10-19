@@ -18,6 +18,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.RepeatMode
@@ -27,12 +28,16 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,6 +53,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -58,6 +64,8 @@ import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Forward10
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
@@ -154,6 +162,7 @@ import kotlin.time.Duration.Companion.milliseconds
 private const val TAG = "VideoPlayer"
 private const val CONTROLLER_AUTO_HIDE_MS = 3_000L
 private const val POSITION_POLL_MS = 200L
+private const val ERROR_OVERLAY_ENTER_MS = 160
 
 /** 应用内画面比例枚举 → media3 AspectRatioFrameLayout 常量 */
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -676,9 +685,11 @@ fun VideoPlayer(
             )
         }
 
-        // 加载动画：初始准备中
-        if (playbackState == Player.STATE_IDLE ||
-            (playbackState == Player.STATE_BUFFERING && position <= 0L)
+        // 加载动画：初始准备中；出错后 state 会回到 IDLE，必须显式排除错误态
+        if (error == null && (
+                playbackState == Player.STATE_IDLE ||
+                    (playbackState == Player.STATE_BUFFERING && position <= 0L)
+                )
         ) {
             Box(
                 modifier = Modifier
@@ -694,9 +705,10 @@ fun VideoPlayer(
             }
         }
 
-        // 缓冲中提示
+        // 缓冲中提示（错误层显示时不再转圈）
         AnimatedVisibility(
-            visible = playbackState == Player.STATE_BUFFERING && position > 0L,
+            visible = error == null &&
+                playbackState == Player.STATE_BUFFERING && position > 0L,
             enter = fadeIn(),
             exit = fadeOut(),
             modifier = Modifier.align(Alignment.Center)
@@ -1454,34 +1466,88 @@ private fun ErrorOverlay(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.75f))
-            .padding(24.dp),
+            // 轻遮罩：保留一点画面信息，视觉重心交给卡片
+            .background(Color.Black.copy(alpha = 0.55f)),
         contentAlignment = Alignment.Center
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = Icons.Filled.Replay5,
-                contentDescription = null,
-                tint = Color.White.copy(alpha = 0.8f),
-                modifier = Modifier.size(56.dp)
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = stringResource(R.string.player_error_title),
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = playbackErrorText(LocalContext.current, error),
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 13.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(vertical = 8.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Button(onClick = onRetry) {
-                Text(stringResource(R.string.common_retry))
+        // 160ms 淡入 + 轻微放大，避免失败卡片硬切出现
+        val visibleState = remember {
+            MutableTransitionState(false).apply { targetState = true }
+        }
+        AnimatedVisibility(
+            visibleState = visibleState,
+            enter = fadeIn(tween(ERROR_OVERLAY_ENTER_MS)) +
+                scaleIn(tween(ERROR_OVERLAY_ENTER_MS), initialScale = 0.96f)
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    // 全屏横屏时也保持卡片宽度，不铺满整块画面
+                    .widthIn(max = 360.dp)
+                    .fillMaxWidth(0.82f)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(Color(0xFF17181D).copy(alpha = 0.96f))
+                    .border(
+                        width = 1.dp,
+                        color = Color.White.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                    // 详情页播放器高度有限：极端字号下仍可滚动到重试按钮
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 18.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Error,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.player_error_title),
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = playbackErrorText(LocalContext.current, error),
+                    color = Color.White.copy(alpha = 0.68f),
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = onRetry,
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    ),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 9.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = stringResource(R.string.player_retry),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
         }
     }

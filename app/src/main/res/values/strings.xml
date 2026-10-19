@@ -351,6 +351,7 @@
     <string name="player_url_copy">复制链接</string>
     <string name="player_url_copied">已复制</string>
     <string name="player_error_title">播放失败</string>
+    <string name="player_retry">重新播放</string>
     <string name="player_stats_title">播放统计</string>
     <string name="player_stat_video_codec">视频编码</string>
     <string name="player_stat_resolution">分辨率</string>
