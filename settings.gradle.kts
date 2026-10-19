@@ -21,3 +21,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "123AV"
 include(":app")
+include(":benchmark")

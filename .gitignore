@@ -9,6 +9,7 @@
 .cxx
 local.properties
 /app/build
+/benchmark/build
 
 .kotlin
 /app/release

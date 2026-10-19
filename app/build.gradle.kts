@@ -79,6 +79,14 @@ android {
                 signingConfig = signingConfigs.getByName("release")
             }
         }
+
+        // Macrobenchmark 专用：release 级优化 + debug 签名，保证可安装且非 debuggable
+        create("benchmark") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            isDebuggable = false
+        }
     }
 
     compileOptions {
