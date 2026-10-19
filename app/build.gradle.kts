@@ -169,9 +169,13 @@ dependencies {
 
     // 解析器单元测试（Jsoup 为纯 JVM 实现，可直接跑 JUnit）
     testImplementation(libs.junit)
+    testImplementation(libs.mockwebserver)
 
-    // Room 迁移测试（真机/模拟器 androidTest）
+    // Room 迁移测试 + Compose 冒烟（真机/模拟器 androidTest）
     androidTestImplementation(libs.androidx.test.ext.junit)
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(platform(libs.androidx.compose.bom))
+    androidTestImplementation(libs.androidx.ui.test.junit4)
+    debugImplementation(libs.androidx.ui.test.manifest)
 }
