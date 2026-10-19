@@ -19,21 +19,26 @@ data class HomeUiState(
     /** 已有内容时的下拉刷新（指示器用）；首屏加载走整屏 LoadingState */
     val isRefreshing: Boolean = false,
     val error: AppError? = null,
-    val categories: List<String> = listOf("全部"),
-    val selectedCategory: String = "全部",
+    val categories: List<CategoryFilter> = listOf(CategoryFilter.All),
+    val selectedCategory: CategoryFilter = CategoryFilter.All,
     val feed: HomeFeed? = null,
     val categoryPages: Map<String, CategoryPageState> = emptyMap()
 ) {
     /** 当前分类的列表页状态（未发起过列表页请求时为 null，UI 回退到首页分组数据） */
     val categoryPageState: CategoryPageState?
-        get() = if (selectedCategory == "全部") null else categoryPages[selectedCategory]
+        get() = selectedCategory.categoryKey?.let { categoryPages[it] }
 }
+
+/** 站点分类名 -> 类型化筛选；“全部”作为唯一哨兵，其余均为可加载的具名分类 */
+private fun HomeFeed?.toCategoryFilters(): List<CategoryFilter> =
+    this?.categories?.map { CategoryFilter.fromLabel(it) }?.distinct()
+        ?: listOf(CategoryFilter.All)
 
 class HomeViewModel(
     private val repository: VideoRepository
 ) : ViewModel() {
 
-    private val selectedCategory = MutableStateFlow("全部")
+    private val selectedCategory = MutableStateFlow<CategoryFilter>(CategoryFilter.All)
 
     // 下拉刷新指示器由 ViewModel 自管：同步置 true，加载完成且满足最短展示时长后才复位。
     // 不能直接透传 repository.isRefreshing：精选页强制刷新可能在系统下拉手势动画落定前
@@ -54,7 +59,7 @@ class HomeViewModel(
         HomeUiState(
             isLoading = refreshing && feed == null,
             error = error,
-            categories = feed?.categories ?: listOf("全部"),
+            categories = feed.toCategoryFilters(),
             selectedCategory = category,
             feed = feed,
             categoryPages = categoryPages
@@ -68,23 +73,22 @@ class HomeViewModel(
         // 第一帧就是缓存内容而非整屏加载（compose 首帧不等 combine 的首次发射）
         initialValue = HomeUiState(
             isLoading = repository.feed.value == null,
-            categories = repository.feed.value?.categories ?: listOf("全部"),
+            categories = repository.feed.value.toCategoryFilters(),
             feed = repository.feed.value,
             categoryPages = repository.categoryPages.value
         )
     )
 
-    fun selectCategory(category: String) {
+    fun selectCategory(category: CategoryFilter) {
         if (selectedCategory.value == category) return
         selectedCategory.value = category
-        // 首次进入该分类时请求其列表页（拿分页页脚）；已加载过则保留页码与数据
-        repository.ensureCategoryLoaded(category)
+        // 首次进入具名分类时请求其列表页（拿分页页脚）；已加载过则保留页码与数据
+        category.categoryKey?.let { repository.ensureCategoryLoaded(it) }
     }
 
     /** 跳转到当前分类的指定页 */
     fun selectPage(page: Int) {
-        val category = selectedCategory.value
-        if (category == "全部") return
+        val category = selectedCategory.value.categoryKey ?: return
         val state = repository.categoryPages.value[category]
         val total = state?.pagination?.totalPages ?: return
         if (page in 1..total && page != state.page) {
@@ -102,12 +106,12 @@ class HomeViewModel(
      */
     fun refresh() {
         if (_isPullRefreshing.value) return
-        val category = selectedCategory.value
-        val pageState = repository.categoryPages.value[category]
+        val category = selectedCategory.value.categoryKey
+        val pageState = category?.let { repository.categoryPages.value[it] }
         // “空成功态”（无视频/无分页/无错误）说明该分类没有独立列表页（如“精选”，
         // fetchByCategory 立即返回空），其内容来自首页 feed 分组，应走 feed 刷新；
         // 加载失败的空态仍按分类页重试。
-        val loadCategoryPage = category != "全部" && pageState != null &&
+        val loadCategoryPage = category != null && pageState != null &&
             (pageState.videos.isNotEmpty() ||
                 pageState.pagination != null ||
                 pageState.error != null)

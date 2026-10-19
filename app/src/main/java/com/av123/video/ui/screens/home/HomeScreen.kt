@@ -195,7 +195,7 @@ private fun HomeContent(
     ui: HomeUiState,
     continueWatching: List<WatchRecord>,
     scrollToTopTick: Int,
-    onSelectCategory: (String) -> Unit,
+    onSelectCategory: (CategoryFilter) -> Unit,
     onSelectPage: (Int) -> Unit,
     onVideoClick: (String) -> Unit,
     onVideoLongClick: (Video) -> Unit,
@@ -214,7 +214,7 @@ private fun HomeContent(
     ) { category ->
         // 分类列表页状态：请求过该分类的列表页且拿到视频时使用它（带分页栏）；
         // 未请求/为空/失败时回退到首页 feed 的分组数据。
-        val pageState = if (category == "全部") null else ui.categoryPages[category]
+        val pageState = category.categoryKey?.let { ui.categoryPages[it] }
         val pagedVideos = pageState?.videos?.takeIf { it.isNotEmpty() }
         val gridState = rememberLazyGridState()
         // 翻页后回到列表顶部
@@ -246,7 +246,7 @@ private fun HomeContent(
                 )
             }
 
-            if (category == "全部") {
+            if (category == CategoryFilter.All) {
                 val feed = ui.feed
 
                 // 精选轮播
@@ -334,7 +334,7 @@ private fun HomeContent(
                 }
             } else {
                 // 回退：首页 feed 中按分类名分组的视频（无独立列表页或请求失败）
-                val fallbackVideos = ui.feed?.byCategory?.get(category).orEmpty()
+                val fallbackVideos = ui.feed?.byCategory?.get(category.categoryKey.orEmpty()).orEmpty()
                 if (fallbackVideos.isEmpty()) {
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Box(modifier = Modifier.height(240.dp)) {
@@ -361,17 +361,17 @@ private fun HomeContent(
 
 @Composable
 private fun CategoryChips(
-    categories: List<String>,
-    selected: String,
-    onSelect: (String) -> Unit
+    categories: List<CategoryFilter>,
+    selected: CategoryFilter,
+    onSelect: (CategoryFilter) -> Unit
 ) {
     LazyRow(
         contentPadding = PaddingValues(vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(categories) { category ->
+        items(categories, key = { it.label }) { category ->
             CategoryPill(
-                text = category,
+                text = category.label,
                 selected = category == selected,
                 onClick = { onSelect(category) }
             )
