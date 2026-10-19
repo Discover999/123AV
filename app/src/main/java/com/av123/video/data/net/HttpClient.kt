@@ -1,11 +1,17 @@
 package com.av123.video.data.net
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
 import okhttp3.ConnectionPool
 import okhttp3.EventListener
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.random.Random
 
 /** 拿到响应但状态码非 2xx/3xx 时抛出，供 [AppError] 归类为站点侧错误 */
 class HttpStatusException(val code: Int) : IOException("HTTP $code")
@@ -23,8 +29,8 @@ data class HttpResponse(
  * - 全 App 共享同一个 [OkHttpClient]（连接池/线程池复用），网页抓取、站点探测、
  *   Coil 图片加载均经此出口；
  * - 统一 UA / Accept-Language、合理的连接与读取超时、gzip（OkHttp 默认透明处理）；
- * - 网络错误（DNS、连接重置、读超时等可恢复 IO 异常）自动重试至多 [MAX_ATTEMPTS] 次，
- *   指数退避；HTTP 4xx/5xx 不重试（重试无意义）。
+ * - 网络错误（DNS、连接重置、读超时等可恢复 IO 异常）与 HTTP 429/5xx 自动重试
+ *   至多 [MAX_ATTEMPTS] 次，指数退避 + 抖动；其余 4xx 不重试（重试无意义）。
  *
  * Jsoup 仅保留 HTML 解析职责（Jsoup.parse），不再由它发起连接。
  */
@@ -37,7 +43,7 @@ object HttpClient {
     /** 网络错误最大尝试次数（首请求 + 2 次重试） */
     const val MAX_ATTEMPTS = 3
 
-    /** 首次重试前等待基数，后续按次数倍增（400ms / 800ms） */
+    /** 首次重试前等待基数，后续按次数倍增（400–600ms / 800–1200ms，含抖动） */
     const val RETRY_BACKOFF_BASE_MS = 400L
 
     private const val CONNECT_TIMEOUT_MS = 10_000L
@@ -67,12 +73,13 @@ object HttpClient {
         .build()
 
     /**
-     * 发起 GET 并返回原始响应（不校验状态码）。仅在网络层失败时抛 [IOException]，
-     * 已拿到响应（含 4xx/5xx）即返回。瞬时 IO 错误自动重试。
+     * 发起 GET 并返回原始响应（不校验状态码）。网络错误抛 [IOException]；
+     * 已拿到响应（含 4xx/5xx）即返回。瞬时 IO 错误与 429/5xx 自动重试。
+     * 阻塞式 OkHttp 调用放在 [Dispatchers.IO]，重试等待使用可取消的 [delay]。
      *
      * @param timeoutMs 单次读取/连接超时覆盖值（站点选择器可自定义），null 用默认
      */
-    fun execute(
+    suspend fun execute(
         url: String,
         headers: Map<String, String> = emptyMap(),
         timeoutMs: Int? = null,
@@ -82,7 +89,7 @@ object HttpClient {
          * 仍共享主 client 的连接池与 Dispatcher。
          */
         eventListenerFactory: EventListener.Factory? = null
-    ): HttpResponse {
+    ): HttpResponse = withContext(Dispatchers.IO) {
         val requestBuilder = Request.Builder().url(url).get()
         headers.forEach { (key, value) -> requestBuilder.header(key, value) }
         val request = requestBuilder.build()
@@ -106,25 +113,34 @@ object HttpClient {
 
         var lastError: IOException? = null
         for (attempt in 0 until MAX_ATTEMPTS) {
-            try {
-                httpClient.newCall(request).execute().use { response ->
-                    val responseHeaders = buildMap {
-                        response.headers.names().forEach { name ->
-                            put(name, response.header(name).orEmpty())
-                        }
-                    }
-                    return HttpResponse(
-                        code = response.code,
-                        body = response.body?.string().orEmpty(),
-                        headers = responseHeaders
-                    )
-                }
+            currentCoroutineContext().ensureActive()
+
+            val response = try {
+                httpClient.newCall(request).execute()
             } catch (e: IOException) {
                 lastError = e
-                // 最后一次不再等待
-                if (attempt < MAX_ATTEMPTS - 1) {
-                    Thread.sleep(RETRY_BACKOFF_BASE_MS * (attempt + 1))
+                if (attempt < MAX_ATTEMPTS - 1) delay(retryDelayMs(attempt))
+                continue
+            }
+
+            // 429/5xx 有限重试：丢弃本次响应体，退避后再试
+            if (isRetryableStatus(response.code) && attempt < MAX_ATTEMPTS - 1) {
+                response.close()
+                delay(retryDelayMs(attempt))
+                continue
+            }
+
+            return@withContext response.use { r ->
+                val responseHeaders = buildMap {
+                    r.headers.names().forEach { name ->
+                        put(name, r.header(name).orEmpty())
+                    }
                 }
+                HttpResponse(
+                    code = r.code,
+                    body = r.body?.string().orEmpty(),
+                    headers = responseHeaders
+                )
             }
         }
         throw lastError ?: IOException("网络请求失败")
@@ -134,7 +150,7 @@ object HttpClient {
      * 期望成功（2xx/3xx）响应的 GET：返回响应体文本；
      * 状态码为 4xx/5xx 时抛 [HttpStatusException]，供错误归一化分类。
      */
-    fun getString(
+    suspend fun getString(
         url: String,
         headers: Map<String, String> = emptyMap(),
         timeoutMs: Int? = null
@@ -142,5 +158,15 @@ object HttpClient {
         val response = execute(url, headers, timeoutMs)
         if (response.code !in 200..399) throw HttpStatusException(response.code)
         return response.body
+    }
+
+    /** 429 与 5xx 可重试；其余 4xx（鉴权/不存在等）重试无意义 */
+    internal fun isRetryableStatus(code: Int): Boolean =
+        code == 429 || code in 500..599
+
+    /** 指数退避 + 抖动：400–600ms、800–1200ms */
+    internal fun retryDelayMs(attempt: Int): Long {
+        val base = RETRY_BACKOFF_BASE_MS shl attempt
+        return base + Random.nextLong(0L, base / 2 + 1L)
     }
 }

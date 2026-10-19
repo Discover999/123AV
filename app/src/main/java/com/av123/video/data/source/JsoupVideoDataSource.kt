@@ -860,7 +860,7 @@ class JsoupVideoDataSource(
      * （超时/重试/连接池），Jsoup 只负责把响应体解析成 DOM；
      * 传入 url 作为 baseUri，保证 DOM 内相对链接的 absUrl() 可解析为绝对地址。
      */
-    private fun fetchDoc(url: String): Document {
+    private suspend fun fetchDoc(url: String): Document {
         val html = HttpClient.getString(
             url = url,
             headers = mapOf("User-Agent" to config.userAgent),
