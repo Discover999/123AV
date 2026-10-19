@@ -63,6 +63,8 @@ class PlayerViewModel : ViewModel() {
         )
         val mediaSourceFactory = DefaultMediaSourceFactory(appContext)
             .setDataSourceFactory(dataSourceFactory)
+            // 网络抖动/429/5xx 有限重试；403 等签名失效立即失败，交给抓流兜底
+            .setLoadErrorHandlingPolicy(RetryLoadErrorHandlingPolicy())
 
         // 媒体播放音频属性：交由 ExoPlayer 管理音频焦点
         // （与其他音频 App 并发时自动暂停/降低音量、焦点恢复后续播），
