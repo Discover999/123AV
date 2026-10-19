@@ -5,7 +5,9 @@ import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
 import com.av123.video.data.net.AppErrorKind
 import com.av123.video.data.net.ErrorReporter
+import com.av123.video.data.runCatchingCancellable
 import com.av123.video.data.source.VideoSite
+import kotlinx.coroutines.CancellationException
 
 /**
  * 详情加载结果：网络失败时仍可能带回列表缓存条目（cached），
@@ -74,7 +76,7 @@ class DetailRepository(
      * 任何异常都静默为空列表——推荐是锦上添花，不能影响详情页主流程。
      */
     suspend fun parseRelated(html: String, baseUrlHint: String, currentVideoId: String): List<Video> =
-        runCatching { dataSource.parseRelatedFromRenderedHtml(html, baseUrlHint) }
+        runCatchingCancellable { dataSource.parseRelatedFromRenderedHtml(html, baseUrlHint) }
             .getOrDefault(emptyList())
             .let { dedupRelated(it, currentVideoId, RELATED_MAX_POOL) }
 
@@ -88,6 +90,8 @@ class DetailRepository(
             dataSource.fetchVideoDetail(
                 cached ?: Video(id = videoId, title = videoId, category = "")
             )
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             val error = AppError.from(e)
             DiagnosticsMetrics.recordLoadFailure(error.kind)

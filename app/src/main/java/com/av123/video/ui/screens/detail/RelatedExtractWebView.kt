@@ -4,6 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import com.av123.video.LocalAppContainer
+import com.av123.video.data.source.HostAllowlist
 
 /**
  * Compose 生命周期壳：WebView、轮询、超时与静默放弃都在 [RelatedResolver]。
@@ -17,12 +19,17 @@ internal fun RelatedExtractWebView(
 ) {
     if (pageUrl.isBlank()) return
     val context = LocalContext.current
-    val resolver = remember(pageUrl) {
+    val siteConfig = LocalAppContainer.current.siteConfig
+    val allowlist = remember(siteConfig) {
+        HostAllowlist(siteConfig.baseUrl, siteConfig.embedHosts, siteConfig.mediaHosts)
+    }
+    val resolver = remember(pageUrl, allowlist) {
         RelatedResolver(
             context = context.applicationContext,
             pageUrl = pageUrl,
             onExtracted = onExtracted,
-            onFinished = onFinished
+            onFinished = onFinished,
+            allowlist = allowlist
         )
     }
 

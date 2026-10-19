@@ -4,6 +4,7 @@ import com.av123.video.data.db.AppJson
 import com.av123.video.data.db.PageCacheEntity
 import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.HomeFeed
+import com.av123.video.data.runCatchingCancellable
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
 import com.av123.video.data.net.ErrorReporter
@@ -60,7 +61,7 @@ class FeedRepository(
     internal suspend fun refreshFeed(reportFailureSnackbar: Boolean) {
         _isRefreshing.value = true
         _error.value = null
-        runCatching { dataSource.fetchHomeFeed() }
+        runCatchingCancellable { dataSource.fetchHomeFeed() }
             .onSuccess { feed ->
                 _feed.value = feed
                 pageCacheStore.putFeed(feed)

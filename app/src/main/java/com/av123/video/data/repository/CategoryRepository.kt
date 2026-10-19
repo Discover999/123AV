@@ -9,6 +9,7 @@ import com.av123.video.data.model.IndexEntry
 import com.av123.video.data.model.Pagination
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
+import com.av123.video.data.runCatchingCancellable
 import com.av123.video.data.net.ErrorReporter
 import com.av123.video.data.source.VideoSite
 import kotlinx.coroutines.CoroutineScope
@@ -127,7 +128,7 @@ class CategoryRepository(
             states + (category to (states[category] ?: CategoryPageState())
                 .copy(isLoading = true, error = null, page = page))
         }
-        runCatching { dataSource.fetchByCategory(category, page) }
+        runCatchingCancellable { dataSource.fetchByCategory(category, page) }
             .onSuccess { result ->
                 _categoryPages.update { states ->
                     // 与 loadChannelPage 保持同一套字段保留策略，
@@ -206,7 +207,7 @@ class CategoryRepository(
             states + (path to (states[path] ?: CategoryPageState())
                 .copy(isLoading = true, error = null, page = page))
         }
-        runCatching { dataSource.fetchByPath(path, label, page, queryParams) }
+        runCatchingCancellable { dataSource.fetchByPath(path, label, page, queryParams) }
             .onSuccess { result ->
                 _channelPages.update { states ->
                     val prev = states[path]

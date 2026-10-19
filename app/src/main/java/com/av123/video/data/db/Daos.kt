@@ -155,7 +155,7 @@ interface PageCacheDao {
     @Query("DELETE FROM page_cache WHERE cacheKey IN (:cacheKeys)")
     suspend fun deleteByKeys(cacheKeys: List<String>)
 
-    @Query("SELECT COALESCE(SUM(LENGTH(payloadJson)), 0) FROM page_cache")
+    @Query("SELECT COALESCE(SUM(LENGTH(CAST(payloadJson AS BLOB))), 0) FROM page_cache")
     suspend fun totalBytes(): Long
 
     @Query("SELECT * FROM page_cache WHERE cacheKey = :cacheKey")

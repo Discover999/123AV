@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.av123.video.data.model.Video
 import com.av123.video.data.repository.FollowedActress
 import com.av123.video.data.repository.FollowedActressRepository
+import com.av123.video.data.runCatchingCancellable
 import com.av123.video.data.source.VideoDataSource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -77,7 +78,9 @@ class FollowedViewModel(
                 .copy(loading = true, error = false))
         viewModelScope.launch {
             val result = fetchLock.withPermit {
-                runCatching { dataSource.fetchByPath(actress.path, actress.name, page = 1) }
+                runCatchingCancellable {
+                    dataSource.fetchByPath(actress.path, actress.name, page = 1)
+                }
             }
             _feeds.value = _feeds.value + (actress.path to result.fold(
                 onSuccess = { page ->

@@ -58,4 +58,11 @@ class PageCacheStoreTest {
         assertTrue(detailKeys.contains(PageCacheStore.detailKey("v4")))
         assertFalse(detailKeys.contains(PageCacheStore.detailKey("v0")))
     }
+
+    @Test
+    fun totalBytes_countsUtf8BytesNotCharacters() = runBlocking {
+        database.pageCacheDao().upsert(PageCacheEntity("utf8", "中文", 0L))
+
+        assertEquals(6L, store.totalBytes())
+    }
 }

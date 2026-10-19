@@ -5,6 +5,7 @@ import com.av123.video.data.model.Pagination
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
 import com.av123.video.data.net.ErrorReporter
+import com.av123.video.data.runCatchingCancellable
 import com.av123.video.data.source.VideoSite
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,7 +55,7 @@ class SearchRepository(
                     error = null
                 )
             }
-            runCatching { dataSource.search(kw, targetPage) }
+            runCatchingCancellable { dataSource.search(kw, targetPage) }
                 .onSuccess { result ->
                     _state.update {
                         it.copy(

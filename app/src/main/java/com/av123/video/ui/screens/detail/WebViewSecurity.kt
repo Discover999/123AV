@@ -10,12 +10,9 @@ internal fun originOf(url: String): String? =
         "$scheme://$authority"
     }
 
-/** 只允许主文档跳转到抓流目标页的来源 */
-internal fun isAllowedPage(url: String, allowedOrigins: Set<String>): Boolean =
-    allowedOrigins.isEmpty() || originOf(url) in allowedOrigins
-
 /**
- * 隐藏 WebView 的最小权限：不允许读本地文件/ContentProvider、不允许脚本弹窗。
+ * 隐藏 WebView 的最小权限：不允许读本地文件/ContentProvider、不允许脚本弹窗、
+ * 禁止 HTTPS 页面加载 HTTP 子资源。
  * 页面仍可正常发 XHR/fetch/媒体请求。
  */
 internal fun WebSettings.hardenForHeadlessWebView() {
@@ -24,6 +21,7 @@ internal fun WebSettings.hardenForHeadlessWebView() {
     javaScriptCanOpenWindowsAutomatically = false
     setSupportMultipleWindows(false)
     setGeolocationEnabled(false)
+    mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
     @Suppress("DEPRECATION")
     allowFileAccessFromFileURLs = false
     @Suppress("DEPRECATION")

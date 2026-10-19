@@ -23,6 +23,7 @@ import androidx.webkit.WebViewFeature
 import com.av123.video.BuildConfig
 import com.av123.video.data.diagnostics.DiagnosticsMetrics
 import com.av123.video.data.model.Video
+import com.av123.video.data.source.HostAllowlist
 import com.av123.video.ui.util.AppLog
 import java.util.Collections
 import java.util.concurrent.atomic.AtomicBoolean
@@ -115,13 +116,14 @@ private val STRIP_REQUEST_HEADERS = setOf(
  * 在进入/离开详情或重试时调用 [start] / [dispose]，不再持有任何 WebView 逻辑。
  */
 @SuppressLint("SetJavaScriptEnabled")
-class PlaybackResolver(
+internal class PlaybackResolver(
     private val context: Context,
     private val video: Video,
     private val epoch: Int,
     private val onCaptured: (url: String, headers: Map<String, String>) -> Unit,
     private val onFailed: () -> Unit,
-    targetUrl: String? = null
+    private val allowlist: HostAllowlist,
+    private val targetUrl: String? = null
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val started = AtomicBoolean(false)
@@ -136,10 +138,21 @@ class PlaybackResolver(
     private val allowDetailFallback = targetUrl == null
     private val allowedOrigins = listOf(primaryUrl, detailUrl)
         .mapNotNull { originOf(it) }
+        .filter { allowlist.isAllowedNavigation(it) }
         .toSet()
 
     fun start() {
         if (!started.compareAndSet(false, true) || primaryUrl.isBlank()) return
+        val primaryAllowed = if (targetUrl != null) {
+            allowlist.isAllowedEmbedOrMedia(primaryUrl)
+        } else {
+            allowlist.isAllowedEmbed(primaryUrl)
+        }
+        if (!primaryAllowed) {
+            AppLog.w(M3U8_TAG, "抓流目标不在白名单: $primaryUrl")
+            onFailed()
+            return
+        }
         DiagnosticsMetrics.recordCaptureAttempt()
 
         val seenM3U8 = Collections.synchronizedSet(HashSet<String>())
@@ -188,6 +201,10 @@ class PlaybackResolver(
             }
 
             fun reportCapturedFromJs(url: String) {
+                if (!allowlist.isAllowedMedia(url)) {
+                    AppLog.w(M3U8_TAG, "忽略非媒体白名单地址: $url")
+                    return
+                }
                 if (!reported.compareAndSet(false, true)) return
                 markCaptured()
                 val capturedHeaders = buildMap {
@@ -213,7 +230,8 @@ class PlaybackResolver(
                 val canFallback = allowDetailFallback &&
                     embedUrl.isNotBlank() &&
                     detailUrl.isNotBlank() &&
-                    detailUrl != embedUrl
+                    detailUrl != embedUrl &&
+                    allowlist.isAllowedEmbed(detailUrl)
                 if (canFallback && fallbackDone.compareAndSet(false, true)) {
                     AppLog.w(M3U8_TAG, "$reason，回退加载详情页整页: $detailUrl")
                     loadUrl(detailUrl)
@@ -249,13 +267,15 @@ class PlaybackResolver(
                 override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
                     val msg = consoleMessage.message()
                     if (msg.contains("[M3U8-JS]")) {
-                        markCaptured()
                         AppLog.i(M3U8_TAG, "===== JS hook 发现 m3u8 =====\n$msg")
                         if (!webMessageSupported) {
                             val m3u8Url = Regex("""https?://[^\s"'<>()\\]+""")
                                 .findAll(msg)
                                 .map { it.value }
-                                .firstOrNull { it.contains(".m3u8", ignoreCase = true) }
+                                .firstOrNull {
+                                    it.contains(".m3u8", ignoreCase = true) &&
+                                        allowlist.isAllowedMedia(it)
+                                }
                             if (m3u8Url != null) reportCapturedFromJs(m3u8Url)
                         }
                     } else {
@@ -275,7 +295,7 @@ class PlaybackResolver(
                 ): Boolean {
                     if (request?.isForMainFrame != true) return false
                     val url = request.url.toString()
-                    if (!isAllowedPage(url, allowedOrigins)) {
+                    if (!allowlist.isAllowedNavigation(url)) {
                         AppLog.w(M3U8_TAG, "阻止跳转到非白名单页面: $url")
                         return true
                     }
@@ -333,7 +353,10 @@ class PlaybackResolver(
                     request: WebResourceRequest?
                 ): WebResourceResponse? {
                     val url = request?.url?.toString().orEmpty()
-                    if (url.contains(".m3u8", ignoreCase = true) && seenM3U8.add(url)) {
+                    if (url.contains(".m3u8", ignoreCase = true) &&
+                        allowlist.isAllowedMedia(url) &&
+                        seenM3U8.add(url)
+                    ) {
                         markCaptured()
                         AppLog.i(M3U8_TAG, "===== 拦截到 m3u8 播放链接 =====\n$url")
                         if (reported.compareAndSet(false, true)) {

@@ -11,6 +11,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import com.av123.video.data.source.HostAllowlist
 import com.av123.video.ui.util.AppLog
 import java.net.URLDecoder
 import java.util.concurrent.atomic.AtomicBoolean
@@ -58,11 +59,12 @@ private const val MUTE_PAUSE_JS = """
  * 进入页面时 start、离开时 dispose。
  */
 @SuppressLint("SetJavaScriptEnabled")
-class RelatedResolver(
+internal class RelatedResolver(
     private val context: Context,
     private val pageUrl: String,
     private val onExtracted: (html: String) -> Unit,
-    private val onFinished: () -> Unit
+    private val onFinished: () -> Unit,
+    private val allowlist: HostAllowlist
 ) {
     private val mainHandler = Handler(Looper.getMainLooper())
     private val started = AtomicBoolean(false)
@@ -72,6 +74,11 @@ class RelatedResolver(
 
     fun start() {
         if (!started.compareAndSet(false, true) || pageUrl.isBlank()) return
+        if (!allowlist.isAllowedEmbed(pageUrl)) {
+            AppLog.w(RELATED_TAG, "相关推荐页不在白名单: $pageUrl")
+            onFinished()
+            return
+        }
 
         val delivered = AtomicBoolean(false)
         val finished = AtomicBoolean(false)
@@ -149,7 +156,7 @@ class RelatedResolver(
                 ): Boolean {
                     if (request?.isForMainFrame != true) return false
                     val url = request.url.toString()
-                    if (!isAllowedPage(url, allowedOrigins)) {
+                    if (!allowlist.isAllowedNavigation(url)) {
                         AppLog.w(RELATED_TAG, "阻止跳到非白名单页面: $url")
                         return true
                     }

@@ -1,6 +1,7 @@
 package com.av123.video.data.source
 
 import com.av123.video.data.net.HttpClient
+import com.av123.video.data.runCatchingCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -97,7 +98,7 @@ class SiteConfigStore(
         if (!snapshot.config.remoteEnabled) return SiteConfigRefreshResult.Skipped
         if (!force && !isRefreshDue(snapshot)) return SiteConfigRefreshResult.Skipped
 
-        val response = runCatching { fetcher(url, snapshot.etag) }.getOrElse { error ->
+        val response = runCatchingCancellable { fetcher(url, snapshot.etag) }.getOrElse { error ->
             return fail("远程配置请求失败: ${error.message ?: "未知错误"}")
         }
         return when {

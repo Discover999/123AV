@@ -1,5 +1,6 @@
 package com.av123.video.data.net
 
+import com.av123.video.data.runCatchingCancellable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
@@ -81,7 +82,7 @@ class DataSourceProbe(
         val start = System.nanoTime()
         // 诊断分段耗时：EventListener 工厂逐 call 收集 DNS/TCP/TLS/TTFB（重试时取末次）
         val listenerFactory = ProbeEventListenerFactory()
-        runCatching {
+        runCatchingCancellable {
             // execute 不在 4xx/5xx 时抛异常：要拿到状态码区分“站点异常”与“网络不通”
             val response = HttpClient.execute(
                 url = siteUrl,
@@ -100,7 +101,7 @@ class DataSourceProbe(
     private suspend fun fetchIpInfo(): IpProbe = withContext(Dispatchers.IO) {
         var lastKind: ProbeFailureKind? = null
         for (provider in IP_PROVIDERS) {
-            val result = runCatching {
+            val result = runCatchingCancellable {
                 val body = HttpClient.getString(
                     url = provider,
                     headers = mapOf("User-Agent" to userAgent),
