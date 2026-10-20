@@ -148,6 +148,9 @@ dependencies {
     // 图片加载（视频封面）
     implementation(libs.coil.compose)
 
+    // 悬浮底栏的真实背景模糊（Haze，API 31+ 走平台 RenderEffect）
+    implementation(libs.haze)
+
     // 视频播放：Media3/ExoPlayer 核心 + HLS（m3u8）
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)

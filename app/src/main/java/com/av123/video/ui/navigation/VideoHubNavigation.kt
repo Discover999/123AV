@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -60,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -83,6 +85,12 @@ import androidx.compose.animation.core.LinearEasing
 import com.av123.video.LocalAppContainer
 import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import com.av123.video.ui.components.BrandLogo
 import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.screens.channels.ChannelScreen
@@ -233,7 +241,8 @@ private fun AppBottomBar(
 private fun FloatingAppBottomBar(
     navController: NavHostController,
     currentRoute: String?,
-    scrollToTopTicks: MutableMap<String, Int>
+    scrollToTopTicks: MutableMap<String, Int>,
+    hazeState: HazeState
 ) {
     val scheme = MaterialTheme.colorScheme
     Box(
@@ -245,12 +254,33 @@ private fun FloatingAppBottomBar(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp),
+                .height(64.dp)
+                // 半透明磨砂：底色透出下方内容，靠 1dp 描边与顶部高光勾出玻璃轮廓
+                .border(
+                    width = 1.dp,
+                    color = scheme.outlineVariant.copy(alpha = 0.4f),
+                    shape = RoundedCornerShape(32.dp)
+                ),
             shape = RoundedCornerShape(32.dp),
-            color = scheme.surfaceContainerHigh,
+            color = Color.Transparent,
             shadowElevation = 8.dp
         ) {
-            Row(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .hazeEffect(
+                        state = hazeState,
+                        style = HazeStyle(
+                            backgroundColor = scheme.surface,
+                            tints = listOf(
+                                HazeTint(scheme.surfaceContainerHigh.copy(alpha = 0.45f))
+                            ),
+                            blurRadius = 24.dp,
+                            noiseFactor = 0.04f
+                        )
+                    )
+            ) {
+                Row(Modifier.fillMaxSize()) {
                 TopLevelDestination.entries.forEach { destination ->
                     val selected = currentRoute == destination.route
                     Box(
@@ -297,6 +327,7 @@ private fun FloatingAppBottomBar(
                             )
                         }
                     }
+                }
                 }
             }
         }
@@ -349,6 +380,7 @@ private fun CompactShell() {
     val snackbarHostState = rememberGlobalSnackbarHostState()
 
     val floatingNavBar = settingsState.settings.floatingNavBar
+    val hazeState = rememberHazeState()
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -371,9 +403,10 @@ private fun CompactShell() {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(
-                if (detailFullscreen) PaddingValues(0.dp) else innerPadding
-            ),
+            modifier = Modifier
+                .padding(if (detailFullscreen) PaddingValues(0.dp) else innerPadding)
+                // 悬浮底栏开启时，把内容层作为 Haze 的采样源
+                .then(if (floatingNavBar) Modifier.hazeSource(hazeState) else Modifier),
             // Tab 之间：原地换内容，统一走 fadeThrough
             enterTransition = { fadeIn(Motion.FadeThrough) },
             exitTransition = { fadeOut(Motion.FadeThrough) },
@@ -405,7 +438,8 @@ private fun CompactShell() {
                 FloatingAppBottomBar(
                     navController = navController,
                     currentRoute = currentRoute,
-                    scrollToTopTicks = scrollToTopTicks
+                    scrollToTopTicks = scrollToTopTicks,
+                    hazeState = hazeState
                 )
             }
         }

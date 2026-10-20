@@ -9,6 +9,7 @@ composeBom = "2026.09.00"
 # 2.10 起 NavHost 的预测性返回改用 navigationevent，实机上不再跟手、退回系统缩放动画，暂锁 2.9.8
 navigationCompose = "2.9.8"
 coil = "2.7.0"
+haze = "1.7.3"
 media3 = "1.11.1"
 webkit = "1.17.1"
 jsoup = "1.23.2"
@@ -59,6 +60,7 @@ media3-ui = { group = "androidx.media3", name = "media3-ui", version.ref = "medi
 # ExoPlayer 分片缓存所需的独立索引库（SimpleCache 元数据）
 media3-database = { group = "androidx.media3", name = "media3-database", version.ref = "media3" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
+haze = { group = "dev.chrisbanes.haze", name = "haze", version.ref = "haze" }
 # WebView 安全通信（WebMessageListener）与特性检测
 androidx-webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 # 统一网络层：网页抓取 / 站点探测 / Coil 图片共用连接池
