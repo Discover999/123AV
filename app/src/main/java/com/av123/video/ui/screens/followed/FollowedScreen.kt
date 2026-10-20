@@ -101,6 +101,8 @@ fun FollowedScreen(
                 icon = Icons.Outlined.PersonAddAlt,
                 title = stringResource(R.string.followed_empty_title),
                 subtitle = stringResource(R.string.followed_empty_subtitle),
+                actionText = stringResource(R.string.followed_retry),
+                onAction = viewModel::refresh,
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()

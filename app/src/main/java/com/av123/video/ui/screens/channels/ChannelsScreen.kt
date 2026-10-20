@@ -124,6 +124,8 @@ fun ChannelsScreen(
                 icon = Icons.Outlined.Category,
                 title = stringResource(R.string.channels_empty_title),
                 subtitle = stringResource(R.string.channels_empty_subtitle),
+                actionText = stringResource(R.string.common_retry),
+                onAction = viewModel::refresh,
                 modifier = modifier
             )
             else -> {

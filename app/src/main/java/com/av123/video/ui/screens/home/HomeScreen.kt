@@ -7,7 +7,10 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
+import android.os.SystemClock
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.spring
@@ -54,6 +57,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -62,6 +66,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -473,6 +478,8 @@ private fun FeaturedPager(
     }
     val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { Int.MAX_VALUE })
     val scope = rememberCoroutineScope()
+    // 用户触摸轮播后 5s 内不自动翻页
+    var lastTouchAt by remember { mutableLongStateOf(0L) }
 
     // 自动轮播：每 5s 前进一页；仅页面 STARTED 时运行（后台/详情页返回后停止），
     // 用户手动拖动时跳过当拍
@@ -482,6 +489,7 @@ private fun FeaturedPager(
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 delay(FEATURED_AUTO_SCROLL_MS)
+                if (SystemClock.uptimeMillis() - lastTouchAt < FEATURED_AUTO_SCROLL_MS) continue
                 if (pagerState.isScrollInProgress) continue
                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
             }
@@ -494,7 +502,14 @@ private fun FeaturedPager(
             state = pagerState,
             contentPadding = PaddingValues(horizontal = 44.dp),
             beyondViewportPageCount = 1,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        lastTouchAt = SystemClock.uptimeMillis()
+                    }
+                }
         ) { page ->
             val actualPage = page % featured.size
             val currentActualPage = pagerState.currentPage % featured.size

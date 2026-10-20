@@ -445,6 +445,8 @@ fun ChannelScreen(
                             icon = Icons.Outlined.VideoLibrary,
                             title = stringResource(R.string.channel_empty_title),
                             subtitle = stringResource(R.string.channel_empty_subtitle),
+                            actionText = stringResource(R.string.common_retry),
+                            onAction = viewModel::retry,
                             modifier = Modifier.fillMaxSize()
                         )
                         else -> VideosGrid(
@@ -470,6 +472,8 @@ fun ChannelScreen(
                 icon = Icons.Outlined.VideoLibrary,
                 title = stringResource(R.string.channel_empty_title),
                 subtitle = stringResource(R.string.channel_empty_subtitle),
+                actionText = stringResource(R.string.common_retry),
+                onAction = viewModel::retry,
                 modifier = modifier
             )
             // 无筛选表单的视频流页（如部分快捷入口）：直接渲染视频网格
