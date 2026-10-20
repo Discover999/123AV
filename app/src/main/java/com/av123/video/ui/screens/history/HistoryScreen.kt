@@ -71,6 +71,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import coil.compose.AsyncImage
 import com.av123.video.data.model.WatchRecord
 import com.av123.video.ui.components.EmptyState
@@ -106,7 +107,11 @@ fun HistoryScreen(
 
     Scaffold(
         topBar = {
-            Crossfade(targetState = selectionMode, label = "historyTopBar") { selecting ->
+            Crossfade(
+                targetState = selectionMode,
+                animationSpec = Motion.FadeThrough,
+                label = "historyTopBar"
+            ) { selecting ->
                 if (selecting) {
                     SelectionTopBar(
                         count = selectedIds.size,

@@ -9,13 +9,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -39,52 +41,63 @@ import com.av123.video.R
 import com.av123.video.data.net.AppError
 import com.av123.video.data.net.AppErrorKind
 
-/** 骨架屏加载态（呼吸动画） */
+/** 骨架屏样式：列表页与详情页各一套，加载完成后不发生整页重排 */
+enum class LoadingSkeleton { List, Detail }
+
 @Composable
-fun LoadingState(modifier: Modifier = Modifier) {
-    val transition = rememberInfiniteTransition(label = "shimmer")
-    val alpha by transition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "shimmerAlpha"
-    )
-    LazyColumn(
-        modifier = modifier,
-        contentPadding = PaddingValues(16.dp),
+fun LoadingState(
+    modifier: Modifier = Modifier,
+    variant: LoadingSkeleton = LoadingSkeleton.List
+) {
+    Column(
+        modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        item {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(200.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha))
-            )
-        }
-        item {
-            Box(
-                Modifier
-                    .fillMaxWidth(0.5f)
-                    .height(24.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha))
-            )
-        }
-        items(4) {
-            Box(
-                Modifier
-                    .fillMaxWidth()
-                    .height(150.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = alpha))
-            )
+        when (variant) {
+            LoadingSkeleton.List -> ListSkeleton()
+            LoadingSkeleton.Detail -> DetailSkeleton()
         }
     }
+}
+
+/** 列表骨架：16:9 头部 + 胶囊行 + 两列卡片，与首页/分类页的真实布局一致 */
+@Composable
+private fun ListSkeleton() {
+    SkeletonBlock(Modifier.fillMaxWidth().aspectRatio(16f / 9f), 20)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        repeat(4) { SkeletonBlock(Modifier.width(64.dp).height(28.dp), 14) }
+    }
+    repeat(2) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            repeat(2) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    SkeletonBlock(Modifier.fillMaxWidth().aspectRatio(16f / 9f), 16)
+                    SkeletonBlock(Modifier.fillMaxWidth(0.85f).height(14.dp), 4)
+                    SkeletonBlock(Modifier.fillMaxWidth(0.5f).height(12.dp), 4)
+                }
+            }
+        }
+    }
+}
+
+/** 详情骨架：hero + 标题 + 信息胶囊 + 简介行 */
+@Composable
+private fun DetailSkeleton() {
+    SkeletonBlock(Modifier.fillMaxWidth().aspectRatio(16f / 9f), 20)
+    SkeletonBlock(Modifier.fillMaxWidth(0.7f).height(26.dp), 8)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        repeat(3) { SkeletonBlock(Modifier.width(72.dp).height(28.dp), 14) }
+    }
+    repeat(3) { SkeletonBlock(Modifier.fillMaxWidth().height(14.dp), 7) }
+}
+
+/** 与封面同一套扫光语言，深色/浅色均取自主题 onSurface */
+@Composable
+private fun SkeletonBlock(modifier: Modifier, radius: Int) {
+    Box(modifier.clip(RoundedCornerShape(radius.dp)).shimmerPlaceholder())
 }
 
 /**

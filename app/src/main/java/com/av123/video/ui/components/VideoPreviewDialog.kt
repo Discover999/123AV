@@ -103,6 +103,7 @@ import android.view.View
 import android.view.ViewOutlineProvider
 import coil.compose.AsyncImage
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.Video
 
 /**
@@ -361,14 +362,8 @@ fun rememberTogglePopScale(active: Boolean): Float {
     LaunchedEffect(active) {
         if (active) {
             scale.snapTo(0.4f)
-            scale.animateTo(1.3f, animationSpec = tween(durationMillis = 150))
-            scale.animateTo(
-                targetValue = 1f,
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            )
+            scale.animateTo(1.3f, animationSpec = Motion.Overlay)
+            scale.animateTo(targetValue = 1f, animationSpec = Motion.PopSpring)
         } else {
             scale.snapTo(1f)
         }

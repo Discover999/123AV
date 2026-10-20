@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
@@ -84,6 +85,7 @@ import com.av123.video.ui.components.SectionHeader
 import com.av123.video.ui.components.VideoCompactCard
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.VideoPreviewDialog
+import com.av123.video.ui.theme.Motion
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,10 +116,10 @@ fun HomeScreen(
     val refreshAlpha = remember { Animatable(1f) }
     LaunchedEffect(refreshTick) {
         if (refreshTick > 0L) {
-            refreshAlpha.snapTo(0.25f)
+            refreshAlpha.snapTo(Motion.REFRESH_DIM)
             refreshAlpha.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 380, easing = FastOutSlowInEasing)
+                animationSpec = Motion.Refresh
             )
         }
     }
@@ -208,7 +210,7 @@ private fun HomeContent(
     // 参考：https://m2.material.io/design/motion/the-motion-system.html
     Crossfade(
         targetState = ui.selectedCategory,
-        animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing),
+        animationSpec = Motion.FadeThrough,
         modifier = modifier,
         label = "homeCategorySwitch"
     ) { category ->
@@ -433,12 +435,17 @@ private fun FeaturedPager(
     onVideoClick: (String) -> Unit
 ) {
     // 初始定位到中间页：聚焦式轮播居中展开，左右两侧同时有卡片探出
-    val initialPage = featured.size / 2
-    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { featured.size })
+    // 无限循环分页：把起点放在 Int 中段并按页数对齐，
+    // 自动轮播只需 currentPage + 1，不再从末页瞬移回第一页。
+    val initialPage = remember(featured.size) {
+        val base = Int.MAX_VALUE / 2
+        base - base % featured.size
+    }
+    val pagerState = rememberPagerState(initialPage = initialPage, pageCount = { Int.MAX_VALUE })
     val scope = rememberCoroutineScope()
 
     // 自动轮播：每 5s 前进一页；仅页面 STARTED 时运行（后台/详情页返回后停止），
-    // 用户手动拖动的当拍跳过；末页回首页用瞬时跳转避免反向连穿整列
+    // 用户手动拖动时跳过当拍
     val lifecycleOwner = LocalLifecycleOwner.current
     LaunchedEffect(pagerState, lifecycleOwner, featured.size) {
         if (featured.size < 2) return@LaunchedEffect
@@ -446,12 +453,7 @@ private fun FeaturedPager(
             while (true) {
                 delay(FEATURED_AUTO_SCROLL_MS)
                 if (pagerState.isScrollInProgress) continue
-                val next = (pagerState.currentPage + 1) % featured.size
-                if (next == 0) {
-                    pagerState.scrollToPage(0)
-                } else {
-                    pagerState.animateScrollToPage(next)
-                }
+                pagerState.animateScrollToPage(pagerState.currentPage + 1)
             }
         }
     }
@@ -464,6 +466,8 @@ private fun FeaturedPager(
             beyondViewportPageCount = 1,
             modifier = Modifier.fillMaxWidth()
         ) { page ->
+            val actualPage = page % featured.size
+            val currentActualPage = pagerState.currentPage % featured.size
             // 该页相对中心页的偏移量：0 = 居中，1 = 完全相邻
             val offset = kotlin.math.abs(
                 pagerState.currentPage - page + pagerState.currentPageOffsetFraction
@@ -471,11 +475,11 @@ private fun FeaturedPager(
             val scale = 1f - 0.14f * offset
             val alpha = 1f - 0.45f * offset
             FeaturedCard(
-                video = featured[page],
+                video = featured[actualPage],
                 // 点击侧边卡：滚动到居中；点击中心卡：进入详情（主流轮播交互）
                 onClick = {
-                    if (page == pagerState.currentPage) {
-                        onVideoClick(featured[page].id)
+                    if (actualPage == currentActualPage) {
+                        onVideoClick(featured[actualPage].id)
                     } else {
                         scope.launch { pagerState.animateScrollToPage(page) }
                     }
@@ -498,10 +502,10 @@ private fun FeaturedPager(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 repeat(featured.size) { i ->
-                    val selected = i == pagerState.currentPage
+                    val selected = i == pagerState.currentPage % featured.size
                     val dotWidth by animateDpAsState(
                         targetValue = if (selected) 18.dp else 6.dp,
-                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                        animationSpec = Motion.morphSpring<Dp>(),
                         label = "dotWidth"
                     )
                     Box(

@@ -100,6 +100,7 @@ import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
 import com.av123.video.data.repository.FollowedActress
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.ActressProfile
 import com.av123.video.data.model.FilterGroup
 import com.av123.video.data.model.FilterOption
@@ -469,7 +470,7 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
         } else {
             MaterialTheme.colorScheme.surfaceContainerHighest
         },
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = Motion.MorphColorSpring,
         label = "actressCapsule"
     )
     val heartColor by animateColorAsState(
@@ -478,7 +479,7 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
         } else {
             MaterialTheme.colorScheme.onSurface
         },
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = Motion.MorphColorSpring,
         label = "actressCapsuleHeart"
     )
     val heartScale = rememberTogglePopScale(active = isFollowed)

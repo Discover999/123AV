@@ -105,11 +105,13 @@ import com.av123.video.data.model.Video
 import com.av123.video.data.model.VideoInfoRow
 import com.av123.video.data.prefs.ResizeModeOption
 import com.av123.video.ui.components.ErrorState
+import com.av123.video.ui.components.LoadingSkeleton
 import com.av123.video.ui.components.LoadingState
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.shimmerPlaceholder
+import com.av123.video.ui.theme.Motion
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -368,7 +370,10 @@ fun DetailScreen(
                     )
                 }
             }
-            isLoading -> LoadingState(Modifier.padding(padding).fillMaxSize())
+            isLoading -> LoadingState(
+                Modifier.padding(padding).fillMaxSize(),
+                variant = LoadingSkeleton.Detail
+            )
             // 网络/解析失败且无缓存：错误态可重试，不再误报“内容不存在或已下线”
             loadError != null -> ErrorState(
                 message = appErrorText(loadError!!),
@@ -546,7 +551,7 @@ private fun DetailBody(
             } else {
                 MaterialTheme.colorScheme.primary
             },
-            animationSpec = spring(),
+            animationSpec = Motion.MorphColorSpring,
             label = "favoriteButtonContainer"
         )
         val favoriteContent by animateColorAsState(
@@ -555,7 +560,7 @@ private fun DetailBody(
             } else {
                 MaterialTheme.colorScheme.onPrimary
             },
-            animationSpec = spring(),
+            animationSpec = Motion.MorphColorSpring,
             label = "favoriteButtonContent"
         )
         val favoriteHeartScale = rememberTogglePopScale(active = isFavorite)
@@ -583,8 +588,8 @@ private fun DetailBody(
             AnimatedContent(
                 targetState = isFavorite,
                 transitionSpec = {
-                    fadeIn(animationSpec = tween(200)) togetherWith
-                        fadeOut(animationSpec = tween(120))
+                    fadeIn(animationSpec = Motion.FadeThrough) togetherWith
+                        fadeOut(animationSpec = Motion.Overlay)
                 },
                 label = "favoriteLabel"
             ) { favorited ->

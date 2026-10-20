@@ -104,6 +104,7 @@ import android.view.ViewOutlineProvider
 import coil.compose.AsyncImage
 import com.av123.video.R
 import com.av123.video.data.model.Video
+import com.av123.video.ui.theme.Motion
 
 /**
  * 骨架屏波纹占位：浅灰底 + 循环扫过的高亮微光带，用于封面加载中 / 无封面时的空白占位。
@@ -116,7 +117,7 @@ fun Modifier.shimmerPlaceholder(): Modifier {
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1300, easing = LinearEasing),
+            animation = tween(durationMillis = Motion.SKELETON_MS, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "shimmerProgress"
@@ -203,7 +204,7 @@ internal fun PressableCard(
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = spring(dampingRatio = 0.6f, stiffness = 600f),
+        animationSpec = Motion.PressSpring,
         label = "cardScale"
     )
     ElevatedCard(

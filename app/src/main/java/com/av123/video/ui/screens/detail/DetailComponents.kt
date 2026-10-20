@@ -99,6 +99,7 @@ import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
 import com.av123.video.ui.components.player.VideoPlayer
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.Episode
 import com.av123.video.data.model.InfoChip
 import com.av123.video.data.model.Video
@@ -242,11 +243,13 @@ internal fun EpisodeSelector(
                 val container by animateColorAsState(
                     targetValue = if (selected) accent
                     else MaterialTheme.colorScheme.surfaceVariant,
+                    animationSpec = Motion.MorphColorSpring,
                     label = "episodeContainer"
                 )
                 val contentColor by animateColorAsState(
                     targetValue = if (selected) MaterialTheme.colorScheme.onPrimary
                     else MaterialTheme.colorScheme.onSurfaceVariant,
+                    animationSpec = Motion.MorphColorSpring,
                     label = "episodeContent"
                 )
                 Box(
@@ -291,10 +294,12 @@ internal fun MetaChip(
     val container by animateColorAsState(
         targetValue = if (pressed) accent.copy(alpha = 0.14f)
         else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f),
+        animationSpec = Motion.MorphColorSpring,
         label = "chipContainer"
     )
     val contentColor by animateColorAsState(
         targetValue = if (pressed) accent else MaterialTheme.colorScheme.onSurfaceVariant,
+        animationSpec = Motion.MorphColorSpring,
         label = "chipContent"
     )
     Box(

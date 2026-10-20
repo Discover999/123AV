@@ -52,7 +52,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.av123.video.ui.theme.Motion
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -129,14 +132,14 @@ enum class TopLevelDestination(
 private fun AnimatedContentTransitionScope<*>.horizontalEnter(): EnterTransition =
     slideIntoContainer(
         AnimatedContentTransitionScope.SlideDirection.Start,
-        animationSpec = tween(380, easing = FastOutSlowInEasing)
-    ) + fadeIn(tween(220, easing = LinearEasing))
+        animationSpec = Motion.pageEnter<IntOffset>()
+    ) + fadeIn(Motion.PageEnter)
 
 private fun AnimatedContentTransitionScope<*>.horizontalPopExit(): ExitTransition =
     slideOutOfContainer(
         AnimatedContentTransitionScope.SlideDirection.End,
-        animationSpec = tween(380, easing = FastOutSlowInEasing)
-    ) + fadeOut(tween(220, easing = LinearEasing))
+        animationSpec = Motion.pageExit<IntOffset>()
+    ) + fadeOut(Motion.PageExit)
 
 /**
  * 应用根框架：
@@ -222,13 +225,13 @@ private fun BottomBarWithAnimation(
     AnimatedVisibility(
         visible = visible,
         enter = slideInVertically(
-            animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+            animationSpec = Motion.pageEnter<IntOffset>(),
             initialOffsetY = { it }
-        ) + fadeIn(tween(300)),
+        ) + fadeIn(Motion.PageEnter),
         exit = slideOutVertically(
-            animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing),
+            animationSpec = Motion.pageExit<IntOffset>(),
             targetOffsetY = { it }
-        ) + fadeOut(tween(200)),
+        ) + fadeOut(Motion.PageExit),
         content = content
     )
 }
@@ -263,11 +266,11 @@ private fun CompactShell() {
             navController = navController,
             startDestination = Routes.HOME,
             modifier = Modifier.padding(innerPadding),
-            // Tab 之间：淡入淡出
-            enterTransition = { fadeIn(animationSpec = tween(300)) },
-            exitTransition = { fadeOut(animationSpec = tween(200)) },
-            popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-            popExitTransition = { fadeOut(animationSpec = tween(250)) }
+            // Tab 之间：原地换内容，统一走 fadeThrough
+            enterTransition = { fadeIn(Motion.FadeThrough) },
+            exitTransition = { fadeOut(Motion.FadeThrough) },
+            popEnterTransition = { fadeIn(Motion.FadeThrough) },
+            popExitTransition = { fadeOut(Motion.FadeThrough) }
         ) {
             listDestinations(
                 navController = navController,
@@ -319,7 +322,7 @@ private fun ExpandedShell() {
 
     val listPaneWidth by animateDpAsState(
         targetValue = if (detailFullscreen) 0.dp else EXPANDED_LIST_PANE_WIDTH_DP.dp,
-        animationSpec = tween(durationMillis = 300, easing = FastOutSlowInEasing),
+        animationSpec = Motion.pageEnter<Dp>(),
         label = "listPaneWidth"
     )
 
@@ -351,11 +354,11 @@ private fun ExpandedShell() {
                     navController = listNav,
                     startDestination = Routes.HOME,
                     modifier = Modifier.padding(innerPadding),
-                    // Tab 之间：淡入淡出
-                    enterTransition = { fadeIn(animationSpec = tween(300)) },
-                    exitTransition = { fadeOut(animationSpec = tween(200)) },
-                    popEnterTransition = { fadeIn(animationSpec = tween(300)) },
-                    popExitTransition = { fadeOut(animationSpec = tween(250)) }
+                    // Tab 之间：原地换内容，统一走 fadeThrough
+                    enterTransition = { fadeIn(Motion.FadeThrough) },
+                    exitTransition = { fadeOut(Motion.FadeThrough) },
+                    popEnterTransition = { fadeIn(Motion.FadeThrough) },
+                    popExitTransition = { fadeOut(Motion.FadeThrough) }
                 ) {
                     listDestinations(
                         navController = listNav,
@@ -370,8 +373,8 @@ private fun ExpandedShell() {
         // —— 分隔线：全屏时淡出（仅视觉元素，不影响详情组合树） ——
         AnimatedVisibility(
             visible = !detailFullscreen,
-            enter = fadeIn(tween(200)),
-            exit = fadeOut(tween(150))
+            enter = fadeIn(Motion.Overlay),
+            exit = fadeOut(Motion.Overlay)
         ) {
             VerticalDivider(Modifier.fillMaxHeight())
         }
@@ -386,10 +389,10 @@ private fun ExpandedShell() {
             NavHost(
                 navController = detailNav,
                 startDestination = Routes.PANE_EMPTY,
-                enterTransition = { fadeIn(animationSpec = tween(220)) },
-                exitTransition = { fadeOut(animationSpec = tween(180)) },
-                popEnterTransition = { fadeIn(animationSpec = tween(220)) },
-                popExitTransition = { fadeOut(animationSpec = tween(180)) }
+                enterTransition = { fadeIn(Motion.FadeThrough) },
+                exitTransition = { fadeOut(Motion.FadeThrough) },
+                popEnterTransition = { fadeIn(Motion.FadeThrough) },
+                popExitTransition = { fadeOut(Motion.FadeThrough) }
             ) {
                 composable(Routes.PANE_EMPTY) {
                     DetailPaneEmpty()

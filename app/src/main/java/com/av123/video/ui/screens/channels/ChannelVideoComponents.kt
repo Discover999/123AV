@@ -100,6 +100,7 @@ import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
 import com.av123.video.data.repository.FollowedActress
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.ActressProfile
 import com.av123.video.data.model.FilterGroup
 import com.av123.video.data.model.FilterOption
@@ -157,7 +158,7 @@ internal fun ActressHero(
         } else {
             colorScheme.secondaryContainer
         },
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = Motion.MorphColorSpring,
         label = "followButtonContainer"
     )
     val animatedContentColor by animateColorAsState(
@@ -166,7 +167,7 @@ internal fun ActressHero(
         } else {
             colorScheme.onSecondaryContainer
         },
-        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        animationSpec = Motion.MorphColorSpring,
         label = "followButtonContent"
     )
 
@@ -319,8 +320,8 @@ internal fun ActressHero(
                     AnimatedContent(
                         targetState = isFollowed,
                         transitionSpec = {
-                            fadeIn(animationSpec = tween(200)) togetherWith
-                                fadeOut(animationSpec = tween(120))
+                            fadeIn(animationSpec = Motion.FadeThrough) togetherWith
+                                fadeOut(animationSpec = Motion.Overlay)
                         },
                         label = "followLabel"
                     ) { followed ->

@@ -100,6 +100,7 @@ import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
 import com.av123.video.data.repository.FollowedActress
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.ActressProfile
 import com.av123.video.data.model.FilterGroup
 import com.av123.video.data.model.FilterOption
@@ -292,10 +293,10 @@ fun ChannelScreen(
     val refreshAlpha = remember { Animatable(1f) }
     LaunchedEffect(refreshTick) {
         if (refreshTick > 0L) {
-            refreshAlpha.snapTo(0.25f)
+            refreshAlpha.snapTo(Motion.REFRESH_DIM)
             refreshAlpha.animateTo(
                 targetValue = 1f,
-                animationSpec = tween(durationMillis = 380, easing = FastOutSlowInEasing)
+                animationSpec = Motion.Refresh
             )
         }
     }
@@ -314,7 +315,7 @@ fun ChannelScreen(
         topBar = {
             Crossfade(
                 targetState = searchExpanded,
-                animationSpec = tween(durationMillis = 180),
+                animationSpec = Motion.Overlay,
                 label = "channelTopBar"
             ) { expanded ->
                 if (expanded && actressSearchField != null) {

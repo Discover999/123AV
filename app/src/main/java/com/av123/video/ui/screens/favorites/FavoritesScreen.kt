@@ -81,12 +81,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.FavoriteRecord
 import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
@@ -165,6 +167,7 @@ fun FavoritesScreen(
             // 内容页多选 → 多选操作栏；其余 → 当前位置的普通顶栏
             Crossfade(
                 targetState = Triple(destination, selectionMode, selectedGroup),
+                animationSpec = Motion.FadeThrough,
                 label = "favoritesTopBar"
             ) { (dest, selecting, groupFilter) ->
                 if (selecting && dest is FavoritesDestination.Content) {
@@ -227,8 +230,10 @@ fun FavoritesScreen(
             targetState = destination,
             transitionSpec = {
                 // 进入内容：横向滑入；返回总览：反向滑出（与路由横滑同一方向语言）
-                (slideInHorizontally { it / 4 } + fadeIn()) togetherWith
-                    (slideOutHorizontally { it / 4 } + fadeOut())
+                (slideInHorizontally(Motion.pageEnter<IntOffset>()) { it / 4 } +
+                    fadeIn(Motion.PageEnter)) togetherWith
+                    (slideOutHorizontally(Motion.pageExit<IntOffset>()) { it / 4 } +
+                        fadeOut(Motion.PageExit))
             },
             label = "favoritesDestination",
             modifier = Modifier.padding(padding)

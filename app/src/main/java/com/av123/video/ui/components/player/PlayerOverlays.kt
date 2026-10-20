@@ -65,6 +65,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.PlaybackException
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import kotlin.math.max
 
 /**
@@ -103,7 +104,7 @@ private fun AnimatedFastForwardArrows(modifier: Modifier = Modifier) {
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 700, easing = LinearEasing),
+            animation = tween(durationMillis = Motion.PULSE_MS, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "progress"
@@ -173,10 +174,7 @@ internal fun DoubleSeekFeedback(
         scale.snapTo(0.6f)
         scale.animateTo(
             targetValue = 1f,
-            animationSpec = spring(
-                dampingRatio = Spring.DampingRatioMediumBouncy,
-                stiffness = Spring.StiffnessMedium
-            )
+            animationSpec = Motion.PopSpring
         )
     }
     val isRewind = direction < 0

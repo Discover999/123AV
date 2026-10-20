@@ -148,6 +148,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.av123.video.MainActivity
 import com.av123.video.R
+import com.av123.video.ui.theme.Motion
 import com.av123.video.data.prefs.ResizeModeOption
 import com.av123.video.ui.util.AppLog
 import com.av123.video.ui.util.findActivity
@@ -247,8 +248,8 @@ internal fun PlayerProgressSlider(
 
             AnimatedVisibility(
                 visible = isDragging,
-                enter = fadeIn(tween(120)),
-                exit = fadeOut(tween(120))
+                enter = fadeIn(Motion.Overlay),
+                exit = fadeOut(Motion.Overlay)
             ) {
                 val previewPositionMs =
                     if (safeDuration > 0) (currentValue * safeDuration).toLong() else 0L
