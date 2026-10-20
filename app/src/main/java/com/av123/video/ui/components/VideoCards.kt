@@ -198,7 +198,7 @@ internal fun PressableCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
-    shape: Shape = RoundedCornerShape(16.dp),
+    shape: Shape = RoundedCornerShape(10.dp),
     defaultElevation: Dp = 2.dp,
     pressedElevation: Dp = 6.dp,
     /** false = 内容直接落在页面底色上（视频卡），不画卡片底与阴影 */
