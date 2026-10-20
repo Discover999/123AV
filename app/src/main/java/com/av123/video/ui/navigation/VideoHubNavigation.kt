@@ -14,7 +14,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -80,7 +85,11 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.LinearEasing
 import com.av123.video.LocalAppContainer
 import com.av123.video.LocalBottomBarInset
@@ -236,98 +245,143 @@ private fun AppBottomBar(
     }
 }
 
-/** 悬浮胶囊底栏：仅在“我的 → 外观 → 悬浮导航栏”开启时使用，展开态左栏仍保持贴底样式 */
+/**
+ * 单一底栏：在“贴底满宽”和“悬浮胶囊”之间按 [morph] 形变。
+ * morph = 0 贴底（80dp、满宽、不透明），morph = 1 悬浮（64dp、24dp 边距、32dp 圆角、Haze 模糊）。
+ */
 @Composable
-private fun FloatingAppBottomBar(
+private fun MorphingAppBottomBar(
     navController: NavHostController,
     currentRoute: String?,
     scrollToTopTicks: MutableMap<String, Int>,
-    hazeState: HazeState
+    hazeState: HazeState,
+    morph: Float
 ) {
     val scheme = MaterialTheme.colorScheme
+    val shape = RoundedCornerShape(32.dp * morph)
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 10.dp)
+            .padding(horizontal = 24.dp * morph, vertical = 10.dp * morph)
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                // 半透明磨砂：底色透出下方内容，靠 1dp 描边与顶部高光勾出玻璃轮廓
+                .height(80.dp - 16.dp * morph)
                 .border(
                     width = 1.dp,
-                    color = scheme.outlineVariant.copy(alpha = 0.4f),
-                    shape = RoundedCornerShape(32.dp)
+                    color = scheme.outlineVariant.copy(alpha = 0.4f * morph),
+                    shape = shape
                 ),
-            shape = RoundedCornerShape(32.dp),
-            color = Color.Transparent,
-            shadowElevation = 8.dp
+            shape = shape,
+            color = scheme.surfaceContainerHigh.copy(alpha = 1f - morph),
+            shadowElevation = 8.dp * morph
         ) {
             Box(
                 Modifier
                     .fillMaxSize()
-                    .hazeEffect(
-                        state = hazeState,
-                        style = HazeStyle(
-                            backgroundColor = scheme.surface,
-                            tints = listOf(
-                                HazeTint(scheme.surfaceContainerHigh.copy(alpha = 0.45f))
-                            ),
-                            blurRadius = 24.dp,
-                            noiseFactor = 0.04f
-                        )
+                    .then(
+                        if (morph > 0.01f) {
+                            Modifier.hazeEffect(
+                                state = hazeState,
+                                style = HazeStyle(
+                                    backgroundColor = scheme.surface,
+                                    tints = listOf(
+                                        HazeTint(
+                                            scheme.surfaceContainerHigh.copy(alpha = 0.45f)
+                                        )
+                                    ),
+                                    blurRadius = 24.dp,
+                                    noiseFactor = 0.04f
+                                )
+                            )
+                        } else {
+                            Modifier
+                        }
                     )
             ) {
-                Row(Modifier.fillMaxSize()) {
-                TopLevelDestination.entries.forEach { destination ->
-                    val selected = currentRoute == destination.route
+                BoxWithConstraints(Modifier.fillMaxSize()) {
+                    val itemWidth = maxWidth / TopLevelDestination.entries.size
+                    val selectedIndex = TopLevelDestination.entries
+                        .indexOfFirst { it.route == currentRoute }
+                        .coerceAtLeast(0)
+                    val indicatorOffset by animateDpAsState(
+                        targetValue = itemWidth * selectedIndex,
+                        animationSpec = Motion.pageEnter<Dp>(),
+                        label = "tabIndicator"
+                    )
+                    // 选中胶囊铺满条目，并在条目之间滑动
                     Box(
-                        modifier = Modifier
-                            .weight(1f)
+                        Modifier
+                            .offset(x = indicatorOffset + 4.dp)
+                            .width(itemWidth - 8.dp)
                             .fillMaxHeight()
-                            .padding(horizontal = 4.dp, vertical = 6.dp)
+                            .padding(vertical = 6.dp)
                             .clip(RoundedCornerShape(24.dp))
-                            .background(
-                                if (selected) scheme.primaryContainer else Color.Transparent
+                            .background(scheme.primaryContainer)
+                    )
+                    Row(Modifier.fillMaxSize()) {
+                        TopLevelDestination.entries.forEach { destination ->
+                            val selected = currentRoute == destination.route
+                            val tint by animateColorAsState(
+                                targetValue = if (selected) scheme.onPrimaryContainer
+                                else scheme.onSurfaceVariant,
+                                animationSpec = Motion.MorphColorSpring,
+                                label = "tabTint"
                             )
-                            .clickable {
-                                if (selected) {
-                                    scrollToTopTicks[destination.route] =
-                                        (scrollToTopTicks[destination.route] ?: 0) + 1
-                                } else {
-                                    navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight()
+                                    .padding(horizontal = 4.dp, vertical = 6.dp)
+                                    .clip(RoundedCornerShape(24.dp))
+                                    .clickable {
+                                        if (selected) {
+                                            scrollToTopTicks[destination.route] =
+                                                (scrollToTopTicks[destination.route] ?: 0) + 1
+                                        } else {
+                                            navController.navigate(destination.route) {
+                                                popUpTo(
+                                                    navController.graph.findStartDestination().id
+                                                ) {
+                                                    saveState = true
+                                                }
+                                                launchSingleTop = true
+                                                restoreState = true
+                                            }
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Crossfade(
+                                        targetState = selected,
+                                        animationSpec = Motion.FadeThrough,
+                                        label = "tabIcon"
+                                    ) { isSelected ->
+                                        Icon(
+                                            imageVector = if (isSelected) {
+                                                destination.selectedIcon
+                                            } else {
+                                                destination.unselectedIcon
+                                            },
+                                            contentDescription = null,
+                                            tint = tint,
+                                            modifier = Modifier.size(22.dp)
+                                        )
                                     }
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        text = stringResource(destination.labelRes),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = tint,
+                                        maxLines = 1
+                                    )
                                 }
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                imageVector = if (selected) destination.selectedIcon
-                                else destination.unselectedIcon,
-                                contentDescription = null,
-                                tint = if (selected) scheme.onPrimaryContainer
-                                else scheme.onSurfaceVariant,
-                                modifier = Modifier.size(22.dp)
-                            )
-                            Spacer(Modifier.height(2.dp))
-                            Text(
-                                text = stringResource(destination.labelRes),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (selected) scheme.onPrimaryContainer
-                                else scheme.onSurfaceVariant,
-                                maxLines = 1
-                            )
+                            }
                         }
                     }
-                }
                 }
             }
         }
@@ -381,25 +435,33 @@ private fun CompactShell() {
 
     val floatingNavBar = settingsState.settings.floatingNavBar
     val hazeState = rememberHazeState()
+
+    // 贴底 ↔ 悬浮的形变进度：0 = 贴底满宽，1 = 悬浮胶囊
+    val morph by animateFloatAsState(
+        targetValue = if (floatingNavBar) 1f else 0f,
+        animationSpec = Motion.PageEnter,
+        label = "bottomBarMorph"
+    )
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    // 贴底时给底栏留出占位；切到悬浮时高度动画到 0，内容自然铺开
+    val reservedBarHeight by animateDpAsState(
+        targetValue = if (!showBottomBar || floatingNavBar) 0.dp else 80.dp + navBarBottom,
+        animationSpec = Motion.pageEnter<Dp>(),
+        label = "bottomBarReserved"
+    )
+    // 悬浮时列表底部要让出胶囊高度
+    val listBottomInset by animateDpAsState(
+        targetValue = if (floatingNavBar && showBottomBar) 96.dp else 0.dp,
+        animationSpec = Motion.pageEnter<Dp>(),
+        label = "bottomBarListInset"
+    )
+
     Box(Modifier.fillMaxSize()) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbarHostState) },
-            // 悬浮模式下不占用 Scaffold 底栏槽位，底栏叠在内容上方
-            bottomBar = {
-                if (!floatingNavBar) {
-                    BottomBarWithAnimation(visible = showBottomBar) {
-                        AppBottomBar(
-                            navController = navController,
-                            currentRoute = currentRoute,
-                            scrollToTopTicks = scrollToTopTicks
-                        )
-                    }
-                }
-            }
+            bottomBar = { Spacer(Modifier.height(reservedBarHeight)) }
         ) { innerPadding ->
-            CompositionLocalProvider(
-                LocalBottomBarInset provides if (floatingNavBar) 96.dp else 0.dp
-            ) {
+            CompositionLocalProvider(LocalBottomBarInset provides listBottomInset) {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
@@ -430,18 +492,17 @@ private fun CompactShell() {
         }
             }
         }
-        if (floatingNavBar) {
-            BottomBarWithAnimation(
-                visible = showBottomBar,
-                modifier = Modifier.align(Alignment.BottomCenter)
-            ) {
-                FloatingAppBottomBar(
-                    navController = navController,
-                    currentRoute = currentRoute,
-                    scrollToTopTicks = scrollToTopTicks,
-                    hazeState = hazeState
-                )
-            }
+        BottomBarWithAnimation(
+            visible = showBottomBar,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            MorphingAppBottomBar(
+                navController = navController,
+                currentRoute = currentRoute,
+                scrollToTopTicks = scrollToTopTicks,
+                hazeState = hazeState,
+                morph = morph
+            )
         }
     }
 }
