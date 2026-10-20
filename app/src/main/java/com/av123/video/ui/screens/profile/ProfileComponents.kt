@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -80,6 +81,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.ui.theme.appCardContainerColor
 import com.av123.video.data.prefs.AppLockTimeout
 import com.av123.video.data.prefs.DarkMode
 import com.av123.video.data.repository.BackupImportResult
@@ -198,9 +200,9 @@ internal fun SettingsSection(
             modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
         )
         ElevatedCard(
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.elevatedCardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                containerColor = appCardContainerColor()
             ),
             elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
         ) {

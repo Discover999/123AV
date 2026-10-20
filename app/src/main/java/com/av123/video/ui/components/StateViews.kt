@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -159,7 +160,9 @@ fun EmptyState(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    actionText: String? = null,
+    onAction: (() -> Unit)? = null
 ) {
     Column(
         modifier = modifier.padding(32.dp),
@@ -185,5 +188,9 @@ fun EmptyState(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
+        if (actionText != null && onAction != null) {
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onAction) { Text(actionText) }
+        }
     }
 }

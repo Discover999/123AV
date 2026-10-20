@@ -13,6 +13,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
@@ -245,6 +246,13 @@ private fun CompactShell() {
 
     val showBottomBar = currentRoute in TopLevelDestination.topLevelRoutes
 
+    // Scaffold 的 innerPadding 取的是 systemBarsForVisualComponents，系统栏隐藏后不会归零；
+    // 全屏播放时主动撤掉外壳内边距，播放器才能铺到状态栏/导航栏区域。
+    var detailFullscreen by remember { mutableStateOf(false) }
+    LaunchedEffect(currentRoute) {
+        if (currentRoute != Routes.DETAIL) detailFullscreen = false
+    }
+
     // 重复点击已选中的一级 Tab：对应路由计数 +1，页面观察后滚动回顶部
     val scrollToTopTicks = remember { mutableStateMapOf<String, Int>() }
 
@@ -265,7 +273,9 @@ private fun CompactShell() {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(
+                if (detailFullscreen) PaddingValues(0.dp) else innerPadding
+            ),
             // Tab 之间：原地换内容，统一走 fadeThrough
             enterTransition = { fadeIn(Motion.FadeThrough) },
             exitTransition = { fadeOut(Motion.FadeThrough) },
@@ -284,7 +294,7 @@ private fun CompactShell() {
                 },
                 onVideoClick = { videoId -> navController.navigate(Routes.detail(videoId)) },
                 paneCloseButton = false,
-                onFullscreenStateChange = null
+                onFullscreenStateChange = { detailFullscreen = it }
             )
         }
     }

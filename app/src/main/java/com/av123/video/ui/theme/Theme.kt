@@ -8,6 +8,7 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColors = lightColorScheme(
@@ -92,7 +93,7 @@ private val DarkColors = darkColorScheme(
 @Composable
 fun VideoHubTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    dynamicColor: Boolean = true,
+    dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = when {
@@ -109,3 +110,15 @@ fun VideoHubTheme(
         content = content
     )
 }
+
+/**
+ * 卡片容器色：页面底色与主题色按 5% 混合，得到“特别淡的主题色”——
+ * 浅色是极淡粉、深色是极淡梅色；始终随主题色走，不会被动态取色带成灰。
+ */
+@Composable
+fun appCardContainerColor() =
+    lerp(
+        MaterialTheme.colorScheme.surface,
+        MaterialTheme.colorScheme.primary,
+        0.05f
+    )

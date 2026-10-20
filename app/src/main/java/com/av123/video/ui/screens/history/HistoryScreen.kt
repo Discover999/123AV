@@ -72,6 +72,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
+import com.av123.video.ui.theme.appCardContainerColor
 import coil.compose.AsyncImage
 import com.av123.video.data.model.WatchRecord
 import com.av123.video.ui.components.EmptyState
@@ -367,7 +368,7 @@ private fun HistoryItem(
     onLongClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val cardShape = RoundedCornerShape(12.dp)
+    val cardShape = RoundedCornerShape(16.dp)
     ElevatedCard(
         modifier = Modifier
             .then(
@@ -384,10 +385,10 @@ private fun HistoryItem(
             containerColor = if (selected) {
                 colorScheme.primaryContainer
             } else {
-                colorScheme.surfaceContainerLow
+                appCardContainerColor()
             }
         ),
-        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
         Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
             // 迷你封面：有封面地址加载网络图，加载中/无封面时显示波纹空白占位

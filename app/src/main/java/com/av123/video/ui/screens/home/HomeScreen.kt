@@ -3,8 +3,11 @@ package com.av123.video.ui.screens.home
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -236,8 +239,8 @@ private fun HomeContent(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             // 分类筛选（网页同款胶囊标签，选中态为站点粉色渐变）
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -343,7 +346,9 @@ private fun HomeContent(
                             EmptyState(
                                 icon = Icons.Outlined.VideoLibrary,
                                 title = stringResource(R.string.home_category_empty_title),
-                                subtitle = stringResource(R.string.home_category_empty_subtitle)
+                                subtitle = stringResource(R.string.home_category_empty_subtitle),
+                                actionText = viewAllText,
+                                onAction = { onSelectCategory(CategoryFilter.All) }
                             )
                         }
                     }
@@ -403,6 +408,13 @@ private fun CategoryPill(
         else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "pillText"
     )
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = Motion.PressSpring,
+        label = "pillScale"
+    )
     Box(
         modifier = Modifier
             .then(
@@ -413,9 +425,17 @@ private fun CategoryPill(
                     ambientColor = primary
                 ) else Modifier
             )
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(CircleShape)
             .background(container)
-            .clickable(onClick = onClick)
+            .clickable(
+                interactionSource = interaction,
+                indication = LocalIndication.current,
+                onClick = onClick
+            )
             .padding(horizontal = 14.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -473,7 +493,8 @@ private fun FeaturedPager(
                 pagerState.currentPage - page + pagerState.currentPageOffsetFraction
             ).coerceIn(0f, 1f)
             val scale = 1f - 0.14f * offset
-            val alpha = 1f - 0.45f * offset
+            // 侧卡最多淡到 0.7，深色模式下仍能看清封面轮廓
+            val alpha = 1f - 0.3f * offset
             FeaturedCard(
                 video = featured[actualPage],
                 // 点击侧边卡：滚动到居中；点击中心卡：进入详情（主流轮播交互）

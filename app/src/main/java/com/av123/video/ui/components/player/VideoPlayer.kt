@@ -29,9 +29,13 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -106,6 +110,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import com.av123.video.ui.theme.Motion
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -303,6 +308,8 @@ fun VideoPlayer(
     var error by remember(player) { mutableStateOf<PlaybackException?>(player.playerError) }
     var bufferedPosition by remember { mutableLongStateOf(player.bufferedPosition) }
     var isControllerVisible by remember { mutableStateOf(true) }
+    // 控制层任意触摸都重置 3s 自动隐藏计时
+    var controlInteractionTick by remember { mutableIntStateOf(0) }
     var isControlPopupVisible by remember { mutableStateOf(false) }
     // 拖动进度条期间禁止控制层自动隐藏（小圆点离手后再重新计时）
     var isSeeking by remember { mutableStateOf(false) }
@@ -459,7 +466,14 @@ fun VideoPlayer(
     }
 
     // 控制器自动隐藏（弹窗打开或拖动进度条期间保持常显）
-    LaunchedEffect(isControllerVisible, isControlPopupVisible, isPlaying, playbackState, isSeeking) {
+    LaunchedEffect(
+        isControllerVisible,
+        isControlPopupVisible,
+        isPlaying,
+        playbackState,
+        isSeeking,
+        controlInteractionTick
+    ) {
         if (isControllerVisible && !isControlPopupVisible && !isSeeking &&
             isPlaying && playbackState == Player.STATE_READY
         ) {
@@ -701,8 +715,8 @@ fun VideoPlayer(
         AnimatedVisibility(
             visible = error == null &&
                 playbackState == Player.STATE_BUFFERING && position > 0L,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(Motion.Overlay),
+            exit = fadeOut(Motion.Overlay),
             modifier = Modifier.align(Alignment.Center)
         ) {
             CircularProgressIndicator(
@@ -728,8 +742,8 @@ fun VideoPlayer(
         // 控制层（长按快放/画中画期间隐藏，避免按钮与浮层重叠）
         AnimatedVisibility(
             visible = isControllerVisible && error == null && !isLongPressSpeed && !isInPip,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(Motion.Overlay) + slideInVertically(Motion.overlay<IntOffset>()) { 8 },
+            exit = fadeOut(Motion.Overlay) + slideOutVertically(Motion.overlay<IntOffset>()) { 8 },
             modifier = Modifier.fillMaxSize()
         ) {
             PlayerControls(
@@ -765,7 +779,14 @@ fun VideoPlayer(
                 onShowPlaybackStats = { showPlaybackStats = true },
                 resizeMode = resizeMode,
                 onResizeModeChange = onResizeModeChange,
-                modifier = Modifier.fillMaxSize()
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            controlInteractionTick++
+                        }
+                    }
             )
         }
 
@@ -788,8 +809,8 @@ fun VideoPlayer(
         // 长按快放提示：顶部居中的紧凑小胶囊（不遮暗画面），松手即消失
         AnimatedVisibility(
             visible = isLongPressSpeed && error == null,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(Motion.Overlay),
+            exit = fadeOut(Motion.Overlay),
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(top = if (isFullscreen) 56.dp else 12.dp)

@@ -6,6 +6,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -290,6 +291,11 @@ internal fun MetaChip(
 ) {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
+    val scale by animateFloatAsState(
+        targetValue = if (pressed) 0.96f else 1f,
+        animationSpec = Motion.PressSpring,
+        label = "chipScale"
+    )
     val accent = MaterialTheme.colorScheme.primary
     val container by animateColorAsState(
         targetValue = if (pressed) accent.copy(alpha = 0.14f)
@@ -304,6 +310,10 @@ internal fun MetaChip(
     )
     Box(
         modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
             .clip(RoundedCornerShape(50))
             .background(container)
             .clickable(

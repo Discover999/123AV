@@ -53,5 +53,6 @@ object Motion {
     fun <T> pageEnter(): TweenSpec<T> = tween(PAGE_ENTER_MS, easing = FastOutSlowInEasing)
     fun <T> pageExit(): TweenSpec<T> = tween(PAGE_EXIT_MS, easing = FastOutSlowInEasing)
     fun <T> fadeThrough(): TweenSpec<T> = tween(FADE_THROUGH_MS, easing = FastOutSlowInEasing)
+    fun <T> overlay(): TweenSpec<T> = tween(OVERLAY_MS, easing = FastOutSlowInEasing)
     fun <T> morphSpring(): SpringSpec<T> = spring(dampingRatio = 0.9f, stiffness = 500f)
 }

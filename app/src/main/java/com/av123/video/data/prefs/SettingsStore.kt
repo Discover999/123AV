@@ -32,7 +32,7 @@ enum class AppLockTimeout(val millis: Long) {
 
 /** 全局外观与播放设置 */
 data class AppSettings(
-    val dynamicColor: Boolean = true,
+    val dynamicColor: Boolean = false,
     val darkMode: DarkMode = DarkMode.SYSTEM,
     /** 全屏播放回桌面时是否自动进入画中画小窗 */
     val pipEnabled: Boolean = true,
@@ -89,7 +89,7 @@ class SettingsStore(context: Context) {
      */
     val settings: Flow<AppSettings> = store.data.map { prefs ->
         AppSettings(
-            dynamicColor = prefs[KEY_DYNAMIC_COLOR] ?: true,
+            dynamicColor = prefs[KEY_DYNAMIC_COLOR] ?: false,
             darkMode = runCatching {
                 DarkMode.valueOf(prefs[KEY_DARK_MODE] ?: DarkMode.SYSTEM.name)
             }.getOrDefault(DarkMode.SYSTEM),

@@ -356,8 +356,8 @@ internal fun VideosGrid(
         columns = GridCells.Fixed(2),
         modifier = modifier,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         // 女演员个人页头部资料（.ahero）：始终置顶，翻页加载时也不消失
         state.actressProfile?.let { profile ->

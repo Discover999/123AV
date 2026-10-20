@@ -31,6 +31,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -82,6 +83,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -105,6 +107,7 @@ import coil.compose.AsyncImage
 import com.av123.video.R
 import com.av123.video.data.model.Video
 import com.av123.video.ui.theme.Motion
+import com.av123.video.ui.theme.appCardContainerColor
 
 /**
  * 骨架屏波纹占位：浅灰底 + 循环扫过的高亮微光带，用于封面加载中 / 无封面时的空白占位。
@@ -198,6 +201,8 @@ internal fun PressableCard(
     shape: Shape = RoundedCornerShape(16.dp),
     defaultElevation: Dp = 2.dp,
     pressedElevation: Dp = 6.dp,
+    /** false = 内容直接落在页面底色上（视频卡），不画卡片底与阴影 */
+    surface: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -218,9 +223,12 @@ internal fun PressableCard(
                 onLongClick = onLongClick
             ),
         shape = shape,
+        colors = CardDefaults.elevatedCardColors(
+            containerColor = if (surface) appCardContainerColor() else Color.Transparent
+        ),
         elevation = CardDefaults.elevatedCardElevation(
-            defaultElevation = defaultElevation,
-            pressedElevation = pressedElevation
+            defaultElevation = if (surface) defaultElevation else 0.dp,
+            pressedElevation = if (surface) pressedElevation else 0.dp
         ),
         content = { content() }
     )
@@ -237,12 +245,19 @@ fun VideoGridCard(
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null
 ) {
-    PressableCard(onClick = onClick, modifier = modifier, onLongClick = onLongClick) {
+    PressableCard(
+        onClick = onClick,
+        modifier = modifier,
+        onLongClick = onLongClick
+    ) {
         VideoCover(video = video, modifier = Modifier.fillMaxWidth())
         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = video.title,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -274,7 +289,10 @@ fun VideoCompactCard(
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
             Text(
                 text = video.title,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleSmall.copy(
+                    fontSize = 13.sp,
+                    lineHeight = 18.sp
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

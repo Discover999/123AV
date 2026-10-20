@@ -1,6 +1,7 @@
 package com.av123.video.ui.screens.stats
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,6 +47,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.ui.theme.appCardContainerColor
 import com.av123.video.data.repository.CategoryStat
 import com.av123.video.data.repository.DayWatch
 import com.av123.video.data.repository.WatchStats
@@ -176,7 +178,7 @@ private fun TodayCard(stats: WatchStats) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -215,9 +217,9 @@ private fun WeekChartCard(week7: List<DayWatch>) {
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = colorScheme.surfaceContainerLow
+            containerColor = appCardContainerColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -301,9 +303,9 @@ private fun OverviewCard(label: String, value: String, modifier: Modifier = Modi
     val colorScheme = MaterialTheme.colorScheme
     ElevatedCard(
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = colorScheme.surfaceContainerLow
+            containerColor = appCardContainerColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
@@ -333,9 +335,9 @@ private fun CategoryCard(categories: List<CategoryStat>) {
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = colorScheme.surfaceContainerLow
+            containerColor = appCardContainerColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
