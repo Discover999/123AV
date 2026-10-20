@@ -1,25 +1,25 @@
 [versions]
-agp = "8.11.1"
-kotlin = "2.1.20"
-coreKtx = "1.15.0"
-lifecycle = "2.8.7"
-activityCompose = "1.9.3"
-fragmentKtx = "1.8.5"
-composeBom = "2024.12.01"
-navigationCompose = "2.8.5"
+agp = "9.4.1"
+kotlin = "2.3.20"
+coreKtx = "1.19.1"
+lifecycle = "2.11.0"
+activityCompose = "1.13.0"
+fragmentKtx = "1.9.1"
+composeBom = "2026.09.00"
+navigationCompose = "2.10.2"
 coil = "2.7.0"
 media3 = "1.4.1"
-webkit = "1.12.1"
+webkit = "1.17.1"
 jsoup = "1.23.2"
 okhttp = "4.12.0"
 material = "1.14.0"
-datastore = "1.1.1"
+datastore = "1.2.1"
 splashscreen = "1.2.0"
 biometric = "1.1.0"
-coroutines = "1.9.0"
+coroutines = "1.11.0"
 room = "2.8.5"
-ksp = "2.1.20-2.0.0"
-serializationJson = "1.7.3"
+ksp = "2.3.12"
+serializationJson = "1.11.0"
 junit = "4.13.2"
 androidxTestCore = "1.7.0"
 androidxTestRunner = "1.7.0"
@@ -83,7 +83,6 @@ androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomato
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 android-test = { id = "com.android.test", version.ref = "agp" }
-kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }

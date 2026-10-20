@@ -74,6 +74,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -105,6 +106,7 @@ fun ProfileScreen(
 ) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val settingsState by container.appSettingsState.collectAsStateWithLifecycle()
     val settings = settingsState.settings
     val historyRecords by container.historyRepository.records
@@ -166,8 +168,8 @@ fun ProfileScreen(
                 container.backupRepository.importJson(text)
             }.getOrElse { BackupImportResult.Failure(it.message ?: "读取失败") }
             val message = when (result) {
-                is BackupImportResult.Success -> context.getString(R.string.profile_import_success)
-                is BackupImportResult.Failure -> context.getString(
+                is BackupImportResult.Success -> resources.getString(R.string.profile_import_success)
+                is BackupImportResult.Failure -> resources.getString(
                     R.string.profile_import_failed,
                     result.message
                 )
@@ -396,10 +398,10 @@ fun ProfileScreen(
                                         }
                                         authenticateAppLock(
                                             activity = activity,
-                                            title = context.getString(
+                                            title = resources.getString(
                                                 R.string.app_lock_prompt_title
                                             ),
-                                            subtitle = context.getString(
+                                            subtitle = resources.getString(
                                                 R.string.profile_app_lock
                                             ),
                                             onSuccess = {

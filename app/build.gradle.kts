@@ -2,7 +2,6 @@ import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
@@ -41,7 +40,7 @@ val hasReleaseSigning = releaseStoreFile != null
 
 android {
     namespace = "com.av123.video"
-    compileSdk = 36
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.av123.video"
@@ -92,9 +91,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-    kotlinOptions {
-        jvmTarget = "17"
     }
     buildFeatures {
         compose = true

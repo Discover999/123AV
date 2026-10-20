@@ -79,7 +79,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -115,7 +115,7 @@ fun FavoritesScreen(
     val container = LocalAppContainer.current
     val viewModel: FavoritesViewModel = viewModel { FavoritesViewModel(container.favoriteRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -186,10 +186,10 @@ fun FavoritesScreen(
                             exitSelection()
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    message = context.getString(
+                                    message = resources.getString(
                                         R.string.favorites_deleted_multi, deleted.size
                                     ),
-                                    actionLabel = context.getString(R.string.favorites_undo),
+                                    actionLabel = resources.getString(R.string.favorites_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
                                 )
@@ -265,10 +265,10 @@ fun FavoritesScreen(
                             viewModel.delete(setOf(record.video.id))
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    message = context.getString(
+                                    message = resources.getString(
                                         R.string.favorites_deleted_single
                                     ),
-                                    actionLabel = context.getString(R.string.favorites_undo),
+                                    actionLabel = resources.getString(R.string.favorites_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
                                 )
@@ -295,10 +295,10 @@ fun FavoritesScreen(
                     showClearDialog = false
                     scope.launch {
                         val result = snackbarHostState.showSnackbar(
-                            message = context.getString(
+                            message = resources.getString(
                                 R.string.favorites_deleted_multi, cleared.size
                             ),
-                            actionLabel = context.getString(R.string.favorites_undo),
+                            actionLabel = resources.getString(R.string.favorites_undo),
                             withDismissAction = true,
                             duration = SnackbarDuration.Short
                         )
@@ -371,8 +371,8 @@ fun FavoritesScreen(
                     viewModel.addToGroup(group.id, toAdd)
                     scope.launch {
                         val result = snackbarHostState.showSnackbar(
-                            message = context.getString(R.string.favorites_added_group, group.name),
-                            actionLabel = context.getString(R.string.favorites_undo),
+                            message = resources.getString(R.string.favorites_added_group, group.name),
+                            actionLabel = resources.getString(R.string.favorites_undo),
                             withDismissAction = true,
                             duration = SnackbarDuration.Short
                         )

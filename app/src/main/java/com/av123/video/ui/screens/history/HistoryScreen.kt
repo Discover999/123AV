@@ -62,7 +62,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -88,7 +88,7 @@ fun HistoryScreen(
     val container = LocalAppContainer.current
     val viewModel: HistoryViewModel = viewModel { HistoryViewModel(container.historyRepository) }
     val records by viewModel.records.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -125,10 +125,10 @@ fun HistoryScreen(
                             exitSelection()
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    message = context.getString(
+                                    message = resources.getString(
                                         R.string.history_deleted_multi, deleted.size
                                     ),
-                                    actionLabel = context.getString(R.string.history_undo),
+                                    actionLabel = resources.getString(R.string.history_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
                                 )
@@ -220,8 +220,8 @@ fun HistoryScreen(
                             viewModel.delete(record.video.id)
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
-                                    message = context.getString(R.string.history_deleted_single),
-                                    actionLabel = context.getString(R.string.history_undo),
+                                    message = resources.getString(R.string.history_deleted_single),
+                                    actionLabel = resources.getString(R.string.history_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
                                 )

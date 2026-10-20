@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -104,6 +105,7 @@ internal data class DiagnosticsData(
 fun DiagnosticsScreen(onBack: () -> Unit) {
     val container = LocalAppContainer.current
     val context = LocalContext.current
+    val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val configState by container.siteConfigStore.state.collectAsStateWithLifecycle()
@@ -200,25 +202,25 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
             stringResource(R.string.diagnostics_config_remote_off)
         }
         val siteConfigLines = buildList {
-            add("${context.getString(R.string.diagnostics_config_source)}：$configSourceLabel")
-            add("${context.getString(R.string.diagnostics_config_version)}：$configVersionText")
-            add("${context.getString(R.string.diagnostics_config_updated)}：$configUpdatedText")
-            add("${context.getString(R.string.diagnostics_config_checked)}：$configCheckedText")
-            add("${context.getString(R.string.diagnostics_config_etag)}：$configEtagText")
-            add("${context.getString(R.string.diagnostics_config_remote)}：$configRemoteText")
+            add("${resources.getString(R.string.diagnostics_config_source)}：$configSourceLabel")
+            add("${resources.getString(R.string.diagnostics_config_version)}：$configVersionText")
+            add("${resources.getString(R.string.diagnostics_config_updated)}：$configUpdatedText")
+            add("${resources.getString(R.string.diagnostics_config_checked)}：$configCheckedText")
+            add("${resources.getString(R.string.diagnostics_config_etag)}：$configEtagText")
+            add("${resources.getString(R.string.diagnostics_config_remote)}：$configRemoteText")
             configState.lastError?.let {
-                add(context.getString(R.string.diagnostics_config_last_error, it))
+                add(resources.getString(R.string.diagnostics_config_last_error, it))
             }
         }
         val runtimeText = runtimeMetricText(snapshot)
         val runtimeLines = listOf(
-            "${context.getString(R.string.diagnostics_runtime_capture)}：" +
+            "${resources.getString(R.string.diagnostics_runtime_capture)}：" +
                 "${runtimeText.captureValue}（${runtimeText.captureDetail}）",
-            "${context.getString(R.string.diagnostics_runtime_failures)}：" +
+            "${resources.getString(R.string.diagnostics_runtime_failures)}：" +
                 "${runtimeText.failureValue}（${runtimeText.failureDetail}）",
-            "${context.getString(R.string.diagnostics_runtime_cache)}：" +
+            "${resources.getString(R.string.diagnostics_runtime_cache)}：" +
                 "${runtimeText.cacheValue}（${runtimeText.cacheDetail}）",
-            "${context.getString(R.string.diagnostics_runtime_webview)}：" +
+            "${resources.getString(R.string.diagnostics_runtime_webview)}：" +
                 "${runtimeText.webViewValue}（${runtimeText.webViewDetail}）"
         )
 
@@ -264,7 +266,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                         )
                         scope.launch {
                             snackbarHostState.showSnackbar(
-                                context.getString(R.string.diagnostics_copied)
+                                resources.getString(R.string.diagnostics_copied)
                             )
                         }
                     },
