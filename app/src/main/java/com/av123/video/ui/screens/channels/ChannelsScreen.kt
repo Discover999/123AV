@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.data.model.NavChannelGroup
 import com.av123.video.data.net.AppError
@@ -132,7 +133,12 @@ fun ChannelsScreen(
                 LazyColumn(
                     state = listState,
                     modifier = modifier,
-                    contentPadding = PaddingValues(16.dp),
+                    contentPadding = PaddingValues(
+                        start = 16.dp,
+                        end = 16.dp,
+                        top = 16.dp,
+                        bottom = 16.dp + LocalBottomBarInset.current
+                    ),
                     verticalArrangement = Arrangement.spacedBy(20.dp)
                 ) {
                     items(ui.groups) { group ->

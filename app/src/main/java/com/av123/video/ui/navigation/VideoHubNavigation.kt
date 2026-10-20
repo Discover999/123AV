@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -18,9 +19,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Home
@@ -32,6 +37,7 @@ import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -46,13 +52,17 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -71,6 +81,7 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.ui.components.BrandLogo
 import com.av123.video.ui.components.appErrorText
@@ -217,14 +228,91 @@ private fun AppBottomBar(
     }
 }
 
+/** 悬浮胶囊底栏：仅在“我的 → 外观 → 悬浮导航栏”开启时使用，展开态左栏仍保持贴底样式 */
+@Composable
+private fun FloatingAppBottomBar(
+    navController: NavHostController,
+    currentRoute: String?,
+    scrollToTopTicks: MutableMap<String, Int>
+) {
+    val scheme = MaterialTheme.colorScheme
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = 24.dp, vertical = 10.dp)
+    ) {
+        Surface(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp),
+            shape = RoundedCornerShape(32.dp),
+            color = scheme.surfaceContainerHigh,
+            shadowElevation = 8.dp
+        ) {
+            Row(Modifier.fillMaxSize()) {
+                TopLevelDestination.entries.forEach { destination ->
+                    val selected = currentRoute == destination.route
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .padding(horizontal = 4.dp, vertical = 6.dp)
+                            .clip(RoundedCornerShape(24.dp))
+                            .background(
+                                if (selected) scheme.primaryContainer else Color.Transparent
+                            )
+                            .clickable {
+                                if (selected) {
+                                    scrollToTopTicks[destination.route] =
+                                        (scrollToTopTicks[destination.route] ?: 0) + 1
+                                } else {
+                                    navController.navigate(destination.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                imageVector = if (selected) destination.selectedIcon
+                                else destination.unselectedIcon,
+                                contentDescription = null,
+                                tint = if (selected) scheme.onPrimaryContainer
+                                else scheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(destination.labelRes),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (selected) scheme.onPrimaryContainer
+                                else scheme.onSurfaceVariant,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /** 底栏显隐动画（与紧凑/展开外壳保持一致的上下滑入滑出） */
 @Composable
 private fun BottomBarWithAnimation(
     visible: Boolean,
+    modifier: Modifier = Modifier,
     content: @Composable androidx.compose.animation.AnimatedVisibilityScope.() -> Unit
 ) {
     AnimatedVisibility(
         visible = visible,
+        modifier = modifier,
         enter = slideInVertically(
             animationSpec = Motion.pageEnter<IntOffset>(),
             initialOffsetY = { it }
@@ -241,6 +329,8 @@ private fun BottomBarWithAnimation(
 @Composable
 private fun CompactShell() {
     val navController = rememberNavController()
+    val container = LocalAppContainer.current
+    val settingsState by container.appSettingsState.collectAsStateWithLifecycle()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
@@ -258,18 +348,26 @@ private fun CompactShell() {
 
     val snackbarHostState = rememberGlobalSnackbarHostState()
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            BottomBarWithAnimation(visible = showBottomBar) {
-                AppBottomBar(
-                    navController = navController,
-                    currentRoute = currentRoute,
-                    scrollToTopTicks = scrollToTopTicks
-                )
+    val floatingNavBar = settingsState.settings.floatingNavBar
+    Box(Modifier.fillMaxSize()) {
+        Scaffold(
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            // 悬浮模式下不占用 Scaffold 底栏槽位，底栏叠在内容上方
+            bottomBar = {
+                if (!floatingNavBar) {
+                    BottomBarWithAnimation(visible = showBottomBar) {
+                        AppBottomBar(
+                            navController = navController,
+                            currentRoute = currentRoute,
+                            scrollToTopTicks = scrollToTopTicks
+                        )
+                    }
+                }
             }
-        }
-    ) { innerPadding ->
+        ) { innerPadding ->
+            CompositionLocalProvider(
+                LocalBottomBarInset provides if (floatingNavBar) 96.dp else 0.dp
+            ) {
         NavHost(
             navController = navController,
             startDestination = Routes.HOME,
@@ -296,6 +394,20 @@ private fun CompactShell() {
                 paneCloseButton = false,
                 onFullscreenStateChange = { detailFullscreen = it }
             )
+        }
+            }
+        }
+        if (floatingNavBar) {
+            BottomBarWithAnimation(
+                visible = showBottomBar,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                FloatingAppBottomBar(
+                    navController = navController,
+                    currentRoute = currentRoute,
+                    scrollToTopTicks = scrollToTopTicks
+                )
+            }
         }
     }
 }

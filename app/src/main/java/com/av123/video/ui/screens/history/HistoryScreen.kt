@@ -70,6 +70,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.theme.appCardContainerColor
@@ -203,7 +204,12 @@ fun HistoryScreen(
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize(),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(
+                    start = 16.dp,
+                    end = 16.dp,
+                    top = 16.dp,
+                    bottom = 16.dp + LocalBottomBarInset.current
+                ),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 items(records, key = { it.video.id }) { record ->
@@ -306,6 +312,9 @@ private fun SelectionTopBar(
     )
 }
 
+/** 历史条目与滑动背景共用同一圆角，避免卡片四角露出背景色 */
+private val HistoryCardShape = RoundedCornerShape(16.dp)
+
 /** 包裹滑动删除手势的历史条目 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -319,13 +328,13 @@ private fun SwipeableHistoryItem(
     onDismiss: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
+        // 只把滑动当作删除手势，不真正停在滑出位置：
+        // 否则撤销恢复记录时，这行的状态仍是“已滑出”，只会露出红色背景。
         confirmValueChange = { value ->
             if (value != SwipeToDismissBoxValue.Settled) {
                 onDismiss()
-                true
-            } else {
-                false
             }
+            false
         }
     )
 
@@ -338,7 +347,7 @@ private fun SwipeableHistoryItem(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(HistoryCardShape)
                     .background(colorScheme.errorContainer)
                     .padding(horizontal = 28.dp),
                 contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
@@ -371,7 +380,7 @@ private fun HistoryItem(
     onLongClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val cardShape = RoundedCornerShape(16.dp)
+    val cardShape = HistoryCardShape
     ElevatedCard(
         modifier = Modifier
             .then(

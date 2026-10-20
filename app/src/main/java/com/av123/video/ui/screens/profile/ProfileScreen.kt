@@ -31,6 +31,7 @@ import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.CleaningServices
 import androidx.compose.material.icons.rounded.Cloud
 import androidx.compose.material.icons.rounded.DarkMode
+import androidx.compose.material.icons.rounded.ViewAgenda
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.FileUpload
 import androidx.compose.material.icons.rounded.Favorite
@@ -80,6 +81,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.data.prefs.AppLockTimeout
 import com.av123.video.data.prefs.DarkMode
@@ -212,7 +214,10 @@ fun ProfileScreen(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize(),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 32.dp),
+            contentPadding = PaddingValues(
+                top = 8.dp,
+                bottom = 32.dp + LocalBottomBarInset.current
+            ),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
             // —— 用户信息头部卡片 ——
@@ -482,6 +487,24 @@ fun ProfileScreen(
                                 onCheckedChange = { enabled ->
                                     scope.launch {
                                         container.settingsStore.setDynamicColor(enabled)
+                                    }
+                                }
+                            )
+                        }
+                    )
+                    SettingsDivider()
+                    SettingsItem(
+                        icon = Icons.Rounded.ViewAgenda,
+                        iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        title = stringResource(R.string.profile_floating_nav),
+                        subtitle = stringResource(R.string.profile_floating_nav_desc),
+                        trailing = {
+                            Switch(
+                                checked = settings.floatingNavBar,
+                                onCheckedChange = { enabled ->
+                                    scope.launch {
+                                        container.settingsStore.setFloatingNavBar(enabled)
                                     }
                                 }
                             )

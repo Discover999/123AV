@@ -74,6 +74,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.data.model.Video
 import com.av123.video.data.model.WatchRecord
@@ -238,7 +239,11 @@ private fun HomeContent(
             state = gridState,
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp),
+            contentPadding = PaddingValues(
+                start = 16.dp,
+                end = 16.dp,
+                bottom = 24.dp + LocalBottomBarInset.current
+            ),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {

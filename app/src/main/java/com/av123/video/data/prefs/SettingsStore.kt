@@ -33,6 +33,8 @@ enum class AppLockTimeout(val millis: Long) {
 /** 全局外观与播放设置 */
 data class AppSettings(
     val dynamicColor: Boolean = false,
+    /** 底部导航改为悬浮胶囊样式；默认保持贴底 NavigationBar */
+    val floatingNavBar: Boolean = false,
     val darkMode: DarkMode = DarkMode.SYSTEM,
     /** 全屏播放回桌面时是否自动进入画中画小窗 */
     val pipEnabled: Boolean = true,
@@ -90,6 +92,7 @@ class SettingsStore(context: Context) {
     val settings: Flow<AppSettings> = store.data.map { prefs ->
         AppSettings(
             dynamicColor = prefs[KEY_DYNAMIC_COLOR] ?: false,
+            floatingNavBar = prefs[KEY_FLOATING_NAV_BAR] ?: false,
             darkMode = runCatching {
                 DarkMode.valueOf(prefs[KEY_DARK_MODE] ?: DarkMode.SYSTEM.name)
             }.getOrDefault(DarkMode.SYSTEM),
@@ -118,6 +121,10 @@ class SettingsStore(context: Context) {
 
     suspend fun setDynamicColor(enabled: Boolean) {
         store.edit { it[KEY_DYNAMIC_COLOR] = enabled }
+    }
+
+    suspend fun setFloatingNavBar(enabled: Boolean) {
+        store.edit { it[KEY_FLOATING_NAV_BAR] = enabled }
     }
 
     suspend fun setDarkMode(mode: DarkMode) {
@@ -154,6 +161,7 @@ class SettingsStore(context: Context) {
         const val STARTUP_KEY_SECURE_SCREEN = "secure_screen"
 
         val KEY_DYNAMIC_COLOR = booleanPreferencesKey("dynamic_color")
+        val KEY_FLOATING_NAV_BAR = booleanPreferencesKey("floating_nav_bar")
         val KEY_DARK_MODE = stringPreferencesKey("dark_mode")
         val KEY_PIP_ENABLED = booleanPreferencesKey("pip_enabled")
         val KEY_AUTO_PLAY_NEXT = booleanPreferencesKey("auto_play_next")
