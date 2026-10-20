@@ -2,9 +2,11 @@ package com.av123.video.data.net
 
 import okhttp3.Call
 import okhttp3.Callback
+import okhttp3.EventListener
 import okhttp3.Request
 import okhttp3.Response
 import okio.Timeout
+import kotlin.reflect.KClass
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -38,6 +40,12 @@ class ProbeTimingsTest {
         override fun isCanceled(): Boolean = false
         override fun timeout(): Timeout = Timeout()
         override fun clone(): Call = this
+        // OkHttp 5 新增：监听器与 tag 查询在测试中都不参与
+        override fun addEventListener(eventListener: EventListener) = Unit
+        override fun <T : Any> tag(type: KClass<T>): T? = null
+        override fun <T> tag(type: Class<out T>): T? = null
+        override fun <T : Any> tag(type: KClass<T>, computeIfAbsent: () -> T): T = computeIfAbsent()
+        override fun <T : Any> tag(type: Class<T>, computeIfAbsent: () -> T): T = computeIfAbsent()
     }
 
     private val dummyAddress: InetSocketAddress =
