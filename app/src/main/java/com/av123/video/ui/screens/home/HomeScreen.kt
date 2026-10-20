@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.home
 
+import com.av123.video.ui.theme.AppTypeScale
+
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -44,6 +46,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -422,6 +425,8 @@ private fun CategoryPill(
     )
     Box(
         modifier = Modifier
+            // 视觉高度约 30dp，但保证 48dp 的触控热区
+            .minimumInteractiveComponentSize()
             .then(
                 if (selected) Modifier.shadow(
                     elevation = 8.dp,
@@ -447,7 +452,7 @@ private fun CategoryPill(
         Text(
             text = text,
             color = textColor,
-            fontSize = 13.sp,
+            fontSize = AppTypeScale.Body,
             fontWeight = FontWeight.Medium,
             maxLines = 1
         )

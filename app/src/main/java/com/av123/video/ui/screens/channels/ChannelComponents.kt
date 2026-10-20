@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.channels
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -213,7 +215,7 @@ internal fun EntriesGrid(
                         placeholder = { Text(stringResource(R.string.channel_filter_hint)) },
                         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                         singleLine = true,
-                        shape = RoundedCornerShape(14.dp)
+                        shape = AppShapes.Medium
                     )
                 }
             }
@@ -344,11 +346,11 @@ internal fun ActressSearchExpandedField(
 @Composable
 internal fun EntryCard(entry: IndexEntry, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShapes.Medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppShapes.Medium)
             .clickable(onClick = onClick)
     ) {
         Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
@@ -380,11 +382,11 @@ internal fun EntryCard(entry: IndexEntry, onClick: () -> Unit) {
 @Composable
 internal fun MakerCard(entry: IndexEntry, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShapes.ExtraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(AppShapes.ExtraLarge)
             .clickable(onClick = onClick)
     ) {
         Row(
@@ -395,7 +397,7 @@ internal fun MakerCard(entry: IndexEntry, onClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(56.dp)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(AppShapes.Medium)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {
@@ -485,11 +487,11 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
     val heartScale = rememberTogglePopScale(active = isFollowed)
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShapes.ExtraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(AppShapes.ExtraLarge)
             .clickable(onClick = onClick)
     ) {
         Row(
@@ -627,11 +629,11 @@ internal fun ActressStat(
 @Composable
 internal fun EntryRow(entry: IndexEntry, onClick: () -> Unit) {
     Surface(
-        shape = RoundedCornerShape(14.dp),
+        shape = AppShapes.Medium,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(AppShapes.Medium)
             .clickable(onClick = onClick)
     ) {
         Row(

@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.AppTypeScale
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -649,7 +652,7 @@ fun VideoPlayer(
             Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(AppShapes.Medium)
                     .background(Color.Black.copy(alpha = 0.82f))
                     .padding(horizontal = 22.dp, vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -664,14 +667,14 @@ fun VideoPlayer(
                 Text(
                     text = formatDuration(seekTarget),
                     color = Color.White,
-                    fontSize = 18.sp,
+                    fontSize = AppTypeScale.Headline,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = "${if (isForward) "+" else "-"}${formatDuration(deltaMs)}" +
                         " / ${formatDuration(duration)}",
                     color = Color.White.copy(alpha = 0.7f),
-                    fontSize = 11.sp
+                    fontSize = AppTypeScale.Caption
                 )
             }
         }

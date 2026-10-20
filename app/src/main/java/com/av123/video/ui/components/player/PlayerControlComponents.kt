@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.AppTypeScale
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -289,7 +292,7 @@ internal fun VolumePanel(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(AppShapes.Large)
             .background(Color.Black.copy(alpha = 0.72f))
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -334,7 +337,7 @@ internal fun VerticalVolumeBar(
             text = if (isMuted) stringResource(R.string.player_mute)
             else "${(fraction * 100).toInt()}%",
             color = Color.White,
-            fontSize = 11.sp,
+            fontSize = AppTypeScale.Caption,
             fontWeight = FontWeight.Medium
         )
         Spacer(modifier = Modifier.height(8.dp))
@@ -406,7 +409,7 @@ internal fun SpeedPopupMenu(
                         text = "${speed}x",
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isSelected) selectedColor else Color.White.copy(alpha = 0.78f),
-                        fontSize = 13.sp
+                        fontSize = AppTypeScale.Body
                     )
                 },
                 onClick = { onSelected(speed) }
@@ -431,7 +434,7 @@ internal fun TrackPopupMenu(
                     text = autoLabel,
                     fontWeight = if (selected == null) FontWeight.SemiBold else FontWeight.Normal,
                     color = if (selected == null) Color.White else Color.White.copy(alpha = 0.78f),
-                    fontSize = 13.sp
+                    fontSize = AppTypeScale.Body
                 )
             },
             onClick = { onSelected(null) }
@@ -444,7 +447,7 @@ internal fun TrackPopupMenu(
                         text = track.label,
                         fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (isSelected) Color.White else Color.White.copy(alpha = 0.78f),
-                        fontSize = 13.sp
+                        fontSize = AppTypeScale.Body
                     )
                 },
                 onClick = { onSelected(track) }
@@ -538,7 +541,7 @@ internal fun SettingsMenuContent(
 
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(16.dp))
+            .clip(AppShapes.Large)
             .background(Color.Black.copy(alpha = 0.86f))
     ) {
         Column(modifier = Modifier.width(IntrinsicSize.Max)) {
@@ -554,13 +557,13 @@ internal fun SettingsMenuContent(
                     Text(
                         text = stringResource(R.string.player_resize_title),
                         color = Color.White.copy(alpha = 0.85f),
-                        fontSize = 13.sp,
+                        fontSize = AppTypeScale.Body,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         text = resizeLabel,
                         color = Color.White.copy(alpha = 0.55f),
-                        fontSize = 12.sp
+                        fontSize = AppTypeScale.Label
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Icon(
@@ -591,7 +594,7 @@ internal fun SettingsMenuContent(
                     Text(
                         text = stringResource(R.string.player_resize_title),
                         color = Color.White,
-                        fontSize = 13.sp,
+                        fontSize = AppTypeScale.Body,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
@@ -613,7 +616,7 @@ internal fun SettingsMenuContent(
                             text = stringResource(label),
                             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
                             color = if (selected) Color.White else Color.White.copy(alpha = 0.78f),
-                            fontSize = 13.sp,
+                            fontSize = AppTypeScale.Body,
                             modifier = Modifier.weight(1f)
                         )
                         if (selected) {
@@ -643,7 +646,7 @@ internal fun SettingsMenuRow(label: String, onClick: () -> Unit) {
         Text(
             text = label,
             color = Color.White.copy(alpha = 0.85f),
-            fontSize = 13.sp
+            fontSize = AppTypeScale.Body
         )
     }
 }
@@ -679,7 +682,7 @@ internal fun PlaybackUrlContent(
     Box(
         modifier = Modifier
             .width(280.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .clip(AppShapes.Large)
             .background(Color.Black.copy(alpha = 0.86f))
             .padding(16.dp)
     ) {
@@ -688,7 +691,7 @@ internal fun PlaybackUrlContent(
                 Text(
                     text = stringResource(R.string.player_menu_url),
                     color = Color.White,
-                    fontSize = 13.sp,
+                    fontSize = AppTypeScale.Body,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f)
                 )
@@ -699,7 +702,7 @@ internal fun PlaybackUrlContent(
             Text(
                 text = url,
                 color = Color(0xFF8AB4F8),
-                fontSize = 11.sp,
+                fontSize = AppTypeScale.Caption,
                 fontFamily = FontFamily.Monospace,
                 textDecoration = TextDecoration.Underline,
                 modifier = Modifier
@@ -731,7 +734,7 @@ internal fun PlaybackUrlContent(
                         text = if (copied) stringResource(R.string.player_url_copied)
                         else stringResource(R.string.player_url_copy),
                         color = Color.White,
-                        fontSize = 12.sp
+                        fontSize = AppTypeScale.Label
                     )
                 }
             }
@@ -765,7 +768,7 @@ internal fun CapsulePopupMenu(
     DropdownMenu(
         expanded = expanded,
         onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.Large,
         containerColor = Color.Black.copy(alpha = 0.86f)
     ) {
         content()

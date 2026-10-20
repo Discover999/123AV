@@ -1,5 +1,7 @@
 package com.av123.video.ui.components
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -191,13 +193,13 @@ fun VideoPreviewDialog(
             contentAlignment = Alignment.Center
         ) {
             Surface(
-                shape = RoundedCornerShape(20.dp),
+                shape = AppShapes.ExtraLarge,
                 color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 6.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
-                    .clip(RoundedCornerShape(20.dp))
+                    .clip(AppShapes.ExtraLarge)
                     // 拦截卡片区域点击，避免点到内容时关闭弹窗
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
@@ -288,7 +290,7 @@ fun VideoPreviewDialog(
                                 style = MaterialTheme.typography.labelMedium,
                                 modifier = Modifier
                                     .align(Alignment.Center)
-                                    .clip(RoundedCornerShape(8.dp))
+                                    .clip(AppShapes.Small)
                                     .background(Color.Black.copy(alpha = 0.6f))
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             )

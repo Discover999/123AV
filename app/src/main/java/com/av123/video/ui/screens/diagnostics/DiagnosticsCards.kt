@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.diagnostics
 
+import com.av123.video.ui.theme.AppShapes
+
 import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -212,7 +214,7 @@ internal fun ConfigSourceChip(source: SiteConfigSource) {
     }
     Box(
         modifier = Modifier
-            .clip(RoundedCornerShape(999.dp))
+            .clip(AppShapes.Pill)
             .background(background)
             .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
@@ -546,7 +548,7 @@ internal fun StatusHeader(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(AppShapes.Medium)
                 .background(containerColor),
             contentAlignment = Alignment.Center
         ) {
@@ -582,7 +584,7 @@ internal fun DiagnosticsCard(
 ) {
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.Large,
         colors = CardDefaults.elevatedCardColors(
             containerColor = appCardContainerColor()
         ),

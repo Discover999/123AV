@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.channels
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -175,7 +177,7 @@ internal fun ActressHero(
     val heartScale = rememberTogglePopScale(active = isFollowed)
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShapes.ExtraLarge,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = Modifier
             .fillMaxWidth()

@@ -1,5 +1,8 @@
 package com.av123.video.ui.screens.detail
 
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.AppTypeScale
+
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -195,7 +198,7 @@ internal fun RelatedCardSkeleton(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth(0.8f)
                 .height(14.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(AppShapes.Small)
                 .shimmerPlaceholder()
         )
         Spacer(Modifier.height(6.dp))
@@ -203,7 +206,7 @@ internal fun RelatedCardSkeleton(modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth(0.5f)
                 .height(11.dp)
-                .clip(RoundedCornerShape(4.dp))
+                .clip(AppShapes.Small)
                 .shimmerPlaceholder()
         )
     }
@@ -257,7 +260,7 @@ internal fun EpisodeSelector(
                     modifier = Modifier
                         .height(42.dp)
                         .widthIn(min = 54.dp)
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(AppShapes.Medium)
                         .background(container)
                         .clickable { onSelect(index) }
                         .padding(horizontal = 16.dp),
@@ -327,7 +330,7 @@ internal fun MetaChip(
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium.copy(
-                fontSize = 13.sp,
+                fontSize = AppTypeScale.Body,
                 fontWeight = FontWeight.Medium
             ),
             color = contentColor,

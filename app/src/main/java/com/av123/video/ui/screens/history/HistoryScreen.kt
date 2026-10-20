@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.history
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.border
@@ -313,7 +315,7 @@ private fun SelectionTopBar(
 }
 
 /** 历史条目与滑动背景共用同一圆角，避免卡片四角露出背景色 */
-private val HistoryCardShape = RoundedCornerShape(16.dp)
+private val HistoryCardShape = AppShapes.Large
 
 /** 包裹滑动删除手势的历史条目 */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -408,7 +410,7 @@ private fun HistoryItem(
                 modifier = Modifier
                     .width(120.dp)
                     .height(68.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .clip(AppShapes.Compact)
                     .shimmerPlaceholder()
             ) {
                 if (record.video.coverUrl.isNotBlank()) {

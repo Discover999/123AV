@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.favorites
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -282,7 +284,7 @@ internal fun ShortcutCard(
 ) {
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(AppShapes.ExtraLarge)
             .background(containerColor)
             .clickable(onClick = onClick)
             .padding(16.dp)
@@ -326,7 +328,7 @@ internal fun FolderRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(AppShapes.Large)
             .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 10.dp)
@@ -335,7 +337,7 @@ internal fun FolderRow(
         Box(
             modifier = Modifier
                 .size(56.dp)
-                .clip(RoundedCornerShape(14.dp))
+                .clip(AppShapes.Medium)
                 .background(MaterialTheme.colorScheme.secondaryContainer),
             contentAlignment = Alignment.Center
         ) {

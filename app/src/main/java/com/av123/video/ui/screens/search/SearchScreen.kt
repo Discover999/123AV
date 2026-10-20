@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.search
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -165,7 +167,7 @@ fun SearchScreen(
                             }
                         },
                         singleLine = true,
-                        shape = RoundedCornerShape(28.dp),
+                        shape = AppShapes.Hero,
                         textStyle = MaterialTheme.typography.bodyLarge,
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,

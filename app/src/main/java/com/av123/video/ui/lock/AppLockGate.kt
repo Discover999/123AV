@@ -1,5 +1,7 @@
 package com.av123.video.ui.lock
 
+import com.av123.video.ui.theme.AppShapes
+
 import android.os.SystemClock
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -205,7 +207,7 @@ private fun AppLockOverlay(onUnlockClick: () -> Unit) {
             Box(
                 modifier = Modifier
                     .size(88.dp)
-                    .clip(RoundedCornerShape(28.dp))
+                    .clip(AppShapes.Hero)
                     .background(MaterialTheme.colorScheme.primaryContainer),
                 contentAlignment = Alignment.Center
             ) {

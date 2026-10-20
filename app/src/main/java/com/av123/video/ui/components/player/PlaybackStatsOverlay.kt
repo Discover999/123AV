@@ -1,5 +1,8 @@
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.AppTypeScale
+
 import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -77,7 +80,7 @@ internal fun PlaybackStatsOverlay(
 
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(AppShapes.Compact)
             .background(Color.Black.copy(alpha = 0.72f))
             .padding(horizontal = 12.dp, vertical = 10.dp)
     ) {
@@ -88,7 +91,7 @@ internal fun PlaybackStatsOverlay(
                 Text(
                     text = stringResource(R.string.player_stats_title),
                     color = Color.White.copy(alpha = 0.55f),
-                    fontSize = 11.sp,
+                    fontSize = AppTypeScale.Caption,
                     fontWeight = FontWeight.Medium,
                     modifier = Modifier.weight(1f)
                 )
@@ -100,14 +103,14 @@ internal fun PlaybackStatsOverlay(
                     Text(
                         text = label,
                         color = Color.White.copy(alpha = 0.55f),
-                        fontSize = 11.sp,
+                        fontSize = AppTypeScale.Caption,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.width(76.dp)
                     )
                     Text(
                         text = value,
                         color = Color.White.copy(alpha = 0.9f),
-                        fontSize = 11.sp,
+                        fontSize = AppTypeScale.Caption,
                         fontFamily = FontFamily.Monospace
                     )
                 }

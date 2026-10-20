@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.stats
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -178,7 +180,7 @@ private fun TodayCard(stats: WatchStats) {
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.Large,
         colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -217,7 +219,7 @@ private fun WeekChartCard(week7: List<DayWatch>) {
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.Large,
         colors = CardDefaults.elevatedCardColors(
             containerColor = appCardContainerColor()
         ),
@@ -303,7 +305,7 @@ private fun OverviewCard(label: String, value: String, modifier: Modifier = Modi
     val colorScheme = MaterialTheme.colorScheme
     ElevatedCard(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.Large,
         colors = CardDefaults.elevatedCardColors(
             containerColor = appCardContainerColor()
         ),
@@ -335,7 +337,7 @@ private fun CategoryCard(categories: List<CategoryStat>) {
 
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = AppShapes.Large,
         colors = CardDefaults.elevatedCardColors(
             containerColor = appCardContainerColor()
         ),
@@ -369,7 +371,7 @@ private fun CategoryCard(categories: List<CategoryStat>) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
+                        .clip(AppShapes.Small),
                     color = colorScheme.primary,
                     trackColor = colorScheme.surfaceVariant,
                     strokeCap = StrokeCap.Round

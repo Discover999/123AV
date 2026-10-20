@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.channels
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -192,7 +194,7 @@ private fun ChannelChip(
     val colorScheme = MaterialTheme.colorScheme
     Column(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShapes.Medium)
             .background(
                 if (emphasized) colorScheme.primaryContainer
                 else colorScheme.surfaceContainerHigh

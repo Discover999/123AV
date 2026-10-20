@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.AppTypeScale
+
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -278,7 +281,7 @@ internal fun PlayerControls(
                     Text(
                         text = title,
                         color = Color.White,
-                        fontSize = 16.sp,
+                        fontSize = AppTypeScale.Title,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         modifier = Modifier.weight(1f)
@@ -395,13 +398,13 @@ internal fun PlayerControls(
                 Text(
                     text = formatDuration(position),
                     color = Color.White,
-                    fontSize = 12.sp,
+                    fontSize = AppTypeScale.Label,
                     fontWeight = FontWeight.Medium
                 )
                 Text(
                     text = " / ${formatDuration(duration)}",
                     color = Color.White.copy(alpha = 0.65f),
-                    fontSize = 12.sp
+                    fontSize = AppTypeScale.Label
                 )
 
                 Spacer(modifier = Modifier.weight(1f))
@@ -409,7 +412,7 @@ internal fun PlayerControls(
                 Box {
                     TextButton(
                         onClick = { showSpeedSheet = true },
-                        shape = RoundedCornerShape(16.dp),
+                        shape = AppShapes.Large,
                         colors = ButtonDefaults.textButtonColors(
                             containerColor = Color.White.copy(alpha = 0.12f)
                         ),
@@ -419,7 +422,7 @@ internal fun PlayerControls(
                         Text(
                             text = "${selectedSpeed}x",
                             color = Color.White,
-                            fontSize = 12.sp,
+                            fontSize = AppTypeScale.Label,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -439,7 +442,7 @@ internal fun PlayerControls(
                     Box {
                         TextButton(
                             onClick = { showTrackSheet = true },
-                            shape = RoundedCornerShape(16.dp),
+                            shape = AppShapes.Large,
                             colors = ButtonDefaults.textButtonColors(
                                 containerColor = Color.White.copy(alpha = 0.12f)
                             ),
@@ -449,7 +452,7 @@ internal fun PlayerControls(
                             Text(
                                 text = selectedTrack?.label ?: trackAutoLabel,
                                 color = Color.White,
-                                fontSize = 12.sp,
+                                fontSize = AppTypeScale.Label,
                                 fontWeight = FontWeight.SemiBold
                             )
                         }

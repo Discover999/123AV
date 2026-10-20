@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.AppTypeScale
+
 import android.content.Context
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
@@ -76,7 +79,7 @@ import kotlin.math.max
 internal fun LongPressSpeedBadge(speed: Float) {
     Row(
         modifier = Modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(AppShapes.ExtraLarge)
             .background(Color.Black.copy(alpha = 0.55f))
             .padding(horizontal = 12.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -85,7 +88,7 @@ internal fun LongPressSpeedBadge(speed: Float) {
         Text(
             text = "${speed.formatSpeed()}X",
             color = Color.White,
-            fontSize = 12.sp,
+            fontSize = AppTypeScale.Label,
             fontWeight = FontWeight.Bold
         )
         AnimatedFastForwardArrows(modifier = Modifier.size(width = 17.dp, height = 13.dp))
@@ -144,14 +147,14 @@ internal fun SeekTimeBubble(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(6.dp))
+            .clip(AppShapes.Small)
             .background(Color.Black.copy(alpha = 0.82f))
             .padding(horizontal = 8.dp, vertical = 4.dp)
     ) {
         Text(
             text = timeText,
             color = Color.White,
-            fontSize = 11.sp,
+            fontSize = AppTypeScale.Caption,
             fontWeight = FontWeight.Medium,
             maxLines = 1
         )
@@ -201,7 +204,7 @@ internal fun DoubleSeekFeedback(
             Text(
                 text = "10 秒",
                 color = Color.White,
-                fontSize = 12.sp,
+                fontSize = AppTypeScale.Label,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -250,12 +253,12 @@ internal fun ErrorOverlay(
                     // 全屏横屏时也保持卡片宽度，不铺满整块画面
                     .widthIn(max = 360.dp)
                     .fillMaxWidth(0.82f)
-                    .clip(RoundedCornerShape(24.dp))
+                    .clip(AppShapes.ExtraLarge)
                     .background(Color(0xFF17181D).copy(alpha = 0.96f))
                     .border(
                         width = 1.dp,
                         color = Color.White.copy(alpha = 0.08f),
-                        shape = RoundedCornerShape(24.dp)
+                        shape = AppShapes.ExtraLarge
                     )
                     // 详情页播放器高度有限：极端字号下仍可滚动到重试按钮
                     .verticalScroll(rememberScrollState())
@@ -279,14 +282,14 @@ internal fun ErrorOverlay(
                 Text(
                     text = stringResource(R.string.player_error_title),
                     color = Color.White,
-                    fontSize = 17.sp,
+                    fontSize = AppTypeScale.OverlayTitle,
                     fontWeight = FontWeight.SemiBold
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = playbackErrorText(LocalContext.current, error),
                     color = Color.White.copy(alpha = 0.68f),
-                    fontSize = 13.sp,
+                    fontSize = AppTypeScale.Body,
                     lineHeight = 18.sp,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = 4.dp)
@@ -309,7 +312,7 @@ internal fun ErrorOverlay(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = stringResource(R.string.player_retry),
-                        fontSize = 13.sp,
+                        fontSize = AppTypeScale.Body,
                         fontWeight = FontWeight.Medium
                     )
                 }

@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.profile
 
+import com.av123.video.ui.theme.AppShapes
+
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -106,7 +108,7 @@ internal fun ProfileHeader(
     val colorScheme = MaterialTheme.colorScheme
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(28.dp),
+        shape = AppShapes.Hero,
         colors = CardDefaults.cardColors(containerColor = colorScheme.primaryContainer),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -200,7 +202,7 @@ internal fun SettingsSection(
             modifier = Modifier.padding(start = 8.dp, bottom = 8.dp)
         )
         ElevatedCard(
-            shape = RoundedCornerShape(16.dp),
+            shape = AppShapes.Large,
             colors = CardDefaults.elevatedCardColors(
                 containerColor = appCardContainerColor()
             ),
@@ -240,7 +242,7 @@ internal fun SettingsItem(
         Box(
             modifier = Modifier
                 .size(40.dp)
-                .clip(RoundedCornerShape(12.dp))
+                .clip(AppShapes.Medium)
                 .background(iconContainerColor),
             contentAlignment = Alignment.Center
         ) {

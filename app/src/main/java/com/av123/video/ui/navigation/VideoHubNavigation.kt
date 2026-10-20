@@ -44,9 +44,6 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -202,47 +199,6 @@ private fun rememberGlobalSnackbarHostState(): SnackbarHostState {
         }
     }
     return snackbarHostState
-}
-
-/** 底部导航条（紧凑态底部 / 展开态左栏底部共用），重复点击一级 Tab 回顶计数在调用侧维护 */
-@Composable
-private fun AppBottomBar(
-    navController: NavHostController,
-    currentRoute: String?,
-    scrollToTopTicks: MutableMap<String, Int>
-) {
-    NavigationBar {
-        TopLevelDestination.entries.forEach { destination ->
-            val selected = currentRoute == destination.route
-            NavigationBarItem(
-                selected = selected,
-                onClick = {
-                    if (!selected) {
-                        navController.navigate(destination.route) {
-                            // 保存状态 + 单例复用，实现 Tab 间快速切换且不重建
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    } else {
-                        // 已在该 Tab：二次点击回顶部
-                        scrollToTopTicks[destination.route] =
-                            (scrollToTopTicks[destination.route] ?: 0) + 1
-                    }
-                },
-                icon = {
-                    Icon(
-                        imageVector = if (selected) destination.selectedIcon else destination.unselectedIcon,
-                        contentDescription = null
-                    )
-                },
-                label = { Text(stringResource(destination.labelRes)) },
-                colors = NavigationBarItemDefaults.colors()
-            )
-        }
-    }
 }
 
 /**
@@ -559,10 +515,12 @@ private fun ExpandedShell() {
                         visible = !detailFullscreen &&
                             listRoute in TopLevelDestination.topLevelRoutes
                     ) {
-                        AppBottomBar(
+                        MorphingAppBottomBar(
                             navController = listNav,
                             currentRoute = listRoute,
-                            scrollToTopTicks = scrollToTopTicks
+                            scrollToTopTicks = scrollToTopTicks,
+                            hazeState = rememberHazeState(),
+                            morph = 0f
                         )
                     }
                 }

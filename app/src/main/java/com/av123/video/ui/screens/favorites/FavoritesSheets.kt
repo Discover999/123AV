@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.favorites
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -186,7 +188,7 @@ internal fun FolderPickerSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(AppShapes.Medium)
                         .clickable { creating = true }
                         .padding(vertical = 8.dp)
                 ) {
@@ -217,7 +219,7 @@ internal fun FolderPickerSheet(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(12.dp))
+                        .clip(AppShapes.Medium)
                         .clickable { selectedGroupId = group.id }
                         .padding(vertical = 10.dp)
                 ) {
@@ -322,7 +324,7 @@ internal fun SheetActionRow(
         verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
+            .clip(AppShapes.Medium)
             .clickable(onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 14.dp)
     ) {

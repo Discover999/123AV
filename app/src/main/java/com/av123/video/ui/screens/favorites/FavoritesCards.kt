@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.favorites
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -175,7 +177,7 @@ internal fun SwipeableFavoriteCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(AppShapes.Large)
                     .background(colorScheme.errorContainer)
                     .padding(horizontal = 24.dp),
                 contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
@@ -208,7 +210,7 @@ internal fun SelectableFavoriteCard(
     onLongClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val cardShape = RoundedCornerShape(16.dp)
+    val cardShape = AppShapes.Large
     Box {
         VideoGridCard(
             video = record.video,

@@ -1,5 +1,7 @@
 package com.av123.video.ui.components
 
+import com.av123.video.ui.theme.AppShapes
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -185,7 +187,7 @@ fun DurationBadge(text: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.labelSmall,
         color = Color.White,
         modifier = modifier
-            .clip(RoundedCornerShape(4.dp))
+            .clip(AppShapes.Small)
             .background(Color.Black.copy(alpha = 0.55f))
             .padding(horizontal = 6.dp, vertical = 2.dp)
     )
@@ -198,7 +200,7 @@ internal fun PressableCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     onLongClick: (() -> Unit)? = null,
-    shape: Shape = RoundedCornerShape(10.dp),
+    shape: Shape = AppShapes.Compact,
     defaultElevation: Dp = 2.dp,
     pressedElevation: Dp = 6.dp,
     /** false = 内容直接落在页面底色上（视频卡），不画卡片底与阴影 */
@@ -363,7 +365,7 @@ fun FeaturedCard(
     PressableCard(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
+        shape = AppShapes.ExtraLarge,
         defaultElevation = 8.dp,
         pressedElevation = 12.dp
     ) {
