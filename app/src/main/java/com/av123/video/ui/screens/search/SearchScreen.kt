@@ -251,6 +251,11 @@ fun SearchScreen(
                         icon = Icons.Outlined.SearchOff,
                         title = stringResource(R.string.search_empty_title),
                         subtitle = stringResource(R.string.search_empty_subtitle, ui.keyword),
+                        actionText = stringResource(R.string.action_clear_search),
+                        onAction = {
+                            input = ""
+                            viewModel.clear()
+                        },
                         modifier = Modifier.fillMaxSize()
                     )
 

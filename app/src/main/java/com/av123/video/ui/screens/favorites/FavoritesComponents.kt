@@ -182,6 +182,7 @@ internal fun FavoritesTopBar(
 @Composable
 internal fun FavoritesOverview(
     state: FavoritesUiState,
+    onNavigateHome: () -> Unit,
     onOpenFilter: (FavoritesFilter) -> Unit,
     onNewGroup: () -> Unit,
     onFolderActions: (FavoriteGroup) -> Unit
@@ -191,6 +192,8 @@ internal fun FavoritesOverview(
             icon = Icons.Rounded.VideoLibrary,
             title = stringResource(R.string.favorites_empty_title),
             subtitle = stringResource(R.string.favorites_empty_subtitle),
+            actionText = stringResource(R.string.action_go_home),
+            onAction = onNavigateHome,
             modifier = Modifier.fillMaxSize()
         )
         return

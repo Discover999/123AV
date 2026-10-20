@@ -473,6 +473,13 @@ private fun NavGraphBuilder.listDestinations(
     composable(Routes.HISTORY) {
         HistoryScreen(
             onVideoClick = onVideoClick,
+            onNavigateHome = {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
             scrollToTopTick = scrollToTopTicks[Routes.HISTORY] ?: 0
         )
     }
@@ -493,6 +500,13 @@ private fun NavGraphBuilder.listDestinations(
     ) {
         FavoritesScreen(
             onBack = { navController.popBackStack() },
+            onNavigateHome = {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
             onVideoClick = onVideoClick
         )
     }

@@ -112,6 +112,7 @@ internal sealed interface FavoritesDestination {
 @Composable
 fun FavoritesScreen(
     onBack: () -> Unit,
+    onNavigateHome: () -> Unit,
     onVideoClick: (String) -> Unit
 ) {
     val container = LocalAppContainer.current
@@ -242,6 +243,7 @@ fun FavoritesScreen(
                 FavoritesDestination.Overview ->
                     FavoritesOverview(
                         state = state,
+                        onNavigateHome = onNavigateHome,
                         onOpenFilter = { filter ->
                             destination = FavoritesDestination.Content(filter)
                         },

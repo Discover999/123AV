@@ -254,10 +254,7 @@ fun VideoGridCard(
         Column(Modifier.padding(horizontal = 12.dp, vertical = 10.dp)) {
             Text(
                 text = video.title,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                ),
+                style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -289,10 +286,7 @@ fun VideoCompactCard(
         Column(Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
             Text(
                 text = video.title,
-                style = MaterialTheme.typography.titleSmall.copy(
-                    fontSize = 13.sp,
-                    lineHeight = 18.sp
-                ),
+                style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

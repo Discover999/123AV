@@ -85,6 +85,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HistoryScreen(
     onVideoClick: (String) -> Unit,
+    onNavigateHome: () -> Unit,
     scrollToTopTick: Int = 0
 ) {
     val container = LocalAppContainer.current
@@ -182,6 +183,8 @@ fun HistoryScreen(
                 icon = Icons.Outlined.History,
                 title = stringResource(R.string.history_empty_title),
                 subtitle = stringResource(R.string.history_empty_subtitle),
+                actionText = stringResource(R.string.action_go_home),
+                onAction = onNavigateHome,
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()

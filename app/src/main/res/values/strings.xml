@@ -76,6 +76,8 @@
     <string name="favorites_title_count">我的收藏(%1$d)</string>
     <string name="favorites_empty_title">还没有收藏</string>
     <string name="favorites_empty_subtitle">在详情页点击收藏，喜欢的内容会出现在这里</string>
+    <string name="action_go_home">去首页</string>
+    <string name="action_clear_search">清空搜索</string>
     <string name="favorites_clear">清空收藏</string>
     <string name="favorites_clear_confirm">确定清空全部收藏吗？</string>
     <string name="favorites_clear_confirm_yes">清空</string>
