@@ -533,6 +533,8 @@ internal fun PlayerArea(
     pipEnabled: Boolean = true,
     autoPlayNext: Boolean = true,
     onAutoPlayNextChange: (Boolean) -> Unit = {},
+    flipToExitEnabled: Boolean = false,
+    onFlipToExitChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
     onEpisodeEnded: () -> Unit = {}
@@ -557,6 +559,8 @@ internal fun PlayerArea(
             pipEnabled = pipEnabled,
             autoPlayNext = autoPlayNext,
             onAutoPlayNextChange = onAutoPlayNextChange,
+            flipToExitEnabled = flipToExitEnabled,
+            onFlipToExitChange = onFlipToExitChange,
             resizeMode = resizeMode,
             onResizeModeChange = onResizeModeChange,
             onEpisodeEnded = onEpisodeEnded,

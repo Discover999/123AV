@@ -208,6 +208,8 @@ internal fun PlayerControls(
     onShowPlaybackStats: () -> Unit,
     autoPlayNext: Boolean,
     onAutoPlayNextChange: (Boolean) -> Unit,
+    flipToExitEnabled: Boolean,
+    onFlipToExitChange: (Boolean) -> Unit,
     resizeMode: ResizeModeOption,
     onResizeModeChange: (ResizeModeOption) -> Unit,
     modifier: Modifier = Modifier
@@ -665,6 +667,8 @@ internal fun PlayerControls(
                 onSpeedChange = onSpeedChange,
                 autoPlayNext = autoPlayNext,
                 onAutoPlayNextChange = onAutoPlayNextChange,
+                flipToExitEnabled = flipToExitEnabled,
+                onFlipToExitChange = onFlipToExitChange,
                 onShowStats = {
                     showSettingsSheet = false
                     onShowPlaybackStats()
@@ -687,6 +691,8 @@ private fun SettingsSheet(
     onSpeedChange: (Float) -> Unit,
     autoPlayNext: Boolean,
     onAutoPlayNextChange: (Boolean) -> Unit,
+    flipToExitEnabled: Boolean,
+    onFlipToExitChange: (Boolean) -> Unit,
     onShowStats: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -797,6 +803,12 @@ private fun SettingsSheet(
             label = stringResource(R.string.profile_auto_next),
             checked = autoPlayNext,
             onCheckedChange = onAutoPlayNextChange
+        )
+        SettingsSheetDivider()
+        SettingsSheetSwitchRow(
+            label = stringResource(R.string.profile_flip_to_exit),
+            checked = flipToExitEnabled,
+            onCheckedChange = onFlipToExitChange
         )
         SettingsSheetDivider()
         SettingsSheetRow(

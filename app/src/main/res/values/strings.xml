@@ -280,9 +280,10 @@
     <string name="profile_app_lock">应用锁</string>
     <string name="profile_app_lock_desc">冷启动或离开后通过指纹、面容或屏幕锁验证</string>
     <string name="profile_app_lock_relock">自动重新上锁</string>
-    <string name="profile_app_lock_relock_off">应用锁关闭时不生效</string>
     <string name="profile_secure_screen">防截屏</string>
     <string name="profile_secure_screen_desc">阻止截屏/录屏，并在最近任务中隐藏预览</string>
+    <string name="profile_flip_to_exit">翻转退出</string>
+    <string name="profile_flip_to_exit_desc">全屏播放时将手机屏幕朝下，自动停止播放并退出应用</string>
     <string name="app_lock_timeout_immediate">立即</string>
     <string name="app_lock_timeout_30s">30 秒后</string>
     <string name="app_lock_timeout_1m">1 分钟后</string>

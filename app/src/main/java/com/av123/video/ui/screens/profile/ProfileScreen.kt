@@ -39,6 +39,7 @@ import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Person
+import androidx.compose.material.icons.rounded.PhoneAndroid
 import androidx.compose.material.icons.rounded.PictureInPictureAlt
 import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
 import androidx.compose.material.icons.rounded.QueryStats
@@ -422,27 +423,24 @@ fun ProfileScreen(
                             )
                         }
                     )
-                    SettingsDivider()
-                    SettingsItem(
-                        icon = Icons.Rounded.Timer,
-                        iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        title = stringResource(R.string.profile_app_lock_relock),
-                        subtitle = if (settings.appLockEnabled) {
-                            appLockTimeoutLabel(settings.appLockTimeout)
-                        } else {
-                            stringResource(R.string.profile_app_lock_relock_off)
-                        },
-                        trailing = {
-                            Icon(
-                                Icons.Rounded.ChevronRight,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        },
-                        enabled = settings.appLockEnabled,
-                        onClick = { showLockTimeoutSheet = true }
-                    )
+                    if (settings.appLockEnabled) {
+                        SettingsDivider()
+                        SettingsItem(
+                            icon = Icons.Rounded.Timer,
+                            iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                            title = stringResource(R.string.profile_app_lock_relock),
+                            subtitle = appLockTimeoutLabel(settings.appLockTimeout),
+                            trailing = {
+                                Icon(
+                                    Icons.Rounded.ChevronRight,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            onClick = { showLockTimeoutSheet = true }
+                        )
+                    }
                     SettingsDivider()
                     SettingsItem(
                         icon = Icons.Rounded.VisibilityOff,
@@ -456,6 +454,24 @@ fun ProfileScreen(
                                 onCheckedChange = { enabled ->
                                     scope.launch {
                                         container.settingsStore.setSecureScreenEnabled(enabled)
+                                    }
+                                }
+                            )
+                        }
+                    )
+                    SettingsDivider()
+                    SettingsItem(
+                        icon = Icons.Rounded.PhoneAndroid,
+                        iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        title = stringResource(R.string.profile_flip_to_exit),
+                        subtitle = stringResource(R.string.profile_flip_to_exit_desc),
+                        trailing = {
+                            Switch(
+                                checked = settings.flipToExitEnabled,
+                                onCheckedChange = { enabled ->
+                                    scope.launch {
+                                        container.settingsStore.setFlipToExitEnabled(enabled)
                                     }
                                 }
                             )

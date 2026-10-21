@@ -40,6 +40,8 @@ data class AppSettings(
     val pipEnabled: Boolean = true,
     /** 当前选集播放结束后是否自动连播下一集 */
     val autoPlayNext: Boolean = true,
+    /** 全屏播放时将手机屏幕朝下，是否停止播放并结束应用 */
+    val flipToExitEnabled: Boolean = false,
     /** 播放器画面比例（适应/填充/裁切填满），全局默认、跨影片持久化 */
     val videoResizeMode: ResizeModeOption = ResizeModeOption.FIT,
     /** 冷启动是否需要生物识别/设备凭据解锁 */
@@ -98,6 +100,7 @@ class SettingsStore(context: Context) {
             }.getOrDefault(DarkMode.SYSTEM),
             pipEnabled = prefs[KEY_PIP_ENABLED] ?: true,
             autoPlayNext = prefs[KEY_AUTO_PLAY_NEXT] ?: true,
+            flipToExitEnabled = prefs[KEY_FLIP_TO_EXIT] ?: false,
             videoResizeMode = runCatching {
                 ResizeModeOption.valueOf(prefs[KEY_VIDEO_RESIZE_MODE] ?: ResizeModeOption.FIT.name)
             }.getOrDefault(ResizeModeOption.FIT),
@@ -139,6 +142,10 @@ class SettingsStore(context: Context) {
         store.edit { it[KEY_AUTO_PLAY_NEXT] = enabled }
     }
 
+    suspend fun setFlipToExitEnabled(enabled: Boolean) {
+        store.edit { it[KEY_FLIP_TO_EXIT] = enabled }
+    }
+
     suspend fun setVideoResizeMode(mode: ResizeModeOption) {
         store.edit { it[KEY_VIDEO_RESIZE_MODE] = mode.name }
     }
@@ -165,6 +172,7 @@ class SettingsStore(context: Context) {
         val KEY_DARK_MODE = stringPreferencesKey("dark_mode")
         val KEY_PIP_ENABLED = booleanPreferencesKey("pip_enabled")
         val KEY_AUTO_PLAY_NEXT = booleanPreferencesKey("auto_play_next")
+        val KEY_FLIP_TO_EXIT = booleanPreferencesKey("flip_to_exit_enabled")
         val KEY_VIDEO_RESIZE_MODE = stringPreferencesKey("video_resize_mode")
         val KEY_APP_LOCK_ENABLED = booleanPreferencesKey("app_lock_enabled")
         val KEY_APP_LOCK_TIMEOUT = stringPreferencesKey("app_lock_timeout")

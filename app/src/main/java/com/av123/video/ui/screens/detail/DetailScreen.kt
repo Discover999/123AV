@@ -312,6 +312,10 @@ fun DetailScreen(
                     onAutoPlayNextChange = { enabled ->
                         scope.launch { container.settingsStore.setAutoPlayNext(enabled) }
                     },
+                    flipToExitEnabled = appSettings.flipToExitEnabled,
+                    onFlipToExitChange = { enabled ->
+                        scope.launch { container.settingsStore.setFlipToExitEnabled(enabled) }
+                    },
                     resizeMode = appSettings.videoResizeMode,
                     onResizeModeChange = { mode ->
                         scope.launch { container.settingsStore.setVideoResizeMode(mode) }
@@ -442,6 +446,8 @@ private fun DetailContent(
     pipEnabled: Boolean = true,
     autoPlayNext: Boolean = true,
     onAutoPlayNextChange: (Boolean) -> Unit = {},
+    flipToExitEnabled: Boolean = false,
+    onFlipToExitChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
     onEpisodeEnded: () -> Unit = {}
@@ -473,6 +479,8 @@ private fun DetailContent(
             pipEnabled = pipEnabled,
             autoPlayNext = autoPlayNext,
             onAutoPlayNextChange = onAutoPlayNextChange,
+            flipToExitEnabled = flipToExitEnabled,
+            onFlipToExitChange = onFlipToExitChange,
             resizeMode = resizeMode,
             onResizeModeChange = onResizeModeChange,
             onEpisodeEnded = onEpisodeEnded,

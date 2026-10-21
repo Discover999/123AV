@@ -10,6 +10,10 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.database.ContentObserver
 import android.graphics.Rect
+import android.hardware.Sensor
+import android.hardware.SensorEvent
+import android.hardware.SensorEventListener
+import android.hardware.SensorManager
 import android.media.AudioManager
 import android.os.Build
 import android.os.Handler
@@ -193,6 +197,12 @@ private const val DOUBLE_TAP_CENTER_ZONE = 0.40f
 /** 双击快退/快进反馈浮层的显示时长 */
 private const val DOUBLE_TAP_FEEDBACK_MS = 600L
 
+/** 翻转退出：屏幕朝下时重力 z 轴阈值（静止朝下约 -9.8） */
+private const val FLIP_TO_EXIT_FACE_DOWN_Z = -7.0f
+
+/** 翻转退出：连续朝下的最短持续时间，避免翻转过程误触 */
+private const val FLIP_TO_EXIT_HOLD_MS = 500L
+
 /**
  * 现代风格流媒体播放器。
  *
@@ -221,6 +231,8 @@ private const val DOUBLE_TAP_FEEDBACK_MS = 600L
  * @param onEpisodeEnded 本集播放结束回调：调用方可据此自动连播下一集
  * @param autoPlayNext 片尾自动连播开关（与“我的-播放设置”共用同一份偏好）
  * @param onAutoPlayNextChange 自动连播开关变化回调
+ * @param flipToExitEnabled 全屏播放时屏幕朝下是否自动停止并结束应用
+ * @param onFlipToExitChange 翻转退出开关变化回调
  * @param pipEnabled 是否允许画中画（用户设置开关）；关闭时 Home/手势回桌面不进入小窗
  */
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -242,6 +254,8 @@ fun VideoPlayer(
     pipEnabled: Boolean = true,
     autoPlayNext: Boolean = true,
     onAutoPlayNextChange: (Boolean) -> Unit = {},
+    flipToExitEnabled: Boolean = false,
+    onFlipToExitChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {}
 ) {
@@ -510,6 +524,54 @@ fun VideoPlayer(
         if (isLocked && isLockControlVisible) {
             delay(CONTROLLER_AUTO_HIDE_MS.milliseconds)
             if (isLocked) isLockControlVisible = false
+        }
+    }
+
+    // 隐私：全屏播放时屏幕朝下持续一段时间，立即暂停并结束任务
+    DisposableEffect(flipToExitEnabled, isFullscreen, isInPip, error, player) {
+        val sensorManager =
+            context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
+        val gravitySensor = sensorManager?.getDefaultSensor(Sensor.TYPE_GRAVITY)
+            ?: sensorManager?.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val hostActivity = activity
+        if (!flipToExitEnabled || !isFullscreen || isInPip || error != null ||
+            sensorManager == null || gravitySensor == null || hostActivity == null
+        ) {
+            onDispose { }
+        } else {
+            var faceDownSinceMs = 0L
+            var triggered = false
+            val listener = object : SensorEventListener {
+                override fun onSensorChanged(event: SensorEvent) {
+                    if (triggered) return
+                    val activelyPlaying = player.playWhenReady &&
+                        player.playbackState != Player.STATE_ENDED
+                    if (!activelyPlaying) {
+                        faceDownSinceMs = 0L
+                        return
+                    }
+                    if (event.values[2] < FLIP_TO_EXIT_FACE_DOWN_Z) {
+                        val now = SystemClock.elapsedRealtime()
+                        if (faceDownSinceMs == 0L) faceDownSinceMs = now
+                        if (now - faceDownSinceMs >= FLIP_TO_EXIT_HOLD_MS) {
+                            triggered = true
+                            player.pause()
+                            hostActivity.finishAndRemoveTask()
+                        }
+                    } else {
+                        faceDownSinceMs = 0L
+                    }
+                }
+
+                override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) = Unit
+            }
+            sensorManager.registerListener(
+                listener,
+                gravitySensor,
+                SensorManager.SENSOR_DELAY_UI,
+                Handler(Looper.getMainLooper())
+            )
+            onDispose { sensorManager.unregisterListener(listener) }
         }
     }
 
@@ -857,6 +919,8 @@ fun VideoPlayer(
                 onShowPlaybackStats = { showPlaybackStats = true },
                 autoPlayNext = autoPlayNext,
                 onAutoPlayNextChange = onAutoPlayNextChange,
+                flipToExitEnabled = flipToExitEnabled,
+                onFlipToExitChange = onFlipToExitChange,
                 resizeMode = resizeMode,
                 onResizeModeChange = onResizeModeChange,
                 modifier = Modifier.fillMaxSize()
