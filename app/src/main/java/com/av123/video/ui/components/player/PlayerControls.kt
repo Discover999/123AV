@@ -419,21 +419,6 @@ internal fun PlayerControls(
             }
         }
 
-        // 竖屏时顶部没有标题栏，在播放器右上角悬浮设置齿轮
-        if (!isFullscreen) {
-            PlayerSettingsButton(
-                settingsExpanded = showSettingsSheet,
-                onSettingsExpandedChange = { showSettingsSheet = it },
-                urlSheetExpanded = showUrlSheet,
-                onUrlSheetExpandedChange = { showUrlSheet = it },
-                playbackUrl = playbackUrl,
-                resizeMode = resizeMode,
-                onResizeModeChange = onResizeModeChange,
-                onShowStats = onShowPlaybackStats,
-                modifier = Modifier.align(Alignment.TopEnd)
-            )
-        }
-
         // 竖屏画面小，不放中心键；全屏常显播放/暂停
         if (isFullscreen) {
             CenterPlayButton(
@@ -532,7 +517,7 @@ internal fun PlayerControls(
                     )
                 }
 
-                if (availableTracks.isNotEmpty()) {
+                if (isFullscreen && availableTracks.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Box {
                         TextButton(

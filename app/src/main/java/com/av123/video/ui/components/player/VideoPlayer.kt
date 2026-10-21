@@ -832,14 +832,22 @@ fun VideoPlayer(
             )
         }
 
-        // 全屏锁定键：放在右侧（远离手机状态栏一侧），锁定时只留这一键
+        // 全屏锁定键：左右各放一个，任一侧被挖孔/刘海遮住时仍可操作
         if (isFullscreen && (isControllerVisible || isLocked)) {
+            val onLockClick: () -> Unit = {
+                isLocked = !isLocked
+                if (!isLocked) isControllerVisible = true
+            }
             LockButton(
                 locked = isLocked,
-                onClick = {
-                    isLocked = !isLocked
-                    if (!isLocked) isControllerVisible = true
-                },
+                onClick = onLockClick,
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 10.dp)
+            )
+            LockButton(
+                locked = isLocked,
+                onClick = onLockClick,
                 modifier = Modifier
                     .align(Alignment.CenterEnd)
                     .padding(end = 10.dp)
