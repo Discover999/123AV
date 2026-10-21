@@ -397,7 +397,7 @@ internal fun SpeedPopupMenu(
     onSelected: (Float) -> Unit,
     onDismiss: () -> Unit
 ) {
-    val speeds = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+    val speeds = listOf(0.5f, 1f, 1.25f, 1.5f, 2f, 3f)
     val selectedColor = MaterialTheme.colorScheme.primary
 
     CapsulePopupMenu(expanded = expanded, onDismiss = onDismiss) {

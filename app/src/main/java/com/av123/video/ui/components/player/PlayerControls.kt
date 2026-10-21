@@ -676,7 +676,7 @@ internal fun PlayerControls(
 
 }
 
-private val SETTINGS_SPEED_OPTIONS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+private val SETTINGS_SPEED_OPTIONS = listOf(0.5f, 1f, 1.25f, 1.5f, 2f, 3f)
 
 /** 全屏设置：右侧滑出面板，B 站式标题 + 行式配置 */
 @Composable

@@ -754,7 +754,7 @@ fun VideoPlayer(
             }
         }
 
-        // 双击左右半屏快退/快进的动画反馈（显示在被点击一侧）
+        // 双击左右半屏快退/快进的动画反馈（顶部居中，和长按 2× 提示同位置，避免被手指遮挡）
         val feedback = doubleSeekFeedback
         if (feedback != null) {
             LaunchedEffect(feedback) {
@@ -763,9 +763,9 @@ fun VideoPlayer(
             }
             DoubleSeekFeedback(
                 direction = feedback.first,
-                modifier = Modifier.align(
-                    if (feedback.first < 0) Alignment.CenterStart else Alignment.CenterEnd
-                )
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = if (isFullscreen) 56.dp else 12.dp)
             )
         }
 

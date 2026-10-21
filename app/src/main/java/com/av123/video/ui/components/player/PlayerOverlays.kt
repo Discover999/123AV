@@ -162,8 +162,9 @@ internal fun SeekTimeBubble(
 }
 
 /**
- * 双击左/右半屏快退快进的反馈浮层：圆形深色底 + 10 秒跳转图标，
- * 出现时带一次弹性放大动画；由调用方对齐到画面左侧 / 右侧。
+ * 双击左/右半屏快退快进的反馈浮层：与长按 2× 提示同款深色胶囊，
+ * 横向排列 10 秒跳转图标与 -10s/+10s，出现时带一次弹性放大动画；
+ * 由调用方对齐到画面顶部中央，与长按 2× 提示同位置。
  *
  * @param direction -1=快退（左），1=快进（右）
  */
@@ -181,33 +182,30 @@ internal fun DoubleSeekFeedback(
         )
     }
     val isRewind = direction < 0
-    Box(
+    Row(
         modifier = modifier
-            .padding(horizontal = 28.dp)
             .graphicsLayer {
                 scaleX = scale.value
                 scaleY = scale.value
             }
-            .clip(CircleShape)
+            .clip(AppShapes.ExtraLarge)
             .background(Color.Black.copy(alpha = 0.55f))
-            .padding(20.dp),
-        contentAlignment = Alignment.Center
+            .padding(horizontal = 12.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Icon(
-                imageVector = if (isRewind) Icons.Filled.Replay10 else Icons.Filled.Forward10,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(34.dp)
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = "10 秒",
-                color = Color.White,
-                fontSize = AppTypeScale.Label,
-                fontWeight = FontWeight.Medium
-            )
-        }
+        Icon(
+            imageVector = if (isRewind) Icons.Filled.Replay10 else Icons.Filled.Forward10,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = if (isRewind) "-10s" else "+10s",
+            color = Color.White,
+            fontSize = AppTypeScale.Label,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
