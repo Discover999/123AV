@@ -99,6 +99,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -116,6 +117,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -204,6 +206,8 @@ internal fun PlayerControls(
     onControlPopupVisibleChange: (Boolean) -> Unit,
     onToggleFullscreen: () -> Unit,
     onShowPlaybackStats: () -> Unit,
+    autoPlayNext: Boolean,
+    onAutoPlayNextChange: (Boolean) -> Unit,
     resizeMode: ResizeModeOption,
     onResizeModeChange: (ResizeModeOption) -> Unit,
     modifier: Modifier = Modifier
@@ -659,6 +663,8 @@ internal fun PlayerControls(
                 onResizeModeChange = onResizeModeChange,
                 selectedSpeed = selectedSpeed,
                 onSpeedChange = onSpeedChange,
+                autoPlayNext = autoPlayNext,
+                onAutoPlayNextChange = onAutoPlayNextChange,
                 onShowStats = {
                     showSettingsSheet = false
                     onShowPlaybackStats()
@@ -679,6 +685,8 @@ private fun SettingsSheet(
     onResizeModeChange: (ResizeModeOption) -> Unit,
     selectedSpeed: Float,
     onSpeedChange: (Float) -> Unit,
+    autoPlayNext: Boolean,
+    onAutoPlayNextChange: (Boolean) -> Unit,
     onShowStats: () -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -785,9 +793,42 @@ private fun SettingsSheet(
         }
         Spacer(modifier = Modifier.height(10.dp))
         SettingsSheetDivider()
+        SettingsSheetSwitchRow(
+            label = stringResource(R.string.profile_auto_next),
+            checked = autoPlayNext,
+            onCheckedChange = onAutoPlayNextChange
+        )
+        SettingsSheetDivider()
         SettingsSheetRow(
             label = stringResource(R.string.player_menu_stats),
             onClick = onShowStats
+        )
+    }
+}
+
+@Composable
+private fun SettingsSheetSwitchRow(
+    label: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable { onCheckedChange(!checked) },
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = Color.White.copy(alpha = 0.88f),
+            fontSize = AppTypeScale.Body,
+            modifier = Modifier.weight(1f)
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            modifier = Modifier.scale(0.8f)
         )
     }
 }

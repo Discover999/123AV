@@ -308,6 +308,10 @@ fun DetailScreen(
                     onPlaybackProgress = detailViewModel::savePlaybackProgress,
                     onPlayingElapsed = detailViewModel::onPlayingElapsed,
                     pipEnabled = appSettings.pipEnabled,
+                    autoPlayNext = appSettings.autoPlayNext,
+                    onAutoPlayNextChange = { enabled ->
+                        scope.launch { container.settingsStore.setAutoPlayNext(enabled) }
+                    },
                     resizeMode = appSettings.videoResizeMode,
                     onResizeModeChange = { mode ->
                         scope.launch { container.settingsStore.setVideoResizeMode(mode) }
@@ -436,6 +440,8 @@ private fun DetailContent(
     modifier: Modifier = Modifier,
     onPlayingElapsed: (Long) -> Unit = {},
     pipEnabled: Boolean = true,
+    autoPlayNext: Boolean = true,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
     onEpisodeEnded: () -> Unit = {}
@@ -465,6 +471,8 @@ private fun DetailContent(
             onPlaybackProgress = onPlaybackProgress,
             onPlayingElapsed = onPlayingElapsed,
             pipEnabled = pipEnabled,
+            autoPlayNext = autoPlayNext,
+            onAutoPlayNextChange = onAutoPlayNextChange,
             resizeMode = resizeMode,
             onResizeModeChange = onResizeModeChange,
             onEpisodeEnded = onEpisodeEnded,

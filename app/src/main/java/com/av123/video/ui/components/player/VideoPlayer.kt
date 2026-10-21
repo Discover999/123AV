@@ -219,6 +219,8 @@ private const val DOUBLE_TAP_FEEDBACK_MS = 600L
  * @param onPlayingElapsed 播放墙钟增量回调（ms）：仅 isPlaying 且无错误期间每个轮询 tick
  *   触发，暂停/缓冲/seek 不计；供观看时长统计累计
  * @param onEpisodeEnded 本集播放结束回调：调用方可据此自动连播下一集
+ * @param autoPlayNext 片尾自动连播开关（与“我的-播放设置”共用同一份偏好）
+ * @param onAutoPlayNextChange 自动连播开关变化回调
  * @param pipEnabled 是否允许画中画（用户设置开关）；关闭时 Home/手势回桌面不进入小窗
  */
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -238,6 +240,8 @@ fun VideoPlayer(
     onPlayingElapsed: (deltaMs: Long) -> Unit = {},
     onEpisodeEnded: () -> Unit = {},
     pipEnabled: Boolean = true,
+    autoPlayNext: Boolean = true,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {}
 ) {
@@ -339,7 +343,15 @@ fun VideoPlayer(
     var doubleSeekFeedback by remember(player) { mutableStateOf<Pair<Int, Long>?>(null) }
     // 全屏锁定：屏蔽画面手势与控件，只留解锁键
     var isLocked by remember(player) { mutableStateOf(false) }
-    LaunchedEffect(isFullscreen) { if (!isFullscreen) isLocked = false }
+    // 锁定态解锁键独立计时：锁上后短暂显示，超时隐藏；点画面重新唤出
+    var isLockControlVisible by remember(player) { mutableStateOf(false) }
+    var lockControlInteractionTick by remember { mutableIntStateOf(0) }
+    LaunchedEffect(isFullscreen) {
+        if (!isFullscreen) {
+            isLocked = false
+            isLockControlVisible = false
+        }
+    }
 
     val mainActivity = activity as? MainActivity
 
@@ -493,6 +505,14 @@ fun VideoPlayer(
         }
     }
 
+    // 锁定态解锁键也在超时后隐藏，避免一直压在画面上
+    LaunchedEffect(isLocked, isLockControlVisible, lockControlInteractionTick) {
+        if (isLocked && isLockControlVisible) {
+            delay(CONTROLLER_AUTO_HIDE_MS.milliseconds)
+            if (isLocked) isLockControlVisible = false
+        }
+    }
+
     // 长按快放：按住期间强制 2x；松手或播放出错时恢复倍速菜单所选速度
     LaunchedEffect(isLongPressSpeed, error) {
         if (isLongPressSpeed && error == null) {
@@ -509,6 +529,7 @@ fun VideoPlayer(
     BackHandler(enabled = isFullscreen) {
         if (isLocked) {
             isLocked = false
+            isLockControlVisible = false
             isControllerVisible = true
         } else {
             onFullscreenChange(false)
@@ -568,7 +589,16 @@ fun VideoPlayer(
             modifier = Modifier
                 .fillMaxSize()
                 .pointerInput(isInPip, isLocked) {
-                    if (isInPip || isLocked) return@pointerInput
+                    if (isInPip) return@pointerInput
+                    if (isLocked) {
+                        detectTapGestures(
+                            onTap = {
+                                isLockControlVisible = true
+                                lockControlInteractionTick++
+                            }
+                        )
+                        return@pointerInput
+                    }
                     detectTapGestures(
                         onTap = { isControllerVisible = !isControllerVisible },
                         onDoubleTap = { tapOffset ->
@@ -825,17 +855,28 @@ fun VideoPlayer(
                 onControlPopupVisibleChange = { isControlPopupVisible = it },
                 onToggleFullscreen = { onFullscreenChange(!isFullscreen) },
                 onShowPlaybackStats = { showPlaybackStats = true },
+                autoPlayNext = autoPlayNext,
+                onAutoPlayNextChange = onAutoPlayNextChange,
                 resizeMode = resizeMode,
                 onResizeModeChange = onResizeModeChange,
                 modifier = Modifier.fillMaxSize()
             )
         }
 
-        // 全屏锁定键：左右各放一个，任一侧被挖孔/刘海遮住时仍可操作
-        if (isFullscreen && (isControllerVisible || isLocked) && !isControlPopupVisible) {
+        // 全屏锁定键：左右各放一个，任一侧被挖孔/刘海遮住时仍可操作；
+        // 锁定态下解锁键也超时隐藏，点画面重新唤出
+        val showLockControl = if (isLocked) isLockControlVisible else isControllerVisible
+        if (isFullscreen && showLockControl && !isControlPopupVisible) {
             val onLockClick: () -> Unit = {
-                isLocked = !isLocked
-                if (!isLocked) isControllerVisible = true
+                if (isLocked) {
+                    isLocked = false
+                    isLockControlVisible = false
+                    isControllerVisible = true
+                } else {
+                    isLocked = true
+                    isLockControlVisible = true
+                    lockControlInteractionTick++
+                }
             }
             LockButton(
                 locked = isLocked,
@@ -929,7 +970,7 @@ private fun MiniSeekBar(
     }
 }
 
-/** 全屏锁定键：放在右侧，锁定时是唯一可点目标，点一下解锁 */
+/** 全屏锁定键：左右各一枚，锁定时是唯一可点目标，点一下解锁 */
 @Composable
 private fun LockButton(
     locked: Boolean,
@@ -938,7 +979,7 @@ private fun LockButton(
 ) {
     Box(
         modifier = modifier
-            .size(36.dp)
+            .size(40.dp)
             .clip(CircleShape)
             .background(Color.Black.copy(alpha = 0.45f))
             .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
@@ -951,7 +992,7 @@ private fun LockButton(
                 if (locked) R.string.player_unlock else R.string.player_lock
             ),
             tint = Color.White,
-            modifier = Modifier.size(16.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }

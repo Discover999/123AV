@@ -531,6 +531,8 @@ internal fun PlayerArea(
     modifier: Modifier = Modifier,
     onPlayingElapsed: (Long) -> Unit = {},
     pipEnabled: Boolean = true,
+    autoPlayNext: Boolean = true,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
     onEpisodeEnded: () -> Unit = {}
@@ -553,6 +555,8 @@ internal fun PlayerArea(
             onPlaybackProgress = onPlaybackProgress,
             onPlayingElapsed = onPlayingElapsed,
             pipEnabled = pipEnabled,
+            autoPlayNext = autoPlayNext,
+            onAutoPlayNextChange = onAutoPlayNextChange,
             resizeMode = resizeMode,
             onResizeModeChange = onResizeModeChange,
             onEpisodeEnded = onEpisodeEnded,
