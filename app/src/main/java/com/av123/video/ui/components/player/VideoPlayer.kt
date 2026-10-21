@@ -187,8 +187,8 @@ private const val HORIZONTAL_SEEK_FRACTION = 0.8f
 /** 双击左右半屏快退 / 快进的步长（毫秒） */
 private const val DOUBLE_TAP_SEEK_STEP_MS = 10_000L
 
-/** 双击中央播放/暂停热区占画面宽度的比例（中间 24%） */
-private const val DOUBLE_TAP_CENTER_ZONE = 0.24f
+/** 双击中央播放/暂停热区占画面宽度的比例（中间 40%，左右各 30%） */
+private const val DOUBLE_TAP_CENTER_ZONE = 0.40f
 
 /** 双击快退/快进反馈浮层的显示时长 */
 private const val DOUBLE_TAP_FEEDBACK_MS = 600L
@@ -802,7 +802,6 @@ fun VideoPlayer(
                 position = seekPreviewTargetMs ?: position,
                 duration = duration,
                 bufferedPosition = bufferedPosition,
-                playbackUrl = url,
                 selectedSpeed = selectedSpeed,
                 availableTracks = availableTracks,
                 selectedTrack = selectedTrack,

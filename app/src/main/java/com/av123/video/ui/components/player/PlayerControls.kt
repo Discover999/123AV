@@ -190,7 +190,6 @@ internal fun PlayerControls(
     position: Long,
     duration: Long,
     bufferedPosition: Long,
-    playbackUrl: String,
     selectedSpeed: Float,
     availableTracks: List<VideoTrack>,
     selectedTrack: VideoTrack?,
@@ -228,7 +227,6 @@ internal fun PlayerControls(
     var showSpeedSheet by remember { mutableStateOf(false) }
     var showTrackSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
-    var showUrlSheet by remember { mutableStateOf(false) }
     // 全屏改用右侧面板，锚定倍速弹层只在竖屏使用
     LaunchedEffect(isFullscreen) {
         if (isFullscreen) showSpeedSheet = false
@@ -256,9 +254,9 @@ internal fun PlayerControls(
 
     val effectivelyMuted = isMuted || volume == 0
 
-    LaunchedEffect(showSpeedSheet, showTrackSheet, showSettingsSheet, showUrlSheet, showVolumePanel) {
+    LaunchedEffect(showSpeedSheet, showTrackSheet, showSettingsSheet, showVolumePanel) {
         onControlPopupVisibleChange(
-            showSpeedSheet || showTrackSheet || showSettingsSheet || showUrlSheet || showVolumePanel
+            showSpeedSheet || showTrackSheet || showSettingsSheet || showVolumePanel
         )
     }
 
@@ -341,9 +339,9 @@ internal fun PlayerControls(
         onDispose { context.unregisterReceiver(receiver) }
     }
 
-    // 设置面板/链接弹层打开时，返回键先关弹层，不直接退出全屏
-    BackHandler(enabled = showSettingsSheet || showUrlSheet) {
-        if (showUrlSheet) showUrlSheet = false else showSettingsSheet = false
+    // 设置面板打开时，返回键先关面板，不直接退出全屏
+    BackHandler(enabled = showSettingsSheet) {
+        showSettingsSheet = false
     }
 
     DisposableEffect(Unit) {
@@ -665,24 +663,8 @@ internal fun PlayerControls(
                     showSettingsSheet = false
                     onShowPlaybackStats()
                 },
-                onShowUrl = {
-                    showSettingsSheet = false
-                    showUrlSheet = true
-                },
                 onDismiss = { showSettingsSheet = false }
             )
-        }
-        if (showUrlSheet) {
-            Popup(
-                alignment = Alignment.Center,
-                onDismissRequest = { showUrlSheet = false },
-                properties = PopupProperties(focusable = true)
-            ) {
-                PlaybackUrlContent(
-                    url = playbackUrl,
-                    onDismiss = { showUrlSheet = false }
-                )
-            }
         }
     }
 
@@ -698,7 +680,6 @@ private fun SettingsSheet(
     selectedSpeed: Float,
     onSpeedChange: (Float) -> Unit,
     onShowStats: () -> Unit,
-    onShowUrl: () -> Unit,
     onDismiss: () -> Unit
 ) {
     Column(
@@ -807,11 +788,6 @@ private fun SettingsSheet(
         SettingsSheetRow(
             label = stringResource(R.string.player_menu_stats),
             onClick = onShowStats
-        )
-        SettingsSheetDivider()
-        SettingsSheetRow(
-            label = stringResource(R.string.player_menu_url),
-            onClick = onShowUrl
         )
     }
 }
