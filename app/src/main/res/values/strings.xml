@@ -223,6 +223,8 @@
     <string name="player_unmute">取消静音</string>
     <string name="player_track_auto">自动</string>
     <string name="player_settings">设置</string>
+    <string name="player_settings_title">播放设置</string>
+    <string name="player_speed_title">倍速</string>
     <string name="player_lock">锁定</string>
     <string name="player_unlock">解锁</string>
     <string name="player_menu_stats">播放详情</string>

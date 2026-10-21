@@ -39,6 +39,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.scaleIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -227,6 +229,10 @@ internal fun PlayerControls(
     var showTrackSheet by remember { mutableStateOf(false) }
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showUrlSheet by remember { mutableStateOf(false) }
+    // 全屏改用右侧面板，锚定倍速弹层只在竖屏使用
+    LaunchedEffect(isFullscreen) {
+        if (isFullscreen) showSpeedSheet = false
+    }
     var showVolumePanel by remember { mutableStateOf(false) }
     var volume by remember {
         mutableIntStateOf(audioManager.getStreamVolume(AudioManager.STREAM_MUSIC))
@@ -335,6 +341,11 @@ internal fun PlayerControls(
         onDispose { context.unregisterReceiver(receiver) }
     }
 
+    // 设置面板/链接弹层打开时，返回键先关弹层，不直接退出全屏
+    BackHandler(enabled = showSettingsSheet || showUrlSheet) {
+        if (showUrlSheet) showUrlSheet = false else showSettingsSheet = false
+    }
+
     DisposableEffect(Unit) {
         onDispose { onControlPopupVisibleChange(false) }
     }
@@ -404,16 +415,17 @@ internal fun PlayerControls(
                                 fontSize = AppTypeScale.Caption
                             )
                         }
-                        PlayerSettingsButton(
-                            settingsExpanded = showSettingsSheet,
-                            onSettingsExpandedChange = { showSettingsSheet = it },
-                            urlSheetExpanded = showUrlSheet,
-                            onUrlSheetExpandedChange = { showUrlSheet = it },
-                            playbackUrl = playbackUrl,
-                            resizeMode = resizeMode,
-                            onResizeModeChange = onResizeModeChange,
-                            onShowStats = onShowPlaybackStats
-                        )
+                        IconButton(
+                            onClick = { showSettingsSheet = true },
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Settings,
+                                contentDescription = stringResource(R.string.player_settings),
+                                tint = Color.White,
+                                modifier = Modifier.size(22.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -491,7 +503,10 @@ internal fun PlayerControls(
 
                 Box {
                     TextButton(
-                        onClick = { showSpeedSheet = true },
+                        onClick = {
+                            if (isFullscreen) showSettingsSheet = true
+                            else showSpeedSheet = true
+                        },
                         shape = AppShapes.Large,
                         colors = ButtonDefaults.textButtonColors(
                             containerColor = Color.White.copy(alpha = 0.12f)
@@ -616,8 +631,231 @@ internal fun PlayerControls(
                 }
             }
         }
+
+        // 全屏设置：右侧滑出面板 + 可点关闭的遮罩
+        AnimatedVisibility(
+            visible = showSettingsSheet,
+            enter = fadeIn(Motion.Overlay),
+            exit = fadeOut(Motion.Overlay)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null
+                    ) { showSettingsSheet = false }
+            )
+        }
+        AnimatedVisibility(
+            visible = showSettingsSheet,
+            enter = slideInHorizontally(Motion.overlay<IntOffset>()) { it } +
+                fadeIn(Motion.Overlay),
+            exit = slideOutHorizontally(Motion.overlay<IntOffset>()) { it } +
+                fadeOut(Motion.Overlay),
+            modifier = Modifier.align(Alignment.CenterEnd)
+        ) {
+            SettingsSheet(
+                resizeMode = resizeMode,
+                onResizeModeChange = onResizeModeChange,
+                selectedSpeed = selectedSpeed,
+                onSpeedChange = onSpeedChange,
+                onShowStats = {
+                    showSettingsSheet = false
+                    onShowPlaybackStats()
+                },
+                onShowUrl = {
+                    showSettingsSheet = false
+                    showUrlSheet = true
+                },
+                onDismiss = { showSettingsSheet = false }
+            )
+        }
+        if (showUrlSheet) {
+            Popup(
+                alignment = Alignment.Center,
+                onDismissRequest = { showUrlSheet = false },
+                properties = PopupProperties(focusable = true)
+            ) {
+                PlaybackUrlContent(
+                    url = playbackUrl,
+                    onDismiss = { showUrlSheet = false }
+                )
+            }
+        }
     }
 
+}
+
+private val SETTINGS_SPEED_OPTIONS = listOf(0.5f, 0.75f, 1f, 1.25f, 1.5f, 2f)
+
+/** 全屏设置：右侧滑出面板，B 站式标题 + 行式配置 */
+@Composable
+private fun SettingsSheet(
+    resizeMode: ResizeModeOption,
+    onResizeModeChange: (ResizeModeOption) -> Unit,
+    selectedSpeed: Float,
+    onSpeedChange: (Float) -> Unit,
+    onShowStats: () -> Unit,
+    onShowUrl: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .width(280.dp)
+            .fillMaxHeight()
+            .background(Color(0xFF171214))
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(R.string.player_settings_title),
+                color = Color.White,
+                fontSize = AppTypeScale.BodyLarge,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.weight(1f)
+            )
+            IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.common_close),
+                    tint = Color.White.copy(alpha = 0.8f),
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.player_resize_title),
+            color = Color.White.copy(alpha = 0.55f),
+            fontSize = AppTypeScale.Label
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ResizeModeOption.entries.forEach { option ->
+                val selected = option == resizeMode
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(36.dp)
+                        .clip(AppShapes.Small)
+                        .background(
+                            if (selected) MaterialTheme.colorScheme.primary
+                            else Color.White.copy(alpha = 0.08f)
+                        )
+                        .clickable { onResizeModeChange(option) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = when (option) {
+                            ResizeModeOption.FIT -> stringResource(R.string.player_resize_fit)
+                            ResizeModeOption.FILL -> stringResource(R.string.player_resize_fill)
+                            ResizeModeOption.ZOOM -> stringResource(R.string.player_resize_zoom)
+                        },
+                        color = if (selected) Color.White
+                        else Color.White.copy(alpha = 0.75f),
+                        fontSize = AppTypeScale.Label,
+                        fontWeight = if (selected) FontWeight.SemiBold
+                        else FontWeight.Normal,
+                        maxLines = 1
+                    )
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        Text(
+            text = stringResource(R.string.player_speed_title),
+            color = Color.White.copy(alpha = 0.55f),
+            fontSize = AppTypeScale.Label
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            SETTINGS_SPEED_OPTIONS.chunked(3).forEach { row ->
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    row.forEach { speed ->
+                        val selected = speed == selectedSpeed
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(36.dp)
+                                .clip(AppShapes.Small)
+                                .background(
+                                    if (selected) MaterialTheme.colorScheme.primary
+                                    else Color.White.copy(alpha = 0.08f)
+                                )
+                                .clickable { onSpeedChange(speed) },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "${speed}x",
+                                color = if (selected) Color.White
+                                else Color.White.copy(alpha = 0.75f),
+                                fontSize = AppTypeScale.Label,
+                                fontWeight = if (selected) FontWeight.SemiBold
+                                else FontWeight.Normal,
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Spacer(modifier = Modifier.height(10.dp))
+        SettingsSheetDivider()
+        SettingsSheetRow(
+            label = stringResource(R.string.player_menu_stats),
+            onClick = onShowStats
+        )
+        SettingsSheetDivider()
+        SettingsSheetRow(
+            label = stringResource(R.string.player_menu_url),
+            onClick = onShowUrl
+        )
+    }
+}
+
+@Composable
+private fun SettingsSheetRow(label: String, value: String? = null, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            color = Color.White.copy(alpha = 0.88f),
+            fontSize = AppTypeScale.Body,
+            modifier = Modifier.weight(1f)
+        )
+        if (value != null) {
+            Text(
+                text = value,
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = AppTypeScale.Label
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+        }
+        Icon(
+            imageVector = Icons.Filled.ChevronRight,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.4f),
+            modifier = Modifier.size(16.dp)
+        )
+    }
+}
+
+@Composable
+private fun SettingsSheetDivider() {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(1.dp)
+            .background(Color.White.copy(alpha = 0.06f))
+    )
 }
 
 /** 只有网络状态用胶囊，时间和电量保持裸文字/图标 */

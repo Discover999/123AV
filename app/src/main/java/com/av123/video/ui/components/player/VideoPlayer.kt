@@ -833,7 +833,7 @@ fun VideoPlayer(
         }
 
         // 全屏锁定键：左右各放一个，任一侧被挖孔/刘海遮住时仍可操作
-        if (isFullscreen && (isControllerVisible || isLocked)) {
+        if (isFullscreen && (isControllerVisible || isLocked) && !isControlPopupVisible) {
             val onLockClick: () -> Unit = {
                 isLocked = !isLocked
                 if (!isLocked) isControllerVisible = true
