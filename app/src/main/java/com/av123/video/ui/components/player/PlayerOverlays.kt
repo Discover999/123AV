@@ -147,9 +147,9 @@ internal fun SeekTimeBubble(
 ) {
     Box(
         modifier = modifier
-            .clip(AppShapes.Small)
-            .background(Color.Black.copy(alpha = 0.82f))
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.52f))
+            .padding(horizontal = 10.dp, vertical = 4.dp)
     ) {
         Text(
             text = timeText,

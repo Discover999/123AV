@@ -47,6 +47,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -80,6 +81,8 @@ import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material.icons.filled.Replay5
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -334,6 +337,9 @@ fun VideoPlayer(
     // 双击左右半屏快退/快进反馈：first=方向(-1 左退 / 1 右进)，second=触发时间戳
     // （每次双击都是新 Pair，驱动反馈动画重播）
     var doubleSeekFeedback by remember(player) { mutableStateOf<Pair<Int, Long>?>(null) }
+    // 全屏锁定：屏蔽画面手势与控件，只留解锁键
+    var isLocked by remember(player) { mutableStateOf(false) }
+    LaunchedEffect(isFullscreen) { if (!isFullscreen) isLocked = false }
 
     val mainActivity = activity as? MainActivity
 
@@ -499,9 +505,14 @@ fun VideoPlayer(
     // 全屏/退出全屏时同步系统 UI
     FullscreenSystemUiSync(isFullscreen)
 
-    // 返回键：全屏时退出全屏
+    // 返回键：锁定态先解锁，未锁定再退出全屏
     BackHandler(enabled = isFullscreen) {
-        onFullscreenChange(false)
+        if (isLocked) {
+            isLocked = false
+            isControllerVisible = true
+        } else {
+            onFullscreenChange(false)
+        }
     }
 
     Box(
@@ -556,8 +567,8 @@ fun VideoPlayer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(isInPip) {
-                    if (isInPip) return@pointerInput
+                .pointerInput(isInPip, isLocked) {
+                    if (isInPip || isLocked) return@pointerInput
                     detectTapGestures(
                         onTap = { isControllerVisible = !isControllerVisible },
                         onDoubleTap = { tapOffset ->
@@ -607,7 +618,7 @@ fun VideoPlayer(
                         }
                     )
                 }
-                .pointerInput(Unit) {
+                .pointerInput(isLocked) {
                     // 横滑 Seek：累积横向位移换算成目标时间，拖动中只显示预览气泡，
                     // 抬手才真正 seekTo（主流 App 交互，避免拖动中途频繁跳转）
                     var accumulatedDx = 0f
@@ -636,7 +647,11 @@ fun VideoPlayer(
                             active = false
                         },
                         onHorizontalDrag = { _, dragAmount ->
-                            if (isInPip || error != null || duration <= 0L) return@detectHorizontalDragGestures
+                            if (isInPip || error != null || isLocked ||
+                                duration <= 0L
+                            ) {
+                                return@detectHorizontalDragGestures
+                            }
                             if (!active) {
                                 active = true
                                 // 拖动期间禁止控制层自动隐藏（复用进度条拖动标记）
@@ -654,37 +669,57 @@ fun VideoPlayer(
                 }
         )
 
-        // 横滑 Seek 时间预览气泡：方向图标 + 目标时间 + 增量/总时长
+        // 横滑 Seek 读数：小胶囊，贴在进度条上方并跟随拖动位置
         val seekTarget = seekPreviewTargetMs
-        if (seekTarget != null) {
-            val isForward = seekTarget >= seekPreviewStartMs
-            val deltaMs = kotlin.math.abs(seekTarget - seekPreviewStartMs)
-            Column(
+        if (seekTarget != null && duration > 0L) {
+            val fraction = (seekTarget.toFloat() / duration.toFloat()).coerceIn(0f, 1f)
+            Layout(
+                content = { SeekTimeBubble(timeText = formatDuration(seekTarget)) },
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .clip(AppShapes.Medium)
-                    .background(Color.Black.copy(alpha = 0.82f))
-                    .padding(horizontal = 22.dp, vertical = 14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = 12.dp,
+                        end = 12.dp,
+                        bottom = if (isControllerVisible) 84.dp else 46.dp
+                    ),
+                measurePolicy = { measurables, constraints ->
+                    val bubble = measurables.first().measure(Constraints())
+                    layout(constraints.maxWidth, bubble.height) {
+                        val centerX = (constraints.maxWidth * fraction).roundToInt()
+                        val x = (centerX - bubble.width / 2)
+                            .coerceIn(0, (constraints.maxWidth - bubble.width).coerceAtLeast(0))
+                        bubble.placeRelative(x, 0)
+                    }
+                }
+            )
+        }
+
+        // 全屏且控件隐藏时横滑：只在底部浮出一条细进度条，不展开整个底栏
+        AnimatedVisibility(
+            visible = isFullscreen && isSeeking && !isControllerVisible && duration > 0L,
+            enter = fadeIn(Motion.Overlay),
+            exit = fadeOut(Motion.Overlay),
+            modifier = Modifier.align(Alignment.BottomCenter)
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.35f))
+                        )
+                    )
+                    .padding(horizontal = 12.dp, vertical = 10.dp)
             ) {
-                Icon(
-                    imageVector = if (isForward) Icons.Filled.Forward10 else Icons.Filled.Replay10,
-                    contentDescription = stringResource(R.string.player_seek_preview),
-                    tint = Color.White,
-                    modifier = Modifier.size(30.dp)
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = formatDuration(seekTarget),
-                    color = Color.White,
-                    fontSize = AppTypeScale.Headline,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "${if (isForward) "+" else "-"}${formatDuration(deltaMs)}" +
-                        " / ${formatDuration(duration)}",
-                    color = Color.White.copy(alpha = 0.7f),
-                    fontSize = AppTypeScale.Caption
+                MiniSeekBar(
+                    position = seekPreviewTargetMs ?: position,
+                    duration = duration,
+                    bufferedPosition = bufferedPosition,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.Center)
                 )
             }
         }
@@ -754,7 +789,8 @@ fun VideoPlayer(
 
         // 控制层（长按快放/画中画期间隐藏，避免按钮与浮层重叠）
         AnimatedVisibility(
-            visible = isControllerVisible && error == null && !isLongPressSpeed && !isInPip,
+            visible = isControllerVisible && error == null && !isLongPressSpeed &&
+                !isInPip && !isLocked,
             enter = fadeIn(Motion.Overlay) + slideInVertically(Motion.overlay<IntOffset>()) { 8 },
             exit = fadeOut(Motion.Overlay) + slideOutVertically(Motion.overlay<IntOffset>()) { 8 },
             modifier = Modifier.fillMaxSize()
@@ -763,7 +799,7 @@ fun VideoPlayer(
                 title = title,
                 isFullscreen = isFullscreen,
                 isPlaying = isPlaying,
-                position = position,
+                position = seekPreviewTargetMs ?: position,
                 duration = duration,
                 bufferedPosition = bufferedPosition,
                 playbackUrl = url,
@@ -796,6 +832,20 @@ fun VideoPlayer(
             )
         }
 
+        // 全屏锁定键：放在右侧（远离手机状态栏一侧），锁定时只留这一键
+        if (isFullscreen && (isControllerVisible || isLocked)) {
+            LockButton(
+                locked = isLocked,
+                onClick = {
+                    isLocked = !isLocked
+                    if (!isLocked) isControllerVisible = true
+                },
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .padding(end = 10.dp)
+            )
+        }
+
         // 播放统计信息浮层（类似 YouTube Stats for nerds），点击 X 关闭
         if (showPlaybackStats && error == null && !isInPip) {
             PlaybackStatsOverlay(
@@ -823,5 +873,79 @@ fun VideoPlayer(
         ) {
             LongPressSpeedBadge(speed = LONG_PRESS_SPEED)
         }
+    }
+}
+
+/** 全屏且控件隐藏时，拖动只在底部显示的细进度条（不可交互，跟随预览位置） */
+@Composable
+private fun MiniSeekBar(
+    position: Long,
+    duration: Long,
+    bufferedPosition: Long,
+    modifier: Modifier = Modifier
+) {
+    val safeDuration = duration.coerceAtLeast(1L)
+    val fraction = (position.toFloat() / safeDuration).coerceIn(0f, 1f)
+    val buffered = (bufferedPosition.toFloat() / safeDuration).coerceIn(0f, 1f)
+    BoxWithConstraints(modifier = modifier.height(24.dp)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.Center)
+                .fillMaxWidth()
+                .height(3.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.28f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(buffered)
+                    .background(Color.White.copy(alpha = 0.38f))
+            )
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(fraction)
+                    .background(MaterialTheme.colorScheme.primary)
+            )
+        }
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .offset(
+                    x = (maxWidth * fraction - 7.dp)
+                        .coerceIn(0.dp, maxWidth - 14.dp)
+                )
+                .size(14.dp)
+                .clip(CircleShape)
+                .background(Color.White)
+        )
+    }
+}
+
+/** 全屏锁定键：放在右侧，锁定时是唯一可点目标，点一下解锁 */
+@Composable
+private fun LockButton(
+    locked: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.45f))
+            .border(1.dp, Color.White.copy(alpha = 0.14f), CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = if (locked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+            contentDescription = stringResource(
+                if (locked) R.string.player_unlock else R.string.player_lock
+            ),
+            tint = Color.White,
+            modifier = Modifier.size(16.dp)
+        )
     }
 }

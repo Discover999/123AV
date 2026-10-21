@@ -4,6 +4,8 @@
 
     <!-- 网页数据抓取、封面图加载、视频流播放均需要网络 -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- 全屏播放顶栏胶囊读取当前网络类型（WiFi / 数据） -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <!-- 应用锁：生物识别（指纹/面容）验证；设备凭据（屏幕锁）由系统弹窗兜底，无需额外权限 -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
