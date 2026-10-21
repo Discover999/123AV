@@ -60,6 +60,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -90,6 +91,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.LinearEasing
 import com.av123.video.LocalAppContainer
 import com.av123.video.LocalBottomBarInset
+import com.av123.video.LocalPreviewOpen
 import com.av123.video.R
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -112,6 +114,9 @@ import com.av123.video.ui.screens.search.SearchScreen
 import com.av123.video.ui.screens.stats.StatsScreen
 import com.av123.video.ui.util.EXPANDED_LIST_PANE_WIDTH_DP
 import com.av123.video.ui.util.rememberIsExpandedScreen
+
+/** 预览弹窗打开时，页面内容的模糊半径（与悬浮底栏同一档） */
+private val PREVIEW_BLUR_RADIUS = 24.dp
 
 /** 路由常量 */
 object Routes {
@@ -180,10 +185,15 @@ private fun AnimatedContentTransitionScope<*>.horizontalPopExit(): ExitTransitio
  */
 @Composable
 fun VideoHubApp() {
-    if (rememberIsExpandedScreen()) {
-        ExpandedShell()
-    } else {
-        CompactShell()
+    // 预览弹窗是独立窗口，跨窗口采样不到页面内容：开关提到根壳层，
+    // 弹窗期间把本窗口内容整体模糊，弹窗的半透明遮罩透出磨砂
+    val previewOpen = remember { mutableStateOf(false) }
+    CompositionLocalProvider(LocalPreviewOpen provides previewOpen) {
+        if (rememberIsExpandedScreen()) {
+            ExpandedShell()
+        } else {
+            CompactShell()
+        }
     }
 }
 
@@ -412,9 +422,23 @@ private fun CompactShell() {
         label = "bottomBarListInset"
     )
 
-    Box(Modifier.fillMaxSize()) {
+    val previewOpen = LocalPreviewOpen.current
+    Box(
+        Modifier
+            .fillMaxSize()
+            .blur(if (previewOpen.value) PREVIEW_BLUR_RADIUS else 0.dp)
+    ) {
         Scaffold(
-            snackbarHost = { SnackbarHost(snackbarHostState) },
+            snackbarHost = {
+                SnackbarHost(
+                    snackbarHostState,
+                    // 悬浮态底栏槽位高度为 0，Scaffold 不会为 Snackbar 让位：
+                    // 手动补上胶囊高度与手势条，提示才落在胶囊上缘之上
+                    modifier = Modifier.padding(
+                        bottom = listBottomInset + if (floatingNavBar) navBarBottom else 0.dp
+                    )
+                )
+            },
             bottomBar = { Spacer(Modifier.height(reservedBarHeight)) }
         ) { innerPadding ->
             CompositionLocalProvider(LocalBottomBarInset provides listBottomInset) {
@@ -449,7 +473,7 @@ private fun CompactShell() {
             }
         }
         BottomBarWithAnimation(
-            visible = showBottomBar,
+            visible = showBottomBar && !previewOpen.value,
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             MorphingAppBottomBar(
@@ -500,8 +524,13 @@ private fun ExpandedShell() {
     )
 
     val snackbarHostState = rememberGlobalSnackbarHostState()
+    val previewOpen = LocalPreviewOpen.current
 
-    Row(Modifier.fillMaxSize()) {
+    Row(
+        Modifier
+            .fillMaxSize()
+            .blur(if (previewOpen.value) PREVIEW_BLUR_RADIUS else 0.dp)
+    ) {
         // —— 左栏：列表侧（一级 Tab + 收藏/关注/统计/栏目/搜索均在此栏内切换） ——
         Box(
             modifier = Modifier
@@ -513,7 +542,8 @@ private fun ExpandedShell() {
                 bottomBar = {
                     BottomBarWithAnimation(
                         visible = !detailFullscreen &&
-                            listRoute in TopLevelDestination.topLevelRoutes
+                            listRoute in TopLevelDestination.topLevelRoutes &&
+                            !previewOpen.value
                     ) {
                         MorphingAppBottomBar(
                             navController = listNav,

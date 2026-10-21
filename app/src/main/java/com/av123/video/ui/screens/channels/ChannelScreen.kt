@@ -70,6 +70,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -98,6 +99,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalPreviewOpen
 import com.av123.video.data.repository.FollowedActress
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
@@ -304,6 +306,14 @@ fun ChannelScreen(
 
     // 长按封面弹出的预览视频；null 表示弹窗关闭
     var previewVideo by remember { mutableStateOf<Video?>(null) }
+    // 弹窗是独立窗口：把开关交给外壳，弹窗期间整体模糊页面内容，遮罩透出磨砂
+    val previewOpen = LocalPreviewOpen.current
+    LaunchedEffect(previewVideo) {
+        previewOpen.value = previewVideo != null
+    }
+    DisposableEffect(Unit) {
+        onDispose { previewOpen.value = false }
+    }
 
     // 女演员页顶栏搜索：false=显示搜索图标（首页同款），true=就地浮出全宽搜索框
     var searchExpanded by rememberSaveable { mutableStateOf(false) }

@@ -55,6 +55,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
@@ -83,6 +84,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
 import com.av123.video.LocalBottomBarInset
+import com.av123.video.LocalPreviewOpen
 import com.av123.video.R
 import com.av123.video.data.model.Video
 import com.av123.video.data.model.WatchRecord
@@ -138,6 +140,14 @@ fun HomeScreen(
 
     // 长按封面弹出的预览视频；null 表示弹窗关闭
     var previewVideo by remember { mutableStateOf<Video?>(null) }
+    // 弹窗是独立窗口：把开关交给外壳，弹窗期间整体模糊页面内容，遮罩透出磨砂
+    val previewOpen = LocalPreviewOpen.current
+    LaunchedEffect(previewVideo) {
+        previewOpen.value = previewVideo != null
+    }
+    DisposableEffect(Unit) {
+        onDispose { previewOpen.value = false }
+    }
 
     Scaffold(
         topBar = {

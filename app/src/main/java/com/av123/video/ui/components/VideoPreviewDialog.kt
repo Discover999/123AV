@@ -75,9 +75,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -87,6 +90,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.DialogWindowProvider
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -100,13 +104,26 @@ import android.graphics.Path
 import android.graphics.RectF
 import android.os.Build
 import android.view.LayoutInflater
+import android.view.Window
 import android.widget.FrameLayout
 import android.view.View
 import android.view.ViewOutlineProvider
+import androidx.core.view.WindowCompat
 import coil.compose.AsyncImage
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.Video
+
+/** 弹窗是独立窗口：系统栏底色交给自己的遮罩，别让窗口再染一层 */
+@Suppress("DEPRECATION")
+private fun transparentSystemBars(window: Window) {
+    window.statusBarColor = Color.Transparent.toArgb()
+    window.navigationBarColor = Color.Transparent.toArgb()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        window.isStatusBarContrastEnforced = false
+        window.isNavigationBarContrastEnforced = false
+    }
+}
 
 /**
  * 封面长按预览弹窗：静音、循环自动播放网页 data-preview 指向的预览视频
@@ -177,14 +194,37 @@ fun VideoPreviewDialog(
         onDispose { player.removeListener(listener) }
     }
 
+    // 弹窗是独立窗口，跨窗口采不到页面内容：磨砂由外壳在弹窗期间整体模糊页面完成；
+    // 这里只把本窗口的系统栏透明化，并同步状态栏图标明暗
+    val view = LocalView.current
+    val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+    val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    DisposableEffect(view, isDarkTheme) {
+        val window = (view.parent as? DialogWindowProvider)?.window
+        // 去掉窗口自带的 dim，避免和遮罩叠加把背景压死
+        window?.setDimAmount(0f)
+        if (window != null) {
+            transparentSystemBars(window)
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = !isDarkTheme
+                isAppearanceLightNavigationBars = !isDarkTheme
+            }
+        }
+        onDispose { }
+    }
+
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(usePlatformDefaultWidth = false)
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            // 内容铺到系统栏后面，状态栏区域由自己的遮罩染色，不再露出一条未染色的底色
+            decorFitsSystemWindows = false
+        )
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.6f))
+                .background(Color.Black.copy(alpha = if (canBlur) 0.35f else 0.6f))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
