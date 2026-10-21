@@ -9,7 +9,6 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
-import androidx.media3.exoplayer.upstream.BandwidthMeter
 import androidx.media3.exoplayer.upstream.DefaultBandwidthMeter
 import com.av123.video.data.playback.MediaCache
 
@@ -24,16 +23,11 @@ class PlayerViewModel : ViewModel() {
 
     /** 播放源身份：URL 相同但 Referer/UA 等请求头变化时必须重建播放器 */
     private var initializedKey: MediaKey? = null
-    private var bandwidthMeter: BandwidthMeter? = null
 
     private data class MediaKey(
         val url: String,
         val headers: Map<String, String>
     )
-
-    /** 当前带宽估算（bit/s），<=0 表示尚无估算；用于播放器左上角网速显示 */
-    val bitrateEstimate: Long
-        get() = bandwidthMeter?.bitrateEstimate ?: Long.MIN_VALUE
 
     fun initialize(context: Context, url: String, headers: Map<String, String>): ExoPlayer {
         val key = MediaKey(url, headers.toMap())
@@ -46,10 +40,9 @@ class PlayerViewModel : ViewModel() {
         releasePlayer()
 
         val appContext = context.applicationContext
-        // 带宽计量器：同时作为 TransferListener 挂到 HTTP 数据源上统计下载字节，
-        // 单例在应用内复用，估算值随播放持续收敛
+        // 带宽计量器：作为 TransferListener 挂到 HTTP 数据源上估算带宽，
+        // 单例在应用内复用，供自适应码率选择使用
         val meter = DefaultBandwidthMeter.getSingletonInstance(appContext)
-        bandwidthMeter = meter
 
         val httpDataSourceFactory = DefaultHttpDataSource.Factory()
             .setAllowCrossProtocolRedirects(true)
@@ -99,7 +92,6 @@ class PlayerViewModel : ViewModel() {
         player?.release()
         player = null
         initializedKey = null
-        bandwidthMeter = null
     }
 
     override fun onCleared() {

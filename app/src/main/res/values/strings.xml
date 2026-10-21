@@ -225,6 +225,9 @@
     <string name="player_settings">设置</string>
     <string name="player_settings_title">播放设置</string>
     <string name="player_speed_title">倍速</string>
+    <string name="player_stats_group_video">视频</string>
+    <string name="player_stats_group_audio">音频</string>
+    <string name="player_stats_group_playback">播放</string>
     <string name="player_lock">锁定</string>
     <string name="player_unlock">解锁</string>
     <string name="player_menu_stats">播放详情</string>
@@ -385,7 +388,7 @@
     <string name="player_stat_resolution">分辨率</string>
     <string name="player_stat_frame_rate">帧率</string>
     <string name="player_stat_video_bitrate">视频码率</string>
-    <string name="player_stat_download_speed">下载网速</string>
+    <string name="player_stat_cache_speed">缓存速度</string>
     <string name="player_stat_audio_codec">音频编码</string>
     <string name="player_stat_audio_sample_rate">音频采样率</string>
     <string name="player_stat_audio_channels">音频声道</string>

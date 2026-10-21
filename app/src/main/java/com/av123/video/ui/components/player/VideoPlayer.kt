@@ -858,7 +858,6 @@ fun VideoPlayer(
         if (showPlaybackStats && error == null && !isInPip) {
             PlaybackStatsOverlay(
                 player = player,
-                bitrateEstimateProvider = { playerViewModel.bitrateEstimate },
                 onDismiss = { showPlaybackStats = false },
                 modifier = Modifier
                     .align(Alignment.TopStart)

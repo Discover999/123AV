@@ -3,12 +3,17 @@ package com.av123.video.data.playback
 import android.content.Context
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.DataSink
+import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.cache.Cache
+import androidx.media3.datasource.cache.CacheDataSink
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import java.io.File
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * ExoPlayer 媒体分片缓存（m3u8 的 ts/fmp4 分片与播放列表）。
@@ -31,6 +36,12 @@ object MediaCache {
 
     /** 活跃播放器计数：播放/画中画期间禁止释放 SimpleCache */
     private val activePlayers = AtomicInteger(0)
+
+    /** 累计写入缓存的媒体字节数；只增不减，供播放统计按采样窗口求写入速度 */
+    private val cacheWriteBytes = AtomicLong(0L)
+
+    val cacheBytesWritten: Long
+        get() = cacheWriteBytes.get()
 
     fun onPlayerCreated() {
         activePlayers.incrementAndGet()
@@ -76,8 +87,50 @@ object MediaCache {
     ): CacheDataSource.Factory {
         return CacheDataSource.Factory()
             .setCache(get(context))
+            .setCacheWriteDataSinkFactory(
+                CountingCacheDataSinkFactory(get(context)) { bytes ->
+                    cacheWriteBytes.addAndGet(bytes)
+                }
+            )
             .setUpstreamDataSourceFactory(upstreamFactory)
             // 缓存命中文件损坏/读取异常时不报错，直接走网络
             .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
+    }
+}
+
+/**
+ * 在 [CacheDataSink] 外层统计真正写入缓存的字节数。
+ * SimpleCache.cacheSpace 会随 LRU 淘汰回落，不能反映写入速率；
+ * 这里按写入调用累加，缓存满后仍能统计到持续写入。
+ */
+@androidx.annotation.OptIn(UnstableApi::class)
+private class CountingCacheDataSinkFactory(
+    private val cache: Cache,
+    private val onBytesWritten: (Long) -> Unit
+) : DataSink.Factory {
+
+    override fun createDataSink(): DataSink = CountingDataSink(
+        delegate = CacheDataSink.Factory().setCache(cache).createDataSink(),
+        onBytesWritten = onBytesWritten
+    )
+}
+
+@androidx.annotation.OptIn(UnstableApi::class)
+private class CountingDataSink(
+    private val delegate: DataSink,
+    private val onBytesWritten: (Long) -> Unit
+) : DataSink {
+
+    override fun open(dataSpec: DataSpec) {
+        delegate.open(dataSpec)
+    }
+
+    override fun write(buffer: ByteArray, offset: Int, length: Int) {
+        delegate.write(buffer, offset, length)
+        onBytesWritten(length.toLong())
+    }
+
+    override fun close() {
+        delegate.close()
     }
 }
