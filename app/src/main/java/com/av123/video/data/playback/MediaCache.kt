@@ -29,10 +29,20 @@ import java.util.concurrent.atomic.AtomicLong
 object MediaCache {
 
     private const val CACHE_DIR_NAME = "exo-media"
-    private const val MAX_CACHE_BYTES = 512L * 1024L * 1024L
+
+    /** 预算下发前的初始视频分片上限；1 GB 总额由 CacheManager 启动时下发 */
+    const val MAX_CACHE_BYTES = 512L * 1024L * 1024L
+    private const val MIN_CACHE_BYTES = 1L * 1024L * 1024L
 
     @Volatile
     private var cache: SimpleCache? = null
+
+    /** 当前生效的 LRU 上限；由存储空间的「缓存上限」按总额预算动态下发 */
+    @Volatile
+    private var maxBytes: Long = MAX_CACHE_BYTES
+
+    /** 播放中收到新上限时先记下，等播放器全部释放再重建 */
+    private var pendingRebuild = false
 
     /** 活跃播放器计数：播放/画中画期间禁止释放 SimpleCache */
     private val activePlayers = AtomicInteger(0)
@@ -43,12 +53,40 @@ object MediaCache {
     val cacheBytesWritten: Long
         get() = cacheWriteBytes.get()
 
+    /** 有播放器持有缓存时不能释放 SimpleCache，存储空间页据此把视频分区标为暂不可清 */
+    val isPlaybackActive: Boolean
+        get() = activePlayers.get() > 0
+
+    /** 调整视频分片 LRU 上限；SimpleCache 的上限在构造时固定，因此空闲时重建实例 */
+    @Synchronized
+    fun setMaxBytes(bytes: Long) {
+        val target = bytes.coerceAtLeast(MIN_CACHE_BYTES)
+        if (target == maxBytes) return
+        maxBytes = target
+        if (activePlayers.get() > 0) {
+            pendingRebuild = true
+            return
+        }
+        releaseLocked()
+    }
+
     fun onPlayerCreated() {
         activePlayers.incrementAndGet()
     }
 
     fun onPlayerReleased() {
         activePlayers.updateAndGet { current -> maxOf(0, current - 1) }
+        if (activePlayers.get() == 0) {
+            synchronized(this) {
+                if (pendingRebuild) releaseLocked()
+            }
+        }
+    }
+
+    private fun releaseLocked() {
+        runCatching { cache?.release() }
+        cache = null
+        pendingRebuild = false
     }
 
     /**
@@ -58,8 +96,7 @@ object MediaCache {
     @Synchronized
     fun tryClear(context: Context): Boolean {
         if (activePlayers.get() > 0) return false
-        runCatching { cache?.release() }
-        cache = null
+        releaseLocked()
         File(context.applicationContext.cacheDir, CACHE_DIR_NAME).deleteRecursively()
         return true
     }
@@ -71,7 +108,7 @@ object MediaCache {
             val cacheDir = File(appContext.cacheDir, CACHE_DIR_NAME).apply { mkdirs() }
             SimpleCache(
                 cacheDir,
-                LeastRecentlyUsedCacheEvictor(MAX_CACHE_BYTES),
+                LeastRecentlyUsedCacheEvictor(maxBytes),
                 StandaloneDatabaseProvider(appContext)
             ).also { cache = it }
         }

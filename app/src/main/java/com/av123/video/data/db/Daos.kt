@@ -135,11 +135,17 @@ interface SearchKeywordDao {
     suspend fun count(): Int
 }
 
+/** 页面缓存占用的轻量投影：只取 key 与载荷字节数，不把 JSON 读进内存 */
+data class PageCacheStatRow(val cacheKey: String, val bytes: Long)
+
 @Dao
 interface PageCacheDao {
 
     @Query("SELECT * FROM page_cache")
     suspend fun getAll(): List<PageCacheEntity>
+
+    @Query("SELECT cacheKey, LENGTH(CAST(payloadJson AS BLOB)) AS bytes FROM page_cache")
+    suspend fun stats(): List<PageCacheStatRow>
 
     /** 冷启动水合只需要首页/列表页，不把详情缓存整包读进内存 */
     @Query("SELECT * FROM page_cache WHERE cacheKey NOT LIKE 'det:%'")

@@ -112,6 +112,9 @@ import com.av123.video.ui.screens.home.HomeScreen
 import com.av123.video.ui.screens.profile.ProfileScreen
 import com.av123.video.ui.screens.search.SearchScreen
 import com.av123.video.ui.screens.stats.StatsScreen
+import com.av123.video.ui.screens.storage.StorageDetailScreen
+import com.av123.video.ui.screens.storage.StorageScreen
+import com.av123.video.data.repository.CacheKind
 import com.av123.video.ui.util.EXPANDED_LIST_PANE_WIDTH_DP
 import com.av123.video.ui.util.rememberIsExpandedScreen
 
@@ -129,6 +132,8 @@ object Routes {
     const val FOLLOWED = "followed"
     const val STATS = "stats"
     const val DIAGNOSTICS = "diagnostics"
+    const val STORAGE = "storage"
+    const val STORAGE_KIND = "storage/{kind}"
     const val CHANNEL = "channel?title={title}&path={path}"
     const val DETAIL = "detail/{videoId}"
 
@@ -140,6 +145,8 @@ object Routes {
         "channel?title=${android.net.Uri.encode(title)}&path=${android.net.Uri.encode(path)}"
 
     fun detail(videoId: String) = "detail/$videoId"
+
+    fun storageKind(kind: CacheKind) = "storage/${kind.name}"
 }
 
 /** 底部一级目的地 */
@@ -684,6 +691,7 @@ private fun NavGraphBuilder.listDestinations(
             onOpenFollowed = { navController.navigate(Routes.FOLLOWED) },
             onOpenStats = { navController.navigate(Routes.STATS) },
             onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) },
+            onOpenStorage = { navController.navigate(Routes.STORAGE) },
             scrollToTopTick = scrollToTopTicks[Routes.PROFILE] ?: 0
         )
     }
@@ -734,6 +742,37 @@ private fun NavGraphBuilder.listDestinations(
         popExitTransition = { horizontalPopExit() }
     ) {
         DiagnosticsScreen(onBack = { navController.popBackStack() })
+    }
+    composable(
+        route = Routes.STORAGE,
+        // 存储空间：与统计/诊断一致横向滑入/滑出
+        enterTransition = { horizontalEnter() },
+        popExitTransition = { horizontalPopExit() }
+    ) {
+        StorageScreen(
+            onBack = { navController.popBackStack() },
+            onOpenKind = { kind -> navController.navigate(Routes.storageKind(kind)) }
+        )
+    }
+    composable(
+        route = Routes.STORAGE_KIND,
+        arguments = listOf(
+            navArgument("kind") {
+                type = NavType.StringType
+                defaultValue = CacheKind.MEDIA.name
+            }
+        ),
+        enterTransition = { horizontalEnter() },
+        popExitTransition = { horizontalPopExit() }
+    ) { entry ->
+        val kind = entry.arguments
+            ?.getString("kind")
+            ?.let { name -> runCatching { CacheKind.valueOf(name) }.getOrNull() }
+            ?: CacheKind.MEDIA
+        StorageDetailScreen(
+            kind = kind,
+            onBack = { navController.popBackStack() }
+        )
     }
     composable(
         route = Routes.CHANNEL,

@@ -28,10 +28,16 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.rounded.CloudDone
 import androidx.compose.material.icons.rounded.CloudOff
 import androidx.compose.material.icons.rounded.ContentCopy
+import androidx.compose.material.icons.rounded.DeviceHub
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Public
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Router
+import androidx.compose.material.icons.rounded.SettingsEthernet
+import androidx.compose.material.icons.rounded.SignalCellularAlt
+import androidx.compose.material.icons.rounded.VpnLock
+import androidx.compose.material.icons.rounded.Wifi
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -281,7 +287,8 @@ internal fun TimingSegments(timings: ProbeTimings?, totalMs: Long?) {
 @Composable
 internal fun NetworkDiagnosticsCard(result: DataSourceProbeResult, env: NetworkEnvironment) {
     DiagnosticsCard(title = stringResource(R.string.diagnostics_section_network)) {
-        InfoLine(
+        InfoLineWithIcon(
+            icon = env.networkType.icon,
             label = stringResource(R.string.diagnostics_network_type),
             value = env.networkTypeText()
         )
@@ -308,7 +315,8 @@ internal fun NetworkDiagnosticsCard(result: DataSourceProbeResult, env: NetworkE
             }
 
             is IpProbe.Failed -> {
-                InfoLine(
+                InfoLineWithIcon(
+                    icon = Icons.Rounded.CloudOff,
                     label = stringResource(R.string.profile_probe_ip_failed),
                     value = ip.kind.failureText()
                 )
@@ -628,10 +636,16 @@ internal fun InfoLine(
     }
 }
 
-/** 带小图标的标签 + 值信息行（公网信息区） */
+/**
+ * 带小图标的标签 + 值信息行。
+ * 图标 + 间距占去 28dp，标签列取 0.36 而非 [InfoLine] 的 0.42，数值列才能落在同一左边缘。
+ */
 @Composable
 internal fun InfoLineWithIcon(icon: ImageVector, label: String, value: String) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
@@ -642,18 +656,17 @@ internal fun InfoLineWithIcon(icon: ImageVector, label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(0.36f)
         )
-        Spacer(Modifier.size(10.dp))
         Text(
             text = value,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(0.64f)
         )
     }
 }
-
-internal const val DIAGNOSTICS_CLIP_LABEL = "VideoHub diagnostics"
 
 /** 归一化失败类别 → strings.xml 中文文案（站点/IP 探测失败共用） */
 @Composable
@@ -678,5 +691,13 @@ internal fun NetworkEnvironment.networkTypeText(): String = when (networkType) {
     NetworkType.NONE -> stringResource(R.string.diagnostics_net_none)
 }
 
-/** 毫秒段文本：有值 "123 ms"，无值 "—"（报告复制也用同款口径） */
-internal fun Long?.toMsOrDash(): String = this?.let { "$it ms" } ?: "—"
+/** 网络类型 → 网络信息卡行首图标 */
+internal val NetworkType.icon: ImageVector
+    get() = when (this) {
+        NetworkType.WIFI -> Icons.Rounded.Wifi
+        NetworkType.CELLULAR -> Icons.Rounded.SignalCellularAlt
+        NetworkType.ETHERNET -> Icons.Rounded.SettingsEthernet
+        NetworkType.VPN -> Icons.Rounded.VpnLock
+        NetworkType.OTHER -> Icons.Rounded.DeviceHub
+        NetworkType.NONE -> Icons.Rounded.WifiOff
+    }

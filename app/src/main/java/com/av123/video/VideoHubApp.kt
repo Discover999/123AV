@@ -152,6 +152,10 @@ class AppContainer(context: Context) {
             LegacyDataMigrator(appContext, database).migrateIfNeeded()
         }
         appScope.launch {
+            // 缓存总额固定 1 GB：启动时下发视频分片的 LRU 预算（播放中会延迟到释放后生效）
+            cacheManager.applyDefaultBudget()
+        }
+        appScope.launch {
             // 错开首页首帧与抓取；远程配置只落缓存，下次冷启动生效
             delay(2_000)
             siteConfigStore.refreshFromNetwork(BuildConfig.SITE_CONFIG_URL)

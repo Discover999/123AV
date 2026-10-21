@@ -9,7 +9,17 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
 
+/** 可单独清理的缓存分区 */
+enum class CacheKind { MEDIA, IMAGE, PAGE, OTHER }
+
 data class CacheClearResult(val mediaCacheCleared: Boolean)
+
+/** 总预算应用结果：[mediaCapBytes] 下发后的视频分片预算，[deferred] 表示播放中推迟到下次起播 */
+data class CacheBudgetApply(
+    val mediaCapBytes: Long,
+    val deferred: Boolean,
+    val trimmedBytes: Long
+)
 
 /** 诊断页缓存占用明细（图片 / ExoPlayer 分片 / 页面 JSON） */
 data class CacheUsage(
@@ -21,30 +31,147 @@ data class CacheUsage(
 }
 
 /**
- * 设置页缓存管理：统计图片、媒体分片、页面缓存占用，并提供安全清理。
+ * 存储空间页的四类占用快照。
+ * [otherBytes] 是 cacheDir 里除图片、媒体之外的网页缓存与临时文件（保留锁文件）。
+ */
+data class CacheBreakdown(
+    val mediaBytes: Long,
+    val mediaCount: Int,
+    val imageBytes: Long,
+    val imageCount: Int,
+    val pageStats: PageCacheStats,
+    val webViewBytes: Long,
+    val tempBytes: Long,
+    val mediaClearable: Boolean
+) {
+    val pageBytes: Long get() = pageStats.totalBytes
+    val otherBytes: Long get() = webViewBytes + tempBytes
+    val totalBytes: Long get() = mediaBytes + imageBytes + pageBytes + otherBytes
+
+    fun bytesOf(kind: CacheKind): Long = when (kind) {
+        CacheKind.MEDIA -> mediaBytes
+        CacheKind.IMAGE -> imageBytes
+        CacheKind.PAGE -> pageBytes
+        CacheKind.OTHER -> otherBytes
+    }
+
+    fun countOf(kind: CacheKind): Int = when (kind) {
+        CacheKind.MEDIA -> mediaCount
+        CacheKind.IMAGE -> imageCount
+        CacheKind.PAGE -> pageStats.feedCount + pageStats.listCount + pageStats.detailCount
+        CacheKind.OTHER -> 0
+    }
+
+    fun clearableOf(kind: CacheKind): Boolean =
+        kind != CacheKind.MEDIA || mediaClearable
+}
+
+/**
+ * 设置页缓存管理：统计图片、媒体分片、页面缓存与网页临时文件，并提供按类清理。
  * 媒体缓存由 SimpleCache 持有，播放中（含画中画）不能释放，清理时跳过。
  */
 class CacheManager(
     private val context: Context,
     private val pageCacheStore: PageCacheStore
 ) {
+    @androidx.annotation.OptIn(UnstableApi::class)
+    suspend fun breakdown(): CacheBreakdown = withContext(Dispatchers.IO) {
+        val cacheRoot = context.cacheDir
+        val imageDir = File(cacheRoot, IMAGE_CACHE_DIR)
+        val mediaDir = File(cacheRoot, MEDIA_CACHE_DIR)
+        val webViewDir = File(cacheRoot, WEBVIEW_CACHE_DIR)
+
+        val imageBytes = directorySize(imageDir)
+        val mediaBytes = directorySize(mediaDir)
+        val webViewBytes = directorySize(webViewDir)
+        CacheBreakdown(
+            mediaBytes = mediaBytes,
+            mediaCount = countFiles(mediaDir) { it.name.endsWith(".exo") },
+            imageBytes = imageBytes,
+            // Coil 的 DiskCache 目录里还有一个 journal 文件，不算缓存图片
+            imageCount = countFiles(imageDir) { !it.name.startsWith("journal") },
+            pageStats = pageCacheStore.stats(),
+            webViewBytes = webViewBytes,
+            tempBytes = (directorySize(cacheRoot) - imageBytes - mediaBytes - webViewBytes)
+                .coerceAtLeast(0L),
+            mediaClearable = !MediaCache.isPlaybackActive
+        )
+    }
+
     suspend fun usage(): CacheUsage = withContext(Dispatchers.IO) {
+        val breakdown = breakdown()
         CacheUsage(
-            imageBytes = directorySize(File(context.cacheDir, IMAGE_CACHE_DIR)),
-            mediaBytes = directorySize(File(context.cacheDir, MEDIA_CACHE_DIR)),
-            pageBytes = pageCacheStore.totalBytes()
+            imageBytes = breakdown.imageBytes,
+            mediaBytes = breakdown.mediaBytes,
+            pageBytes = breakdown.pageBytes
         )
     }
 
     suspend fun sizeBytes(): Long = usage().totalBytes
 
+    /** 只清理 [kinds] 指定的分区；媒体分区在播放中会被跳过并返回 false */
     @androidx.annotation.OptIn(UnstableApi::class)
     @OptIn(coil.annotation.ExperimentalCoilApi::class)
-    suspend fun clear(): CacheClearResult = withContext(Dispatchers.IO) {
-        runCatching { context.imageLoader.diskCache?.clear() }
-        pageCacheStore.clearAll()
-        val mediaCleared = MediaCache.tryClear(context)
+    suspend fun clear(kinds: Set<CacheKind>): CacheClearResult = withContext(Dispatchers.IO) {
+        if (CacheKind.IMAGE in kinds) {
+            runCatching { context.imageLoader.diskCache?.clear() }
+        }
+        if (CacheKind.PAGE in kinds) {
+            pageCacheStore.clearAll()
+        }
+        val mediaCleared = if (CacheKind.MEDIA in kinds) {
+            MediaCache.tryClear(context)
+        } else {
+            true
+        }
+        if (CacheKind.OTHER in kinds) {
+            clearOtherFiles()
+        }
         CacheClearResult(mediaCacheCleared = mediaCleared)
+    }
+
+    suspend fun clear(): CacheClearResult = clear(CacheKind.entries.toSet())
+
+    /**
+     * 把固定的 1 GB 总额预算落到四类缓存上：
+     * - 总额减去图片/页面/网页临时后的余量全部交给视频分片 LRU，
+     *   这样总量始终受一个预算约束，而最大的一类仍按最久未看淘汰；
+     * - 非媒体部分自己就超过 1 GB 时，按「页面 → 图片 → 网页临时」的顺序让位。
+     * 缓存上限不在 UI 暴露，启动时调用一次即可。
+     */
+    @androidx.annotation.OptIn(UnstableApi::class)
+    suspend fun applyDefaultBudget(): CacheBudgetApply = withContext(Dispatchers.IO) {
+        val before = breakdown()
+        var current = before
+        fun nonMedia(b: CacheBreakdown): Long = b.imageBytes + b.pageBytes + b.otherBytes
+        if (nonMedia(current) > DEFAULT_TOTAL_BUDGET_BYTES) {
+            pageCacheStore.clearAll()
+            current = breakdown()
+        }
+        if (nonMedia(current) > DEFAULT_TOTAL_BUDGET_BYTES) {
+            runCatching { context.imageLoader.diskCache?.clear() }
+            current = breakdown()
+        }
+        if (nonMedia(current) > DEFAULT_TOTAL_BUDGET_BYTES) {
+            clearOtherFiles()
+            current = breakdown()
+        }
+        val mediaCap = (DEFAULT_TOTAL_BUDGET_BYTES - nonMedia(current)).coerceAtLeast(0L)
+        MediaCache.setMaxBytes(mediaCap)
+        CacheBudgetApply(
+            mediaCapBytes = mediaCap,
+            deferred = MediaCache.isPlaybackActive,
+            trimmedBytes = (before.totalBytes - current.totalBytes).coerceAtLeast(0L)
+        )
+    }
+
+    /** 网页缓存与临时文件：删掉 cacheDir 下除图片、媒体与锁文件外的内容 */
+    private fun clearOtherFiles() {
+        context.cacheDir.listFiles()?.forEach { child ->
+            if (child.name == IMAGE_CACHE_DIR || child.name == MEDIA_CACHE_DIR) return@forEach
+            if (child.name.endsWith(".lck")) return@forEach
+            runCatching { child.deleteRecursively() }
+        }
     }
 
     private fun directorySize(dir: File): Long =
@@ -56,9 +183,22 @@ class CacheManager(
             }.getOrDefault(0L)
         }
 
-    private companion object {
-        const val IMAGE_CACHE_DIR = "image-cache"
-        const val MEDIA_CACHE_DIR = "exo-media"
+    private fun countFiles(dir: File, predicate: (File) -> Boolean): Int =
+        if (!dir.exists()) {
+            0
+        } else {
+            runCatching {
+                dir.walkTopDown().count { it.isFile && predicate(it) }
+            }.getOrDefault(0)
+        }
+
+    companion object {
+        /** 四类缓存合计的固定预算（不再暴露设置项） */
+        const val DEFAULT_TOTAL_BUDGET_BYTES = 1L * 1024 * 1024 * 1024
+
+        private const val IMAGE_CACHE_DIR = "image-cache"
+        private const val MEDIA_CACHE_DIR = "exo-media"
+        private const val WEBVIEW_CACHE_DIR = "WebView"
     }
 }
 

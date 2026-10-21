@@ -8,6 +8,20 @@ import com.av123.video.data.model.HomeFeed
 import com.av123.video.data.model.Video
 import kotlinx.serialization.Serializable
 
+/** 页面缓存构成：首页 / 列表页 / 详情页各自的条数与字节数 */
+data class PageCacheStats(
+    val feedBytes: Long,
+    val feedCount: Int,
+    val listBytes: Long,
+    val listCount: Int,
+    val detailBytes: Long,
+    val detailCount: Int
+) {
+    val totalBytes: Long get() = feedBytes + listBytes + detailBytes
+    val listLikeBytes: Long get() = feedBytes + listBytes
+    val listLikeCount: Int get() = feedCount + listCount
+}
+
 /** 列表页缓存载荷：label 为分栏栏目的显示名（分类页为 null） */
 @Serializable
 internal data class CachedListPage(
@@ -43,6 +57,41 @@ class PageCacheStore(private val dao: PageCacheDao) {
 
     /** 缓存载荷占用字节数（用于设置页展示） */
     suspend fun totalBytes(): Long = dao.totalBytes()
+
+    /** 按首页/列表/详情分组的条数与字节数（存储空间页展示构成） */
+    suspend fun stats(): PageCacheStats {
+        val rows = dao.stats()
+        var feedBytes = 0L
+        var feedCount = 0
+        var listBytes = 0L
+        var listCount = 0
+        var detailBytes = 0L
+        var detailCount = 0
+        rows.forEach { row ->
+            when {
+                row.cacheKey == FEED_KEY -> {
+                    feedBytes += row.bytes
+                    feedCount++
+                }
+                row.cacheKey.startsWith(DET_KEY_PREFIX) -> {
+                    detailBytes += row.bytes
+                    detailCount++
+                }
+                else -> {
+                    listBytes += row.bytes
+                    listCount++
+                }
+            }
+        }
+        return PageCacheStats(
+            feedBytes = feedBytes,
+            feedCount = feedCount,
+            listBytes = listBytes,
+            listCount = listCount,
+            detailBytes = detailBytes,
+            detailCount = detailCount
+        )
+    }
 
     /** 清空首页/列表/详情缓存 */
     suspend fun clearAll() = dao.clear()

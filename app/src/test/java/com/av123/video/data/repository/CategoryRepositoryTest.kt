@@ -2,6 +2,7 @@ package com.av123.video.data.repository
 
 import com.av123.video.data.db.PageCacheDao
 import com.av123.video.data.db.PageCacheEntity
+import com.av123.video.data.db.PageCacheStatRow
 import com.av123.video.data.model.CategoryPage
 import com.av123.video.data.model.HomeFeed
 import com.av123.video.data.model.Video
@@ -35,6 +36,8 @@ class CategoryRepositoryTest {
         }
         override suspend fun totalBytes(): Long =
             entries.values.sumOf { it.payloadJson.length.toLong() }
+        override suspend fun stats(): List<PageCacheStatRow> =
+            entries.values.map { PageCacheStatRow(it.cacheKey, it.payloadJson.length.toLong()) }
         override suspend fun get(cacheKey: String): PageCacheEntity? = entries[cacheKey]
         override suspend fun upsert(entity: PageCacheEntity) {
             entries[entity.cacheKey] = entity

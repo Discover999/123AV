@@ -65,7 +65,6 @@ import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -92,6 +91,7 @@ import com.av123.video.ui.lock.authenticateAppLock
 import com.av123.video.ui.lock.canAuthenticateAppLock
 import com.av123.video.ui.util.findActivity
 import com.av123.video.ui.util.formatWatchDurationMs
+import com.av123.video.ui.util.rememberResumeTick
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -105,6 +105,7 @@ fun ProfileScreen(
     onOpenFollowed: () -> Unit,
     onOpenStats: () -> Unit,
     onOpenDiagnostics: () -> Unit,
+    onOpenStorage: () -> Unit,
     scrollToTopTick: Int = 0
 ) {
     val container = LocalAppContainer.current
@@ -127,11 +128,11 @@ fun ProfileScreen(
     var showLockUnavailableDialog by remember { mutableStateOf(false) }
     var showLockTimeoutSheet by remember { mutableStateOf(false) }
     var showImportConfirm by remember { mutableStateOf(false) }
-    var showClearCacheConfirm by remember { mutableStateOf(false) }
     var cacheSizeBytes by remember { mutableStateOf<Long?>(null) }
-    var cacheRefreshTick by remember { mutableIntStateOf(0) }
+    // 从存储空间页清完缓存退回时，副标题的体积要跟着更新
+    val resumeTick = rememberResumeTick()
 
-    LaunchedEffect(cacheRefreshTick) {
+    LaunchedEffect(resumeTick) {
         cacheSizeBytes = runCatching { container.cacheManager.sizeBytes() }.getOrNull()
     }
     val cacheSummary = cacheSizeBytes?.let { formatCacheSize(it) }
@@ -353,7 +354,7 @@ fun ProfileScreen(
                         icon = Icons.Rounded.CleaningServices,
                         iconContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
-                        title = stringResource(R.string.profile_clear_cache),
+                        title = stringResource(R.string.storage_title),
                         subtitle = if (cacheSummary != null) {
                             stringResource(R.string.profile_cache_size, cacheSummary)
                         } else {
@@ -366,7 +367,7 @@ fun ProfileScreen(
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         },
-                        onClick = { showClearCacheConfirm = true }
+                        onClick = onOpenStorage
                     )
                 }
             }
@@ -666,38 +667,6 @@ fun ProfileScreen(
             },
             dismissButton = {
                 TextButton(onClick = { showImportConfirm = false }) {
-                    Text(stringResource(R.string.common_cancel))
-                }
-            }
-        )
-    }
-
-    if (showClearCacheConfirm) {
-        AlertDialog(
-            onDismissRequest = { showClearCacheConfirm = false },
-            title = { Text(stringResource(R.string.profile_clear_cache_confirm_title)) },
-            text = { Text(stringResource(R.string.profile_clear_cache_confirm_msg)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showClearCacheConfirm = false
-                        scope.launch {
-                            val result = runCatching { container.cacheManager.clear() }.getOrNull()
-                            cacheRefreshTick++
-                            val message = when {
-                                result == null -> R.string.profile_cache_clear_failed
-                                result.mediaCacheCleared -> R.string.profile_cache_cleared
-                                else -> R.string.profile_cache_cleared_media_busy
-                            }
-                            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                ) {
-                    Text(stringResource(R.string.common_confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showClearCacheConfirm = false }) {
                     Text(stringResource(R.string.common_cancel))
                 }
             }
