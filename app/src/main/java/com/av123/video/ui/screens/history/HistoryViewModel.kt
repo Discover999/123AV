@@ -20,6 +20,14 @@ class HistoryViewModel(
             initialValue = emptyList()
         )
 
+    /** 全部日期累计观看时长；历史页汇总行 */
+    val totalPlayMs: StateFlow<Long> = historyRepository.totalPlayMs
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = 0L
+        )
+
     fun clear() {
         viewModelScope.launch { historyRepository.clear() }
     }

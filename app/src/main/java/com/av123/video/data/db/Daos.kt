@@ -64,6 +64,10 @@ interface WatchDailyDao {
     /** 观察某天的墙钟时长（无行时为 0）；用于"我的"页入口副标题实时显示今日时长 */
     @Query("SELECT COALESCE((SELECT playMs FROM watch_daily WHERE day = :day), 0)")
     fun observeDayPlayMs(day: String): Flow<Long>
+
+    /** 全部日期的观看时长合计；历史页汇总行用 */
+    @Query("SELECT COALESCE(SUM(playMs), 0) FROM watch_daily")
+    fun observeTotalPlayMs(): Flow<Long>
 }
 
 @Dao

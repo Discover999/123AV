@@ -34,6 +34,9 @@ class HistoryRepository(
     fun observeDayPlayMs(day: String = watchDayKey()): Flow<Long> =
         dailyDao.observeDayPlayMs(day)
 
+    /** 全部日期观看时长合计；历史页「观看 X 小时 Y 分」用 */
+    val totalPlayMs: Flow<Long> = dailyDao.observeTotalPlayMs()
+
     /**
      * 进入详情页时写入/更新一条历史：watchedAt 刷新为当前时间（排到列表最前），
      * 但已存在记录的播放位置/时长/选集必须原样保留——本次抓流可能失败或用户

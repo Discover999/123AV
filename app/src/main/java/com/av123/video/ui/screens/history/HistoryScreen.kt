@@ -1,10 +1,13 @@
 package com.av123.video.ui.screens.history
 
-import com.av123.video.ui.theme.AppShapes
-
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -13,33 +16,33 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.background
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material.icons.rounded.Deselect
 import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -74,17 +77,31 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
 import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
-import com.av123.video.ui.theme.Motion
-import com.av123.video.ui.theme.appCardContainerColor
-import coil.compose.AsyncImage
 import com.av123.video.data.model.WatchRecord
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.shimmerPlaceholder
+import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.theme.Motion
+import com.av123.video.ui.theme.appCardContainerColor
 import com.av123.video.ui.util.formatDuration
-import com.av123.video.ui.util.relativeTime
+import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val HistoryCardShape = AppShapes.Large
+private val HistoryClockFormat = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+private val HistoryEarlierFormat = DateTimeFormatter.ofPattern("MM-dd HH:mm", Locale.getDefault())
+
+/**
+ * 观看历史：日期分组 + 全部/未看完/已看完筛选 + 封面内进度与时长。
+ * 不做继续观看大卡，最近一条直接排在「今天」第一条。
+ * 长按多选、滑动删除 + 撤销、清空确认都沿用原交互。
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     onVideoClick: (String) -> Unit,
@@ -94,21 +111,38 @@ fun HistoryScreen(
     val container = LocalAppContainer.current
     val viewModel: HistoryViewModel = viewModel { HistoryViewModel(container.historyRepository) }
     val records by viewModel.records.collectAsStateWithLifecycle()
+    val totalPlayMs by viewModel.totalPlayMs.collectAsStateWithLifecycle()
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
+    val listState = rememberLazyListState()
 
     var showClearDialog by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
+    var filter by remember { mutableStateOf(HistoryFilter.ALL) }
+
+    val today = LocalDate.now()
+    val filtered = remember(records, filter) { filterHistory(records, filter) }
+    // 多选时展示全部记录，避免筛选后无法选到其他条目
+    val visible = if (selectionMode) records else filtered
+    val sections = remember(visible, today) { groupHistory(visible, today) }
+    val allSelected = visible.isNotEmpty() && selectedIds.size == visible.size
 
     fun exitSelection() {
         selectionMode = false
         selectedIds = emptySet()
     }
 
-    // 多选模式下返回键先退出多选，而不是离开页面
     BackHandler(enabled = selectionMode) { exitSelection() }
+
+    // 重复点击底部 Tab：回到顶部（同时退出多选态）
+    LaunchedEffect(scrollToTopTick) {
+        if (scrollToTopTick > 0) {
+            exitSelection()
+            listState.scrollToItem(0)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -120,17 +154,17 @@ fun HistoryScreen(
                 if (selecting) {
                     SelectionTopBar(
                         count = selectedIds.size,
-                        allSelected = records.isNotEmpty() && selectedIds.size == records.size,
+                        allSelected = allSelected,
                         onClose = { exitSelection() },
                         onToggleAll = {
-                            selectedIds = if (selectedIds.size == records.size) {
+                            selectedIds = if (allSelected) {
                                 emptySet()
                             } else {
-                                records.map { it.video.id }.toSet()
+                                visible.map { it.video.id }.toSet()
                             }
                         },
                         onDelete = {
-                            val deleted = records.filter { it.video.id in selectedIds }
+                            val deleted = visible.filter { it.video.id in selectedIds }
                             viewModel.delete(selectedIds)
                             exitSelection()
                             scope.launch {
@@ -152,15 +186,11 @@ fun HistoryScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                text = if (records.isNotEmpty()) {
-                                    stringResource(R.string.history_title_count, records.size)
-                                } else {
-                                    stringResource(R.string.history_title)
-                                },
+                                text = stringResource(R.string.history_title),
                                 style = MaterialTheme.typography.titleLarge.copy(
                                     fontWeight = FontWeight.Bold
                                 ),
-                                color = MaterialTheme.colorScheme.primary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         },
                         actions = {
@@ -193,14 +223,6 @@ fun HistoryScreen(
                     .fillMaxSize()
             )
         } else {
-            val listState = rememberLazyListState()
-            // 重复点击底部 Tab：回到顶部（同时退出多选态）
-            LaunchedEffect(scrollToTopTick) {
-                if (scrollToTopTick > 0) {
-                    exitSelection()
-                    listState.scrollToItem(0)
-                }
-            }
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -209,45 +231,75 @@ fun HistoryScreen(
                 contentPadding = PaddingValues(
                     start = 16.dp,
                     end = 16.dp,
-                    top = 16.dp,
+                    top = 8.dp,
                     bottom = 16.dp + LocalBottomBarInset.current
                 ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(records, key = { it.video.id }) { record ->
-                    SwipeableHistoryItem(
-                        record = record,
-                        selectionMode = selectionMode,
-                        selected = record.video.id in selectedIds,
-                        swipeEnabled = !selectionMode,
-                        onClick = {
-                            if (selectionMode) {
-                                val id = record.video.id
-                                selectedIds =
-                                    if (id in selectedIds) selectedIds - id else selectedIds + id
-                            } else {
-                                onVideoClick(record.video.id)
-                            }
-                        },
-                        onLongClick = {
-                            selectionMode = true
-                            selectedIds = setOf(record.video.id)
-                        },
-                        onDismiss = {
-                            viewModel.delete(record.video.id)
-                            scope.launch {
-                                val result = snackbarHostState.showSnackbar(
-                                    message = resources.getString(R.string.history_deleted_single),
-                                    actionLabel = resources.getString(R.string.history_undo),
-                                    withDismissAction = true,
-                                    duration = SnackbarDuration.Short
-                                )
-                                if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.restore(listOf(record))
-                                }
-                            }
+                if (!selectionMode) {
+                    item(key = "summary") {
+                        HistorySummary(count = records.size, totalPlayMs = totalPlayMs)
+                    }
+                    item(key = "filters") {
+                        HistoryFilterRow(
+                            current = filter,
+                            onSelect = { filter = it }
+                        )
+                    }
+                }
+
+                if (visible.isEmpty()) {
+                    item(key = "filter-empty") {
+                        HistoryFilterEmpty(onShowAll = { filter = HistoryFilter.ALL })
+                    }
+                } else {
+                    sections.forEach { section ->
+                        stickyHeader(key = "header-${section.group.name}") {
+                            HistoryGroupHeader(
+                                group = section.group,
+                                count = section.records.size
+                            )
                         }
-                    )
+                        items(section.records, key = { it.video.id }) { record ->
+                            SwipeableHistoryItem(
+                                record = record,
+                                today = today,
+                                selectionMode = selectionMode,
+                                selected = record.video.id in selectedIds,
+                                swipeEnabled = !selectionMode,
+                                onClick = {
+                                    if (selectionMode) {
+                                        val id = record.video.id
+                                        selectedIds = if (id in selectedIds) {
+                                            selectedIds - id
+                                        } else {
+                                            selectedIds + id
+                                        }
+                                    } else {
+                                        onVideoClick(record.video.id)
+                                    }
+                                },
+                                onLongClick = {
+                                    selectionMode = true
+                                    selectedIds = setOf(record.video.id)
+                                },
+                                onDismiss = {
+                                    viewModel.delete(record.video.id)
+                                    scope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = resources.getString(R.string.history_deleted_single),
+                                            actionLabel = resources.getString(R.string.history_undo),
+                                            withDismissAction = true,
+                                            duration = SnackbarDuration.Short
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            viewModel.restore(listOf(record))
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -259,10 +311,17 @@ fun HistoryScreen(
             title = { Text(stringResource(R.string.history_clear)) },
             text = { Text(stringResource(R.string.history_clear_confirm)) },
             confirmButton = {
-                TextButton(onClick = {
-                    viewModel.clear()
-                    showClearDialog = false
-                }) { Text(stringResource(R.string.history_clear_confirm_yes)) }
+                TextButton(
+                    onClick = {
+                        viewModel.clear()
+                        showClearDialog = false
+                        exitSelection()
+                        filter = HistoryFilter.ALL
+                    },
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text(stringResource(R.string.history_clear_confirm_yes)) }
             },
             dismissButton = {
                 TextButton(onClick = { showClearDialog = false }) {
@@ -271,6 +330,126 @@ fun HistoryScreen(
             }
         )
     }
+}
+
+@Composable
+private fun HistorySummary(count: Int, totalPlayMs: Long) {
+    Text(
+        text = historySummaryText(count = count, totalPlayMs = totalPlayMs),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 4.dp)
+    )
+}
+
+/** 「共 N 部 · 观看 X」：X 取全部日期累计，不按周截断 */
+@Composable
+private fun historySummaryText(count: Int, totalPlayMs: Long): String {
+    val totalMinutes = (totalPlayMs / 60_000L).toInt()
+    val hours = totalMinutes / 60
+    val minutes = totalMinutes % 60
+    val duration = when {
+        hours > 0 -> stringResource(R.string.history_total_hours_minutes, hours, minutes)
+        totalMinutes > 0 -> stringResource(R.string.history_total_minutes, totalMinutes)
+        totalPlayMs > 0L -> stringResource(R.string.history_total_less_than_minute)
+        else -> null
+    }
+    return if (duration == null) {
+        stringResource(R.string.history_summary_short, count)
+    } else {
+        stringResource(R.string.history_summary, count, duration)
+    }
+}
+
+@Composable
+private fun HistoryFilterRow(current: HistoryFilter, onSelect: (HistoryFilter) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        HistoryFilter.entries.forEach { item ->
+            val selected = item == current
+            val background by animateColorAsState(
+                targetValue = if (selected) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                },
+                animationSpec = tween(180),
+                label = "historyFilterBg"
+            )
+            val foreground by animateColorAsState(
+                targetValue = if (selected) {
+                    MaterialTheme.colorScheme.onPrimary
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                },
+                animationSpec = tween(180),
+                label = "historyFilterFg"
+            )
+            Box(
+                modifier = Modifier
+                    .height(32.dp)
+                    .clip(CircleShape)
+                    .background(background)
+                    .clickable { onSelect(item) }
+                    .padding(horizontal = 13.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = item.label(),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = foreground
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HistoryGroupHeader(group: HistoryGroup, count: Int) {
+    Text(
+        text = stringResource(R.string.history_group_count, group.label(), count),
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(start = 4.dp, top = 12.dp, bottom = 6.dp)
+    )
+}
+
+@Composable
+private fun HistoryFilterEmpty(onShowAll: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 52.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(R.string.history_filter_empty_title),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(6.dp))
+        TextButton(onClick = onShowAll) {
+            Text(stringResource(R.string.history_filter_empty_action))
+        }
+    }
+}
+
+@Composable
+private fun HistoryFilter.label(): String = when (this) {
+    HistoryFilter.ALL -> stringResource(R.string.history_filter_all)
+    HistoryFilter.UNFINISHED -> stringResource(R.string.history_filter_unfinished)
+    HistoryFilter.FINISHED -> stringResource(R.string.history_filter_finished)
+}
+
+@Composable
+private fun HistoryGroup.label(): String = when (this) {
+    HistoryGroup.TODAY -> stringResource(R.string.history_group_today)
+    HistoryGroup.YESTERDAY -> stringResource(R.string.history_group_yesterday)
+    HistoryGroup.EARLIER -> stringResource(R.string.history_group_earlier)
 }
 
 /** 多选模式下的顶部操作栏：退出 + 已选数量 + 全选 + 删除 */
@@ -314,14 +493,12 @@ private fun SelectionTopBar(
     )
 }
 
-/** 历史条目与滑动背景共用同一圆角，避免卡片四角露出背景色 */
-private val HistoryCardShape = AppShapes.Large
-
 /** 包裹滑动删除手势的历史条目 */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SwipeableHistoryItem(
     record: WatchRecord,
+    today: LocalDate,
     selectionMode: Boolean,
     selected: Boolean,
     swipeEnabled: Boolean,
@@ -330,8 +507,7 @@ private fun SwipeableHistoryItem(
     onDismiss: () -> Unit
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
-        // 只把滑动当作删除手势，不真正停在滑出位置：
-        // 否则撤销恢复记录时，这行的状态仍是“已滑出”，只会露出红色背景。
+        // 滑动只作为删除手势，不真正停在滑出位置；删除与撤销交给 ViewModel + Snackbar
         confirmValueChange = { value ->
             if (value != SwipeToDismissBoxValue.Settled) {
                 onDismiss()
@@ -364,6 +540,7 @@ private fun SwipeableHistoryItem(
     ) {
         HistoryItem(
             record = record,
+            today = today,
             selectionMode = selectionMode,
             selected = selected,
             onClick = onClick,
@@ -372,29 +549,63 @@ private fun SwipeableHistoryItem(
     }
 }
 
-@OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun HistoryItem(
     record: WatchRecord,
+    today: LocalDate,
     selectionMode: Boolean,
     selected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val cardShape = HistoryCardShape
+    val finished = record.isFinished()
+    val durationText = when {
+        record.durationMs > 0L -> formatDuration(record.durationMs)
+        record.video.durationText.isNotBlank() -> record.video.durationText
+        else -> ""
+    }
+    val episodeText = if (record.video.episodeCount > 1) {
+        stringResource(R.string.history_episode_badge, record.episodeIndex + 1)
+    } else {
+        ""
+    }
+    val instant = Instant.ofEpochMilli(record.watchedAt).atZone(ZoneId.systemDefault())
+    val date = instant.toLocalDate()
+    val clock = instant.format(HistoryClockFormat)
+    val timeText = when {
+        date >= today -> stringResource(R.string.history_time_today, clock)
+        date == today.minusDays(1) -> stringResource(R.string.history_time_yesterday, clock)
+        else -> instant.format(HistoryEarlierFormat)
+    }
+    val metaText = if (record.video.category.isBlank()) {
+        timeText
+    } else {
+        "${record.video.category} · $timeText"
+    }
+    val watchedText = when {
+        finished -> stringResource(R.string.history_finished)
+        record.positionMs > 0L -> stringResource(
+            R.string.history_watched_at,
+            formatDuration(record.positionMs)
+        )
+        else -> stringResource(R.string.history_not_started)
+    }
+    val showProgress = record.positionMs > 0L && record.durationMs > 0L && !finished
+
     ElevatedCard(
         modifier = Modifier
             .then(
                 if (selected) {
-                    Modifier.border(1.5.dp, colorScheme.primary.copy(alpha = 0.7f), cardShape)
+                    Modifier.border(1.5.dp, colorScheme.primary.copy(alpha = 0.7f), HistoryCardShape)
                 } else {
                     Modifier
                 }
             )
-            .clip(cardShape)
+            .clip(HistoryCardShape)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
-        shape = cardShape,
+        shape = HistoryCardShape,
         colors = CardDefaults.elevatedCardColors(
             containerColor = if (selected) {
                 colorScheme.primaryContainer
@@ -404,12 +615,14 @@ private fun HistoryItem(
         ),
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
-        Row(Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            // 迷你封面：有封面地址加载网络图，加载中/无封面时显示波纹空白占位
+        Row(
+            modifier = Modifier.padding(9.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
-                    .width(120.dp)
-                    .height(68.dp)
+                    .width(124.dp)
+                    .height(70.dp)
                     .clip(AppShapes.Compact)
                     .shimmerPlaceholder()
             ) {
@@ -421,35 +634,74 @@ private fun HistoryItem(
                         modifier = Modifier.fillMaxSize()
                     )
                 }
-                // 多选模式下的选中标记（类似相册的右上角勾选圆钮）
-                if (selectionMode) {
-                    if (selected) {
+                if (episodeText.isNotEmpty()) {
+                    Text(
+                        text = episodeText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.TopStart)
+                            .padding(5.dp)
+                            .clip(AppShapes.Small)
+                            .background(Color.Black.copy(alpha = 0.55f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+                if (durationText.isNotEmpty()) {
+                    Text(
+                        text = durationText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(5.dp)
+                            .clip(AppShapes.Small)
+                            .background(Color.Black.copy(alpha = 0.62f))
+                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                    )
+                }
+                if (showProgress) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomStart)
+                            .fillMaxWidth()
+                            .height(3.dp)
+                            .background(Color.Black.copy(alpha = 0.45f))
+                    ) {
                         Box(
                             modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(6.dp)
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(colorScheme.primary),
-                            contentAlignment = Alignment.Center
-                        ) {
+                                .fillMaxWidth(record.progress.coerceIn(0f, 1f))
+                                .fillMaxHeight()
+                                .background(colorScheme.primary)
+                        )
+                    }
+                }
+                if (selectionMode) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (selected) colorScheme.primary
+                                else Color.Black.copy(alpha = 0.22f)
+                            )
+                            .border(
+                                1.5.dp,
+                                if (selected) colorScheme.primary else Color.White.copy(alpha = 0.9f),
+                                CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        if (selected) {
                             Icon(
                                 Icons.Rounded.Check,
                                 contentDescription = null,
                                 tint = colorScheme.onPrimary,
-                                modifier = Modifier.size(14.dp)
+                                modifier = Modifier.size(13.dp)
                             )
                         }
-                    } else {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .padding(6.dp)
-                                .size(22.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = 0.25f))
-                                .border(1.5.dp, Color.White.copy(alpha = 0.9f), CircleShape)
-                        )
                     }
                 }
             }
@@ -458,35 +710,30 @@ private fun HistoryItem(
                 Text(
                     text = record.video.title,
                     style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(3.dp))
+                Text(
+                    text = metaText,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(3.dp))
                 Text(
-                    text = "${record.video.category} · ${relativeTime(record.watchedAt)}",
-                    style = MaterialTheme.typography.labelMedium,
+                    text = watchedText,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Spacer(Modifier.height(8.dp))
-                // 仅在有真实播放进度时展示进度条（刚进入详情未播放/已看完复位均不显示）
-                if (record.positionMs > 0L && record.durationMs > 0L) {
-                    LinearProgressIndicator(
-                        progress = { record.progress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp)
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(
-                            R.string.history_watched_at,
-                            formatDuration(record.positionMs)
-                        ),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
             }
+            Icon(
+                imageVector = Icons.Rounded.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
