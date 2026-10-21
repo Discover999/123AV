@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.favorites
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.activity.compose.BackHandler
@@ -32,23 +34,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.CreateNewFolder
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Deselect
-import androidx.compose.material.icons.rounded.DriveFileRenameOutline
-import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.Inbox
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.SelectAll
-import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -170,7 +155,7 @@ internal fun FolderPickerSheet(
                         }
                     ) {
                         Icon(
-                            Icons.Rounded.Check,
+                            AppIcons.Check,
                             contentDescription = stringResource(R.string.favorites_dialog_done),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -180,7 +165,7 @@ internal fun FolderPickerSheet(
                         newName = ""
                         duplicate = false
                     }) {
-                        Icon(Icons.Rounded.Close, contentDescription = null)
+                        Icon(AppIcons.Close, contentDescription = null)
                     }
                 }
             } else {
@@ -193,7 +178,7 @@ internal fun FolderPickerSheet(
                         .padding(vertical = 8.dp)
                 ) {
                     Icon(
-                        Icons.Rounded.CreateNewFolder,
+                        AppIcons.CreateNewFolder,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary
                     )
@@ -242,7 +227,7 @@ internal fun FolderPickerSheet(
                     ) {
                         if (selected) {
                             Icon(
-                                Icons.Rounded.Check,
+                                AppIcons.Check,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onPrimary,
                                 modifier = Modifier.size(14.dp)
@@ -298,12 +283,12 @@ internal fun FolderActionsSheet(
                 modifier = Modifier.padding(start = 16.dp, top = 4.dp, bottom = 8.dp)
             )
             SheetActionRow(
-                icon = Icons.Rounded.DriveFileRenameOutline,
+                icon = AppIcons.DriveFileRenameOutline,
                 label = stringResource(R.string.favorites_rename_group),
                 onClick = onRename
             )
             SheetActionRow(
-                icon = Icons.Rounded.Delete,
+                icon = AppIcons.Delete,
                 label = stringResource(R.string.favorites_delete_group),
                 tint = MaterialTheme.colorScheme.error,
                 onClick = onDelete

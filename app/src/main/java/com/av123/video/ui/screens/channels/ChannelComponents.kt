@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.channels
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.activity.compose.BackHandler
@@ -41,20 +43,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.FilterAltOff
-import androidx.compose.material.icons.outlined.Videocam
-import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -213,7 +201,7 @@ internal fun EntriesGrid(
                             .fillMaxWidth()
                             .padding(bottom = 4.dp),
                         placeholder = { Text(stringResource(R.string.channel_filter_hint)) },
-                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
                         singleLine = true,
                         shape = AppShapes.Medium
                     )
@@ -312,7 +300,7 @@ internal fun ActressSearchExpandedField(
                 style = MaterialTheme.typography.bodyLarge
             )
         },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        leadingIcon = { Icon(AppIcons.Search, contentDescription = null) },
         trailingIcon = if (input.isNotEmpty()) {
             {
                 IconButton(onClick = {
@@ -321,7 +309,7 @@ internal fun ActressSearchExpandedField(
                     keyboardController?.hide()
                 }) {
                     Icon(
-                        imageVector = Icons.Filled.Close,
+                        imageVector = AppIcons.Close,
                         contentDescription = stringResource(R.string.search_clear)
                     )
                 }
@@ -441,7 +429,7 @@ internal fun MakerCard(entry: IndexEntry, onClick: () -> Unit) {
                 }
             }
             Icon(
-                imageVector = Icons.Rounded.ChevronRight,
+                imageVector = AppIcons.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -527,8 +515,8 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     // 只显示视频/观看；关注数由右侧心形胶囊（紧凑格式）展示，避免重复
-                    ActressStat(Icons.Outlined.Videocam, entry.videos, Modifier.weight(1f))
-                    ActressStat(Icons.Outlined.Visibility, entry.views, Modifier.weight(1f))
+                    ActressStat(AppIcons.VideocamOutline, entry.videos, Modifier.weight(1f))
+                    ActressStat(AppIcons.VisibilityOutline, entry.views, Modifier.weight(1f))
                 }
             }
             // 网页给了关注数，或已被本机关注（关注数缺失时也要保留取关入口）：展示胶囊
@@ -566,9 +554,9 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
                     ) {
                         Icon(
                             imageVector = if (isFollowed) {
-                                Icons.Filled.Favorite
+                                AppIcons.Favorite
                             } else {
-                                Icons.Outlined.FavoriteBorder
+                                AppIcons.FavoriteBorder
                             },
                             contentDescription = stringResource(
                                 if (isFollowed) R.string.actress_followed
@@ -675,7 +663,7 @@ internal fun EntryRow(entry: IndexEntry, onClick: () -> Unit) {
             }
             Spacer(Modifier.width(8.dp))
             Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                imageVector = AppIcons.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

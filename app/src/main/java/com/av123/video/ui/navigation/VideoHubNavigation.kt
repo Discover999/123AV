@@ -1,5 +1,7 @@
 package com.av123.video.ui.navigation
 
+import com.av123.video.ui.icons.AppIcons
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.EnterTransition
@@ -32,15 +34,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Category
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.outlined.Category
-import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -156,10 +149,10 @@ enum class TopLevelDestination(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    HOME(Routes.HOME, R.string.tab_home, Icons.Filled.Home, Icons.Outlined.Home),
-    CHANNELS(Routes.CHANNELS, R.string.tab_channels, Icons.Filled.Category, Icons.Outlined.Category),
-    HISTORY(Routes.HISTORY, R.string.tab_history, Icons.Filled.History, Icons.Outlined.History),
-    PROFILE(Routes.PROFILE, R.string.tab_profile, Icons.Filled.Person, Icons.Outlined.Person);
+    HOME(Routes.HOME, R.string.tab_home, AppIcons.Home, AppIcons.HomeOutline),
+    CHANNELS(Routes.CHANNELS, R.string.tab_channels, AppIcons.Category, AppIcons.CategoryOutline),
+    HISTORY(Routes.HISTORY, R.string.tab_history, AppIcons.History, AppIcons.HistoryOutline),
+    PROFILE(Routes.PROFILE, R.string.tab_profile, AppIcons.Person, AppIcons.PersonOutline);
 
     companion object {
         val topLevelRoutes = entries.map { it.route }.toSet()

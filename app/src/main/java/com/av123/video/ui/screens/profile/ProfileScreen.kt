@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.profile
 
+import com.av123.video.ui.icons.AppIcons
+
 import android.os.Build
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -26,26 +28,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.CleaningServices
-import androidx.compose.material.icons.rounded.Cloud
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.ViewAgenda
-import androidx.compose.material.icons.rounded.FileDownload
-import androidx.compose.material.icons.rounded.FileUpload
-import androidx.compose.material.icons.rounded.Favorite
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.Lock
-import androidx.compose.material.icons.rounded.Palette
-import androidx.compose.material.icons.rounded.Person
-import androidx.compose.material.icons.rounded.PhoneAndroid
-import androidx.compose.material.icons.rounded.PictureInPictureAlt
-import androidx.compose.material.icons.automirrored.rounded.PlaylistPlay
-import androidx.compose.material.icons.rounded.QueryStats
-import androidx.compose.material.icons.rounded.Stars
-import androidx.compose.material.icons.rounded.Timer
-import androidx.compose.material.icons.rounded.VisibilityOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -238,7 +220,7 @@ fun ProfileScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     SettingsItem(
-                        icon = Icons.Rounded.Favorite,
+                        icon = AppIcons.Favorite,
                         iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                         title = stringResource(R.string.profile_my_favorites),
@@ -247,7 +229,7 @@ fun ProfileScreen(
                         ),
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -256,7 +238,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.Stars,
+                        icon = AppIcons.Stars,
                         iconContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
                         title = stringResource(R.string.profile_my_followed),
@@ -265,7 +247,7 @@ fun ProfileScreen(
                         ),
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -274,7 +256,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.QueryStats,
+                        icon = AppIcons.QueryStats,
                         iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                         title = stringResource(R.string.profile_watch_stats),
@@ -284,7 +266,7 @@ fun ProfileScreen(
                         ),
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -293,14 +275,14 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.Cloud,
+                        icon = AppIcons.Cloud,
                         iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                         title = stringResource(R.string.profile_data_source),
                         subtitle = stringResource(R.string.profile_data_source_value),
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -317,14 +299,14 @@ fun ProfileScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     SettingsItem(
-                        icon = Icons.Rounded.FileUpload,
+                        icon = AppIcons.FileUpload,
                         iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                         title = stringResource(R.string.profile_export_data),
                         subtitle = stringResource(R.string.profile_export_data_desc),
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -335,14 +317,14 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.FileDownload,
+                        icon = AppIcons.FileDownload,
                         iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                         title = stringResource(R.string.profile_import_data),
                         subtitle = stringResource(R.string.profile_import_data_desc),
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -351,7 +333,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.CleaningServices,
+                        icon = AppIcons.CleaningServices,
                         iconContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
                         title = stringResource(R.string.storage_title),
@@ -362,7 +344,7 @@ fun ProfileScreen(
                         },
                         trailing = {
                             Icon(
-                                Icons.Rounded.ChevronRight,
+                                AppIcons.ChevronRight,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -379,7 +361,7 @@ fun ProfileScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     SettingsItem(
-                        icon = Icons.Rounded.Lock,
+                        icon = AppIcons.Lock,
                         iconContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
                         title = stringResource(R.string.profile_app_lock),
@@ -427,14 +409,14 @@ fun ProfileScreen(
                     if (settings.appLockEnabled) {
                         SettingsDivider()
                         SettingsItem(
-                            icon = Icons.Rounded.Timer,
+                            icon = AppIcons.Timer,
                             iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                             iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                             title = stringResource(R.string.profile_app_lock_relock),
                             subtitle = appLockTimeoutLabel(settings.appLockTimeout),
                             trailing = {
                                 Icon(
-                                    Icons.Rounded.ChevronRight,
+                                    AppIcons.ChevronRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -444,7 +426,7 @@ fun ProfileScreen(
                     }
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.VisibilityOff,
+                        icon = AppIcons.VisibilityOff,
                         iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                         title = stringResource(R.string.profile_secure_screen),
@@ -462,7 +444,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.PhoneAndroid,
+                        icon = AppIcons.PhoneAndroid,
                         iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                         title = stringResource(R.string.profile_flip_to_exit),
@@ -488,7 +470,7 @@ fun ProfileScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     SettingsItem(
-                        icon = Icons.Rounded.Palette,
+                        icon = AppIcons.Palette,
                         iconContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
                         iconTint = MaterialTheme.colorScheme.onTertiaryContainer,
                         title = stringResource(R.string.profile_dynamic_color),
@@ -511,7 +493,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.ViewAgenda,
+                        icon = AppIcons.ViewAgenda,
                         iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                         title = stringResource(R.string.profile_floating_nav),
@@ -529,7 +511,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.Rounded.DarkMode,
+                        icon = AppIcons.DarkMode,
                         iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                         title = stringResource(R.string.profile_dark_mode),
@@ -541,7 +523,7 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.primary
                                 )
                                 Icon(
-                                    Icons.Rounded.ChevronRight,
+                                    AppIcons.ChevronRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
@@ -559,7 +541,7 @@ fun ProfileScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     SettingsItem(
-                        icon = Icons.Rounded.PictureInPictureAlt,
+                        icon = AppIcons.PictureInPictureAlt,
                         iconContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         iconTint = MaterialTheme.colorScheme.onPrimaryContainer,
                         title = stringResource(R.string.profile_pip),
@@ -577,7 +559,7 @@ fun ProfileScreen(
                     )
                     SettingsDivider()
                     SettingsItem(
-                        icon = Icons.AutoMirrored.Rounded.PlaylistPlay,
+                        icon = AppIcons.PlaylistPlay,
                         iconContainerColor = MaterialTheme.colorScheme.secondaryContainer,
                         iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                         title = stringResource(R.string.profile_auto_next),
@@ -603,7 +585,7 @@ fun ProfileScreen(
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
                     SettingsItem(
-                        icon = Icons.Rounded.Info,
+                        icon = AppIcons.Info,
                         iconContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                         title = stringResource(R.string.profile_about_version),
@@ -615,7 +597,7 @@ fun ProfileScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Icon(
-                                    Icons.Rounded.ChevronRight,
+                                    AppIcons.ChevronRight,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )

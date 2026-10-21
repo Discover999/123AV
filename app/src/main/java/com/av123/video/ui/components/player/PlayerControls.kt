@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.icons.AppIconSize
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
 import com.av123.video.ui.theme.Motion
@@ -70,24 +73,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.Replay5
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -384,10 +369,10 @@ internal fun PlayerControls(
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = AppIcons.ArrowBack,
                             contentDescription = exitFullscreenDescription,
                             tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+                            modifier = Modifier.size(AppIconSize.Player)
                         )
                     }
                     Text(
@@ -424,10 +409,10 @@ internal fun PlayerControls(
                             modifier = Modifier.size(40.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Settings,
+                                imageVector = AppIcons.Settings,
                                 contentDescription = stringResource(R.string.player_settings),
                                 tint = Color.White,
-                                modifier = Modifier.size(22.dp)
+                                modifier = Modifier.size(AppIconSize.Inline)
                             )
                         }
                     }
@@ -484,7 +469,7 @@ internal fun PlayerControls(
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
-                        imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                        imageVector = if (isPlaying) AppIcons.Pause else AppIcons.PlayArrow,
                         contentDescription = if (isPlaying) pauseDescription else playDescription,
                         tint = Color.White,
                         modifier = Modifier.size(24.dp)
@@ -583,7 +568,7 @@ internal fun PlayerControls(
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            imageVector = if (effectivelyMuted) Icons.AutoMirrored.Filled.VolumeOff else Icons.AutoMirrored.Filled.VolumeUp,
+                            imageVector = if (effectivelyMuted) AppIcons.VolumeOff else AppIcons.VolumeUp,
                             contentDescription = if (effectivelyMuted) unmuteDescription else muteDescription,
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -626,7 +611,7 @@ internal fun PlayerControls(
                 ) {
                     Icon(
                         imageVector = if (isFullscreen)
-                            Icons.Filled.FullscreenExit else Icons.Filled.Fullscreen,
+                            AppIcons.FullscreenExit else AppIcons.Fullscreen,
                         contentDescription = if (isFullscreen) exitFullscreenDescription
                         else enterFullscreenDescription,
                         tint = Color.White,
@@ -714,7 +699,7 @@ private fun SettingsSheet(
             )
             IconButton(onClick = onDismiss, modifier = Modifier.size(40.dp)) {
                 Icon(
-                    imageVector = Icons.Filled.Close,
+                    imageVector = AppIcons.Close,
                     contentDescription = stringResource(R.string.common_close),
                     tint = Color.White.copy(alpha = 0.8f),
                     modifier = Modifier.size(20.dp)
@@ -869,7 +854,7 @@ private fun SettingsSheetRow(label: String, value: String? = null, onClick: () -
             Spacer(modifier = Modifier.width(4.dp))
         }
         Icon(
-            imageVector = Icons.Filled.ChevronRight,
+            imageVector = AppIcons.ChevronRight,
             contentDescription = null,
             tint = Color.White.copy(alpha = 0.4f),
             modifier = Modifier.size(16.dp)
@@ -910,35 +895,27 @@ private fun NetworkPill(label: String) {
 
 @Composable
 private fun BatteryGlyph(level: Int, charging: Boolean) {
-    val fraction = level.coerceIn(0, 100) / 100f
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Box(
-            modifier = Modifier
-                .width(18.dp)
-                .height(9.dp)
-                .border(1.dp, Color.White.copy(alpha = 0.7f), RoundedCornerShape(2.dp))
-                .padding(1.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth(fraction)
-                    .background(
-                        when {
-                            charging -> Color(0xFF6EDC8A)
-                            level <= 15 -> Color(0xFFFF6B6B)
-                            else -> Color.White.copy(alpha = 0.9f)
-                        }
-                    )
-            )
-        }
-        Box(
-            modifier = Modifier
-                .width(1.5.dp)
-                .height(4.dp)
-                .background(Color.White.copy(alpha = 0.7f))
-        )
+    val icon = when {
+        charging -> AppIcons.BatteryChargingFull
+        level >= 95 -> AppIcons.BatteryFull
+        level >= 80 -> AppIcons.Battery6Bar
+        level >= 65 -> AppIcons.Battery5Bar
+        level >= 50 -> AppIcons.Battery4Bar
+        level >= 35 -> AppIcons.Battery3Bar
+        level >= 20 -> AppIcons.Battery2Bar
+        level >= 10 -> AppIcons.Battery1Bar
+        else -> AppIcons.Battery0Bar
     }
+    Icon(
+        imageVector = icon,
+        contentDescription = null,
+        tint = when {
+            charging -> Color(0xFF6EDC8A)
+            level <= 15 -> Color(0xFFFF6B6B)
+            else -> Color.White.copy(alpha = 0.9f)
+        },
+        modifier = Modifier.size(AppIconSize.Compact)
+    )
 }
 
 /** 居中的播放/暂停键：半透明玻璃底 + 细描边 + 手绘柔光，按压轻微回弹 */
@@ -995,10 +972,10 @@ private fun CenterPlayButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                imageVector = if (isPlaying) AppIcons.Pause else AppIcons.PlayArrow,
                 contentDescription = description,
                 tint = Color.White,
-                modifier = Modifier.size(36.dp)
+                modifier = Modifier.size(AppIconSize.Hero)
             )
         }
     }

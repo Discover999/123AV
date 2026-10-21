@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.favorites
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.activity.compose.BackHandler
@@ -32,23 +34,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.CreateNewFolder
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Deselect
-import androidx.compose.material.icons.rounded.DriveFileRenameOutline
-import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.Inbox
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.SelectAll
-import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -111,7 +96,7 @@ internal fun SelectionTopBar(
         navigationIcon = {
             IconButton(onClick = onClose) {
                 Icon(
-                    Icons.Rounded.Close,
+                    AppIcons.Close,
                     contentDescription = stringResource(R.string.favorites_exit_selection)
                 )
             }
@@ -120,13 +105,13 @@ internal fun SelectionTopBar(
         actions = {
             IconButton(onClick = onManageGroups, enabled = count > 0) {
                 Icon(
-                    Icons.AutoMirrored.Rounded.DriveFileMove,
+                    AppIcons.DriveFileMove,
                     contentDescription = stringResource(R.string.favorites_manage_groups)
                 )
             }
             IconButton(onClick = onToggleAll) {
                 Icon(
-                    if (allSelected) Icons.Rounded.Deselect else Icons.Rounded.SelectAll,
+                    if (allSelected) AppIcons.Deselect else AppIcons.SelectAll,
                     contentDescription = stringResource(
                         if (allSelected) R.string.favorites_deselect_all
                         else R.string.favorites_select_all
@@ -135,7 +120,7 @@ internal fun SelectionTopBar(
             }
             IconButton(onClick = onDelete, enabled = count > 0) {
                 Icon(
-                    Icons.Rounded.Delete,
+                    AppIcons.Delete,
                     contentDescription = stringResource(R.string.favorites_delete_selected)
                 )
             }
@@ -183,7 +168,7 @@ internal fun SwipeableFavoriteCard(
                 contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
             ) {
                 Icon(
-                    Icons.Rounded.Delete,
+                    AppIcons.Delete,
                     contentDescription = null,
                     tint = colorScheme.onErrorContainer
                 )
@@ -249,7 +234,7 @@ internal fun SelectableFavoriteCard(
             ) {
                 if (selected) {
                     Icon(
-                        Icons.Rounded.Check,
+                        AppIcons.Check,
                         contentDescription = null,
                         tint = colorScheme.onPrimary,
                         modifier = Modifier.size(14.dp)

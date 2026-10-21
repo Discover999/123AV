@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.detail
 
+import com.av123.video.ui.icons.AppIcons
+
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -39,15 +41,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -221,12 +214,12 @@ fun DetailScreen(
                             // 双栏右栏：关闭详情回到空态占位；紧凑态：返回上一页
                             if (paneCloseButton) {
                                 Icon(
-                                    Icons.Filled.Close,
+                                    AppIcons.Close,
                                     contentDescription = stringResource(R.string.detail_pane_close)
                                 )
                             } else {
                                 Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    AppIcons.ArrowBack,
                                     contentDescription = stringResource(R.string.detail_back)
                                 )
                             }
@@ -252,7 +245,7 @@ fun DetailScreen(
                                 }
                             }) {
                                 Icon(
-                                    imageVector = Icons.Filled.Share,
+                                    imageVector = AppIcons.Share,
                                     contentDescription = shareDescription
                                 )
                             }
@@ -590,9 +583,9 @@ private fun DetailBody(
         ) {
             Icon(
                 imageVector = if (isFavorite) {
-                    Icons.Filled.Favorite
+                    AppIcons.Favorite
                 } else {
-                    Icons.Filled.FavoriteBorder
+                    AppIcons.FavoriteBorder
                 },
                 contentDescription = null,
                 modifier = Modifier.graphicsLayer {

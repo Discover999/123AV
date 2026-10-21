@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.diagnostics
 
+import com.av123.video.ui.icons.AppIcons
+
 import android.app.ActivityManager
 import android.os.Process
 import androidx.compose.foundation.background
@@ -17,14 +19,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.CloudDone
-import androidx.compose.material.icons.rounded.CloudOff
-import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Router
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
@@ -113,7 +107,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.diagnostics_back)
                         )
                     }
@@ -121,7 +115,7 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                 actions = {
                     IconButton(onClick = { epoch += 1 }, enabled = !loading) {
                         Icon(
-                            Icons.Rounded.Refresh,
+                            AppIcons.Refresh,
                             contentDescription = stringResource(R.string.diagnostics_refresh)
                         )
                     }

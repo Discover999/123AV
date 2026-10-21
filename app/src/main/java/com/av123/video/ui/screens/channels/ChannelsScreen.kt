@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.channels
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.compose.foundation.background
@@ -17,8 +19,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.Category
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -121,7 +121,7 @@ fun ChannelsScreen(
             ui.groups.isEmpty() && ui.error != null ->
                 ErrorState(message = appErrorText(ui.error!!), onRetry = viewModel::refresh, modifier = modifier)
             ui.groups.isEmpty() -> EmptyState(
-                icon = Icons.Outlined.Category,
+                icon = AppIcons.CategoryOutline,
                 title = stringResource(R.string.channels_empty_title),
                 subtitle = stringResource(R.string.channels_empty_subtitle),
                 actionText = stringResource(R.string.common_retry),

@@ -1,6 +1,9 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.icons.AppIconSize
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
 
@@ -68,26 +71,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.Replay5
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -1051,12 +1034,12 @@ private fun LockButton(
         contentAlignment = Alignment.Center
     ) {
         Icon(
-            imageVector = if (locked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+            imageVector = if (locked) AppIcons.Lock else AppIcons.LockOpen,
             contentDescription = stringResource(
                 if (locked) R.string.player_unlock else R.string.player_lock
             ),
             tint = Color.White,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(AppIconSize.Inline)
         )
     }
 }

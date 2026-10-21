@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.storage
 
+import com.av123.video.ui.icons.AppIcons
+
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -33,14 +35,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.Image
-import androidx.compose.material.icons.outlined.Language
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -176,7 +170,7 @@ fun StorageScreen(onBack: () -> Unit, onOpenKind: (CacheKind) -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.storage_back)
                         )
                     }
@@ -321,7 +315,7 @@ fun StorageDetailScreen(kind: CacheKind, onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.storage_back)
                         )
                     }
@@ -374,10 +368,10 @@ private fun CacheKind.title(): String = when (this) {
 }
 
 private fun CacheKind.icon(): ImageVector = when (this) {
-    CacheKind.MEDIA -> Icons.Outlined.PlayArrow
-    CacheKind.IMAGE -> Icons.Outlined.Image
-    CacheKind.PAGE -> Icons.Outlined.Description
-    CacheKind.OTHER -> Icons.Outlined.Language
+    CacheKind.MEDIA -> AppIcons.PlayArrowOutline
+    CacheKind.IMAGE -> AppIcons.ImageOutline
+    CacheKind.PAGE -> AppIcons.DescriptionOutline
+    CacheKind.OTHER -> AppIcons.LanguageOutline
 }
 
 /** 四类共用一套线性图标与配色：环、行首图标、图例三点一致 */
@@ -833,7 +827,7 @@ private fun CacheCheckbox(checked: Boolean, enabled: Boolean, onToggle: () -> Un
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Rounded.Check,
+                imageVector = AppIcons.Check,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier
@@ -926,7 +920,7 @@ private fun StorageKindRow(
             }
         }
         Icon(
-            imageVector = Icons.Rounded.ChevronRight,
+            imageVector = AppIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
             modifier = Modifier.size(20.dp)

@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.followed
 
+import com.av123.video.ui.icons.AppIcons
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,11 +20,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
-import androidx.compose.material.icons.outlined.PersonAddAlt
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -76,7 +73,7 @@ fun FollowedScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.followed_back)
                         )
                     }
@@ -85,7 +82,7 @@ fun FollowedScreen(
                     if (actresses.isNotEmpty()) {
                         IconButton(onClick = viewModel::refresh) {
                             Icon(
-                                Icons.Rounded.Refresh,
+                                AppIcons.Refresh,
                                 contentDescription = stringResource(R.string.followed_refresh)
                             )
                         }
@@ -98,7 +95,7 @@ fun FollowedScreen(
     ) { padding ->
         if (actresses.isEmpty()) {
             EmptyState(
-                icon = Icons.Outlined.PersonAddAlt,
+                icon = AppIcons.PersonAddAltOutline,
                 title = stringResource(R.string.followed_empty_title),
                 subtitle = stringResource(R.string.followed_empty_subtitle),
                 actionText = stringResource(R.string.followed_retry),
@@ -211,7 +208,7 @@ private fun ActressFeedSection(
                 modifier = Modifier.weight(1f)
             )
             Icon(
-                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
+                AppIcons.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

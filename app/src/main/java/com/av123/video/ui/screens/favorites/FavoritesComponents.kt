@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.favorites
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.activity.compose.BackHandler
@@ -32,23 +34,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.CreateNewFolder
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Deselect
-import androidx.compose.material.icons.rounded.DriveFileRenameOutline
-import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.Inbox
-import androidx.compose.material.icons.rounded.MoreVert
-import androidx.compose.material.icons.rounded.SelectAll
-import androidx.compose.material.icons.rounded.VideoLibrary
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -138,7 +123,7 @@ internal fun FavoritesTopBar(
         navigationIcon = {
             IconButton(onClick = onBack) {
                 Icon(
-                    Icons.AutoMirrored.Filled.ArrowBack,
+                    AppIcons.ArrowBack,
                     contentDescription = stringResource(R.string.favorites_back)
                 )
             }
@@ -151,14 +136,14 @@ internal fun FavoritesTopBar(
                     resolveGroup(groupFilter.groupId)?.let(onGroupMenu)
                 }) {
                     Icon(
-                        Icons.Rounded.MoreVert,
+                        AppIcons.MoreVert,
                         contentDescription = stringResource(R.string.favorites_folder_actions)
                     )
                 }
             } else {
                 IconButton(onClick = onNewGroup) {
                     Icon(
-                        Icons.Rounded.CreateNewFolder,
+                        AppIcons.CreateNewFolder,
                         contentDescription = stringResource(R.string.favorites_new_group)
                     )
                 }
@@ -166,7 +151,7 @@ internal fun FavoritesTopBar(
                 if (filter == FavoritesFilter.All && totalCount > 0) {
                     IconButton(onClick = onClear) {
                         Icon(
-                            Icons.Rounded.DeleteSweep,
+                            AppIcons.DeleteSweep,
                             contentDescription = stringResource(R.string.favorites_clear)
                         )
                     }
@@ -191,7 +176,7 @@ internal fun FavoritesOverview(
 ) {
     if (state.records.isEmpty() && state.groups.isEmpty()) {
         EmptyState(
-            icon = Icons.Rounded.VideoLibrary,
+            icon = AppIcons.VideoLibrary,
             title = stringResource(R.string.favorites_empty_title),
             subtitle = stringResource(R.string.favorites_empty_subtitle),
             actionText = stringResource(R.string.action_go_home),
@@ -208,7 +193,7 @@ internal fun FavoritesOverview(
         item {
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 ShortcutCard(
-                    icon = Icons.Rounded.VideoLibrary,
+                    icon = AppIcons.VideoLibrary,
                     label = stringResource(R.string.favorites_all_videos),
                     count = state.records.size,
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -217,7 +202,7 @@ internal fun FavoritesOverview(
                     modifier = Modifier.weight(1f)
                 )
                 ShortcutCard(
-                    icon = Icons.Rounded.Inbox,
+                    icon = AppIcons.Inbox,
                     label = stringResource(R.string.favorites_ungrouped_label),
                     count = state.ungroupedCount,
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
@@ -261,7 +246,7 @@ internal fun FavoritesOverview(
                     .fillMaxWidth()
                     .padding(top = 4.dp)
             ) {
-                Icon(Icons.Rounded.Add, contentDescription = null)
+                Icon(AppIcons.Add, contentDescription = null)
                 Text(
                     text = stringResource(R.string.favorites_new_group),
                     modifier = Modifier.padding(start = 6.dp)
@@ -349,7 +334,7 @@ internal fun FolderRow(
                 )
             } else {
                 Icon(
-                    Icons.Rounded.Folder,
+                    AppIcons.Folder,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer
                 )
@@ -369,7 +354,7 @@ internal fun FolderRow(
             )
         }
         Icon(
-            Icons.Rounded.ChevronRight,
+            AppIcons.ChevronRight,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -409,7 +394,7 @@ internal fun FolderContent(
             }
         }
         EmptyState(
-            icon = Icons.Rounded.Folder,
+            icon = AppIcons.Folder,
             title = stringResource(titleRes),
             subtitle = stringResource(subtitleRes),
             modifier = Modifier.fillMaxSize()

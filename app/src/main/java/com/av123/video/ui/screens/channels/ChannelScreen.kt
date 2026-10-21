@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.channels
 
+import com.av123.video.ui.icons.AppIcons
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.Crossfade
@@ -39,20 +41,6 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.FavoriteBorder
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.FilterAltOff
-import androidx.compose.material.icons.outlined.Videocam
-import androidx.compose.material.icons.outlined.VideoLibrary
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -341,7 +329,7 @@ fun ChannelScreen(
                         navigationIcon = {
                             IconButton(onClick = { searchExpanded = false }) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    imageVector = AppIcons.ArrowBack,
                                     contentDescription = stringResource(R.string.channel_back)
                                 )
                             }
@@ -373,7 +361,7 @@ fun ChannelScreen(
                         navigationIcon = {
                             IconButton(onClick = onBack) {
                                 Icon(
-                                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                    imageVector = AppIcons.ArrowBack,
                                     contentDescription = stringResource(R.string.channel_back)
                                 )
                             }
@@ -383,7 +371,7 @@ fun ChannelScreen(
                             if (actressSearchField != null) {
                                 IconButton(onClick = { searchExpanded = true }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Search,
+                                        imageVector = AppIcons.Search,
                                         contentDescription = stringResource(R.string.home_search),
                                         tint = MaterialTheme.colorScheme.primary
                                     )
@@ -450,7 +438,7 @@ fun ChannelScreen(
                                 modifier = Modifier.fillMaxSize()
                             )
                         state.videos.isEmpty() -> EmptyState(
-                            icon = Icons.Outlined.VideoLibrary,
+                            icon = AppIcons.VideoLibraryOutline,
                             title = stringResource(R.string.channel_empty_title),
                             subtitle = stringResource(R.string.channel_empty_subtitle),
                             actionText = stringResource(R.string.common_retry),
@@ -480,7 +468,7 @@ fun ChannelScreen(
                     modifier = modifier
                 )
             !hasContent -> EmptyState(
-                icon = Icons.Outlined.VideoLibrary,
+                icon = AppIcons.VideoLibraryOutline,
                 title = stringResource(R.string.channel_empty_title),
                 subtitle = stringResource(R.string.channel_empty_subtitle),
                 actionText = stringResource(R.string.common_retry),

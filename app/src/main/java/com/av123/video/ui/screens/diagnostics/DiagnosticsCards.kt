@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.diagnostics
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import android.app.ActivityManager
@@ -23,21 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.rounded.CloudDone
-import androidx.compose.material.icons.rounded.CloudOff
-import androidx.compose.material.icons.rounded.ContentCopy
-import androidx.compose.material.icons.rounded.DeviceHub
-import androidx.compose.material.icons.rounded.Place
-import androidx.compose.material.icons.rounded.Public
-import androidx.compose.material.icons.rounded.Refresh
-import androidx.compose.material.icons.rounded.Router
-import androidx.compose.material.icons.rounded.SettingsEthernet
-import androidx.compose.material.icons.rounded.SignalCellularAlt
-import androidx.compose.material.icons.rounded.VpnLock
-import androidx.compose.material.icons.rounded.Wifi
-import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -105,7 +92,7 @@ internal fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
         when (val site = result.site) {
             is SiteProbe.Ok -> {
                 StatusHeader(
-                    icon = Icons.Rounded.CloudDone,
+                    icon = AppIcons.CloudDone,
                     containerColor = MaterialTheme.colorScheme.tertiaryContainer,
                     tint = MaterialTheme.colorScheme.onTertiaryContainer,
                     title = stringResource(R.string.profile_probe_ok),
@@ -117,7 +104,7 @@ internal fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
 
             is SiteProbe.HttpError -> {
                 StatusHeader(
-                    icon = Icons.Rounded.CloudOff,
+                    icon = AppIcons.CloudOff,
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     title = stringResource(R.string.profile_probe_http_error),
@@ -130,7 +117,7 @@ internal fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
             is SiteProbe.Failed -> {
                 val reasonText = site.kind.failureText()
                 StatusHeader(
-                    icon = Icons.Rounded.CloudOff,
+                    icon = AppIcons.CloudOff,
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     title = stringResource(R.string.profile_probe_unreachable),
@@ -296,19 +283,19 @@ internal fun NetworkDiagnosticsCard(result: DataSourceProbeResult, env: NetworkE
         when (val ip = result.ip) {
             is IpProbe.Ok -> {
                 InfoLineWithIcon(
-                    icon = Icons.Rounded.Public,
+                    icon = AppIcons.Public,
                     label = stringResource(R.string.profile_probe_ip),
                     value = ip.ip
                 )
                 Spacer(Modifier.height(10.dp))
                 InfoLineWithIcon(
-                    icon = Icons.Rounded.Place,
+                    icon = AppIcons.Place,
                     label = stringResource(R.string.profile_probe_location),
                     value = ip.location.ifBlank { stringResource(R.string.profile_probe_unknown) }
                 )
                 Spacer(Modifier.height(10.dp))
                 InfoLineWithIcon(
-                    icon = Icons.Rounded.Router,
+                    icon = AppIcons.Router,
                     label = stringResource(R.string.profile_probe_isp),
                     value = ip.isp.ifBlank { stringResource(R.string.profile_probe_unknown) }
                 )
@@ -316,7 +303,7 @@ internal fun NetworkDiagnosticsCard(result: DataSourceProbeResult, env: NetworkE
 
             is IpProbe.Failed -> {
                 InfoLineWithIcon(
-                    icon = Icons.Rounded.CloudOff,
+                    icon = AppIcons.CloudOff,
                     label = stringResource(R.string.profile_probe_ip_failed),
                     value = ip.kind.failureText()
                 )
@@ -694,10 +681,10 @@ internal fun NetworkEnvironment.networkTypeText(): String = when (networkType) {
 /** 网络类型 → 网络信息卡行首图标 */
 internal val NetworkType.icon: ImageVector
     get() = when (this) {
-        NetworkType.WIFI -> Icons.Rounded.Wifi
-        NetworkType.CELLULAR -> Icons.Rounded.SignalCellularAlt
-        NetworkType.ETHERNET -> Icons.Rounded.SettingsEthernet
-        NetworkType.VPN -> Icons.Rounded.VpnLock
-        NetworkType.OTHER -> Icons.Rounded.DeviceHub
-        NetworkType.NONE -> Icons.Rounded.WifiOff
+        NetworkType.WIFI -> AppIcons.Wifi
+        NetworkType.CELLULAR -> AppIcons.SignalCellularAlt
+        NetworkType.ETHERNET -> AppIcons.SettingsEthernet
+        NetworkType.VPN -> AppIcons.VpnLock
+        NetworkType.OTHER -> AppIcons.DeviceHub
+        NetworkType.NONE -> AppIcons.WifiOff
     }

@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
 
@@ -38,12 +40,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Replay10
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -120,7 +116,7 @@ private fun AnimatedFastForwardArrows(modifier: Modifier = Modifier) {
             // 三角波：周期中段最亮、两端最暗
             val pulse = 1f - kotlin.math.abs(phase * 2f - 1f)
             Icon(
-                imageVector = Icons.Filled.ChevronRight,
+                imageVector = AppIcons.ChevronRight,
                 contentDescription = null,
                 tint = Color.White.copy(alpha = 0.3f + 0.7f * pulse),
                 modifier = Modifier
@@ -195,7 +191,7 @@ internal fun DoubleSeekFeedback(
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Icon(
-            imageVector = if (isRewind) Icons.Filled.Replay10 else Icons.Filled.Forward10,
+            imageVector = if (isRewind) AppIcons.Replay10 else AppIcons.Forward10,
             contentDescription = null,
             tint = Color.White,
             modifier = Modifier.size(16.dp)
@@ -270,7 +266,7 @@ internal fun ErrorOverlay(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Error,
+                        imageVector = AppIcons.Error,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
@@ -303,7 +299,7 @@ internal fun ErrorOverlay(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 9.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.Refresh,
+                        imageVector = AppIcons.Refresh,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )

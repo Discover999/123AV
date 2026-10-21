@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.stats
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.compose.foundation.background
@@ -18,10 +20,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.QueryStats
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -79,7 +77,7 @@ fun StatsScreen(onBack: () -> Unit) {
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
+                            AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.stats_back)
                         )
                     }
@@ -87,7 +85,7 @@ fun StatsScreen(onBack: () -> Unit) {
                 actions = {
                     IconButton(onClick = viewModel::refresh, enabled = !uiState.loading) {
                         Icon(
-                            Icons.Rounded.Refresh,
+                            AppIcons.Refresh,
                             contentDescription = stringResource(R.string.stats_refresh)
                         )
                     }
@@ -113,7 +111,7 @@ fun StatsScreen(onBack: () -> Unit) {
             // 完全没有观看历史：空态引导
             stats != null && stats.totalVideos == 0 -> {
                 EmptyState(
-                    icon = Icons.Outlined.QueryStats,
+                    icon = AppIcons.QueryStatsOutline,
                     title = stringResource(R.string.stats_empty_title),
                     subtitle = stringResource(R.string.stats_empty_subtitle),
                     modifier = Modifier

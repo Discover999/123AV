@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.search
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.compose.animation.Crossfade
@@ -29,13 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.outlined.SearchOff
-import androidx.compose.material.icons.rounded.DeleteSweep
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -152,7 +147,7 @@ fun SearchScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            imageVector = AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.search_back)
                         )
                     }
@@ -174,7 +169,7 @@ fun SearchScreen(
                             )
                         },
                         leadingIcon = {
-                            Icon(imageVector = Icons.Filled.Search, contentDescription = null)
+                            Icon(imageVector = AppIcons.Search, contentDescription = null)
                         },
                         trailingIcon = {
                             if (input.isNotEmpty()) {
@@ -184,7 +179,7 @@ fun SearchScreen(
                                     viewModel.clear()
                                 }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Close,
+                                        imageVector = AppIcons.Close,
                                         contentDescription = stringResource(R.string.search_clear)
                                     )
                                 }
@@ -215,7 +210,7 @@ fun SearchScreen(
                         enabled = !ui.isLoading && input.isNotBlank()
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Search,
+                            imageVector = AppIcons.Search,
                             contentDescription = stringResource(R.string.search_action),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -280,7 +275,7 @@ fun SearchScreen(
                             // 无历史且输入框为空：居中引导；输入中但无匹配则留白
                             query.isEmpty() ->
                                 EmptyState(
-                                    icon = Icons.Filled.Search,
+                                    icon = AppIcons.Search,
                                     title = stringResource(R.string.search_initial_title),
                                     subtitle = stringResource(R.string.search_initial_subtitle),
                                     modifier = Modifier.fillMaxSize()
@@ -291,7 +286,7 @@ fun SearchScreen(
                     // 搜索完成但无结果
                     SearchSurface.Empty ->
                         EmptyState(
-                            icon = Icons.Outlined.SearchOff,
+                            icon = AppIcons.SearchOffOutline,
                             title = stringResource(R.string.search_empty_title),
                             subtitle = stringResource(R.string.search_empty_subtitle, ui.keyword),
                             actionText = stringResource(R.string.action_clear_search),
@@ -370,7 +365,7 @@ private fun SearchHistoryPanel(
             )
             IconButton(onClick = onClearAll) {
                 Icon(
-                    imageVector = Icons.Rounded.DeleteSweep,
+                    imageVector = AppIcons.DeleteSweep,
                     contentDescription = stringResource(R.string.search_history_clear_all),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -394,14 +389,14 @@ private fun SearchHistoryPanel(
                     },
                     leadingIcon = {
                         Icon(
-                            imageVector = Icons.Outlined.History,
+                            imageVector = AppIcons.HistoryOutline,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp)
                         )
                     },
                     trailingIcon = {
                         Icon(
-                            imageVector = Icons.Filled.Close,
+                            imageVector = AppIcons.Close,
                             contentDescription = stringResource(
                                 R.string.search_history_delete,
                                 keyword

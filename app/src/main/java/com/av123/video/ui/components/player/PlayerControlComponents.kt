@@ -1,6 +1,8 @@
 @file:OptIn(ExperimentalMaterial3Api::class)
 package com.av123.video.ui.components.player
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
 
@@ -59,24 +61,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.VolumeOff
-import androidx.compose.material.icons.automirrored.filled.VolumeUp
-import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Error
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Forward10
-import androidx.compose.material.icons.filled.Fullscreen
-import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay10
-import androidx.compose.material.icons.filled.Replay5
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -476,7 +460,7 @@ internal fun PlayerSettingsButton(
     Box(modifier = modifier) {
         IconButton(onClick = { onSettingsExpandedChange(!settingsExpanded) }) {
             Icon(
-                imageVector = Icons.Filled.Settings,
+                imageVector = AppIcons.Settings,
                 contentDescription = stringResource(R.string.player_settings),
                 tint = Color.White,
                 modifier = Modifier.size(22.dp)
@@ -567,7 +551,7 @@ internal fun SettingsMenuContent(
                     )
                     Spacer(modifier = Modifier.width(2.dp))
                     Icon(
-                        imageVector = Icons.Filled.ChevronRight,
+                        imageVector = AppIcons.ChevronRight,
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.55f),
                         modifier = Modifier.size(16.dp)
@@ -585,7 +569,7 @@ internal fun SettingsMenuContent(
                         .padding(start = 8.dp, end = 16.dp, top = 8.dp, bottom = 4.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = AppIcons.ArrowBack,
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(18.dp)
@@ -621,7 +605,7 @@ internal fun SettingsMenuContent(
                         )
                         if (selected) {
                             Icon(
-                                imageVector = Icons.Filled.Check,
+                                imageVector = AppIcons.Check,
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
@@ -724,7 +708,7 @@ internal fun PlaybackUrlContent(
                     modifier = Modifier.height(32.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Filled.ContentCopy,
+                        imageVector = AppIcons.ContentCopy,
                         contentDescription = null,
                         tint = Color.White,
                         modifier = Modifier.size(14.dp)
@@ -750,7 +734,7 @@ internal fun PopupCloseButton(onClick: () -> Unit) {
         modifier = Modifier.size(28.dp)
     ) {
         Icon(
-            imageVector = Icons.Filled.Close,
+            imageVector = AppIcons.Close,
             contentDescription = stringResource(R.string.common_close),
             tint = Color.White.copy(alpha = 0.8f),
             modifier = Modifier.size(18.dp)

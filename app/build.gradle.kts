@@ -123,7 +123,6 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.material.icons.extended)
     // XML 层 MD3 主题（Theme.Material3.DayNight.NoActionBar）
     implementation(libs.material.components)
     implementation(libs.androidx.navigation.compose)

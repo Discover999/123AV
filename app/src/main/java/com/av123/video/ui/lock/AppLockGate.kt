@@ -1,5 +1,7 @@
 package com.av123.video.ui.lock
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import android.os.SystemClock
@@ -41,8 +43,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.av123.video.R
 import com.av123.video.ui.components.BrandLogo
 import com.av123.video.ui.util.findActivity
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Lock
 
 /** 应用锁允许的认证方式：强生物识别，失败可回退设备凭据（PIN/图案/密码） */
 private const val LOCK_AUTHENTICATORS =
@@ -212,7 +212,7 @@ private fun AppLockOverlay(onUnlockClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = Icons.Rounded.Lock,
+                    imageVector = AppIcons.Lock,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     modifier = Modifier.size(40.dp)

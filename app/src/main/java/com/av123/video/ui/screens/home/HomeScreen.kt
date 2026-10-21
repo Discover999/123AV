@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.home
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppTypeScale
 
 import androidx.compose.animation.Crossfade
@@ -40,9 +42,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.outlined.VideoLibrary
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -157,7 +156,7 @@ fun HomeScreen(
                 actions = {
                     IconButton(onClick = onSearchClick) {
                         Icon(
-                            imageVector = Icons.Filled.Search,
+                            imageVector = AppIcons.Search,
                             contentDescription = stringResource(R.string.home_search),
                             tint = MaterialTheme.colorScheme.primary
                         )
@@ -372,7 +371,7 @@ private fun HomeContent(
                     item(span = { GridItemSpan(maxLineSpan) }) {
                         Box(modifier = Modifier.height(240.dp)) {
                             EmptyState(
-                                icon = Icons.Outlined.VideoLibrary,
+                                icon = AppIcons.VideoLibraryOutline,
                                 title = stringResource(R.string.home_category_empty_title),
                                 subtitle = stringResource(R.string.home_category_empty_subtitle),
                                 actionText = viewAllText,

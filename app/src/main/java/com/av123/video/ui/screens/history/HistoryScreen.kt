@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.history
 
+import com.av123.video.ui.icons.AppIcons
+
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
@@ -27,15 +29,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.History
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.Close
-import androidx.compose.material.icons.rounded.Delete
-import androidx.compose.material.icons.rounded.DeleteSweep
-import androidx.compose.material.icons.rounded.Deselect
-import androidx.compose.material.icons.rounded.SelectAll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
@@ -197,7 +190,7 @@ fun HistoryScreen(
                             if (records.isNotEmpty()) {
                                 IconButton(onClick = { showClearDialog = true }) {
                                     Icon(
-                                        Icons.Rounded.DeleteSweep,
+                                        AppIcons.DeleteSweep,
                                         contentDescription = stringResource(R.string.history_clear)
                                     )
                                 }
@@ -213,7 +206,7 @@ fun HistoryScreen(
     ) { padding ->
         if (records.isEmpty()) {
             EmptyState(
-                icon = Icons.Outlined.History,
+                icon = AppIcons.HistoryOutline,
                 title = stringResource(R.string.history_empty_title),
                 subtitle = stringResource(R.string.history_empty_subtitle),
                 actionText = stringResource(R.string.action_go_home),
@@ -466,7 +459,7 @@ private fun SelectionTopBar(
         navigationIcon = {
             IconButton(onClick = onClose) {
                 Icon(
-                    Icons.Rounded.Close,
+                    AppIcons.Close,
                     contentDescription = stringResource(R.string.history_exit_selection)
                 )
             }
@@ -475,7 +468,7 @@ private fun SelectionTopBar(
         actions = {
             IconButton(onClick = onToggleAll) {
                 Icon(
-                    if (allSelected) Icons.Rounded.Deselect else Icons.Rounded.SelectAll,
+                    if (allSelected) AppIcons.Deselect else AppIcons.SelectAll,
                     contentDescription = stringResource(
                         if (allSelected) R.string.history_deselect_all
                         else R.string.history_select_all
@@ -484,7 +477,7 @@ private fun SelectionTopBar(
             }
             IconButton(onClick = onDelete, enabled = count > 0) {
                 Icon(
-                    Icons.Rounded.Delete,
+                    AppIcons.Delete,
                     contentDescription = stringResource(R.string.history_delete_selected)
                 )
             }
@@ -531,7 +524,7 @@ private fun SwipeableHistoryItem(
                 contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
             ) {
                 Icon(
-                    Icons.Rounded.Delete,
+                    AppIcons.Delete,
                     contentDescription = null,
                     tint = colorScheme.onErrorContainer
                 )
@@ -696,7 +689,7 @@ private fun HistoryItem(
                     ) {
                         if (selected) {
                             Icon(
-                                Icons.Rounded.Check,
+                                AppIcons.Check,
                                 contentDescription = null,
                                 tint = colorScheme.onPrimary,
                                 modifier = Modifier.size(13.dp)
@@ -729,7 +722,7 @@ private fun HistoryItem(
                 )
             }
             Icon(
-                imageVector = Icons.Rounded.ChevronRight,
+                imageVector = AppIcons.ChevronRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.45f),
                 modifier = Modifier.size(20.dp)

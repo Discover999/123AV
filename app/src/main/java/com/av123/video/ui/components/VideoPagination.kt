@@ -1,5 +1,7 @@
 package com.av123.video.ui.components
 
+import com.av123.video.ui.icons.AppIcons
+
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -37,13 +39,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.LastPage
-import androidx.compose.material.icons.filled.FirstPage
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -135,7 +130,7 @@ fun PaginationBar(
             verticalAlignment = Alignment.CenterVertically
         ) {
             PagerIconButton(
-                icon = Icons.Filled.FirstPage,
+                icon = AppIcons.FirstPage,
                 description = firstPageDescription,
                 enabled = enabled && currentPage > 1,
                 onClick = { onPageSelected(1) }
@@ -150,7 +145,7 @@ fun PaginationBar(
                 )
             }
             PagerIconButton(
-                icon = Icons.AutoMirrored.Filled.LastPage,
+                icon = AppIcons.LastPage,
                 description = lastPageDescription,
                 enabled = enabled && currentPage < totalPages,
                 onClick = { onPageSelected(totalPages) }

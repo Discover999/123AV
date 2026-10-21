@@ -1,5 +1,7 @@
 package com.av123.video.ui.screens.detail
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
 
@@ -43,15 +45,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -162,7 +155,7 @@ internal fun RelatedSection(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    imageVector = AppIcons.KeyboardArrowDown,
                     contentDescription = null
                 )
                 Spacer(Modifier.width(6.dp))
@@ -496,7 +489,7 @@ internal fun ExpandableSynopsis(text: String) {
             )
             Spacer(Modifier.size(2.dp))
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
+                imageVector = AppIcons.KeyboardArrowDown,
                 contentDescription = null,
                 modifier = Modifier
                     .size(18.dp)
@@ -635,14 +628,14 @@ internal fun PlayerArea(
                             )
 
                             resolveFailed -> Icon(
-                                imageVector = Icons.Filled.Replay,
+                                imageVector = AppIcons.Replay,
                                 contentDescription = stringResource(R.string.detail_retry),
                                 tint = Color.White,
                                 modifier = Modifier.size(38.dp)
                             )
 
                             else -> Icon(
-                                imageVector = Icons.Filled.PlayArrow,
+                                imageVector = AppIcons.PlayArrow,
                                 contentDescription = stringResource(R.string.detail_play),
                                 tint = Color.White,
                                 modifier = Modifier
@@ -695,7 +688,7 @@ internal fun PlayerArea(
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Filled.Replay,
+                                imageVector = AppIcons.Replay,
                                 contentDescription = null,
                                 modifier = Modifier.size(16.dp)
                             )

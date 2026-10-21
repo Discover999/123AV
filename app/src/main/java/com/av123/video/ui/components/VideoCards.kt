@@ -1,5 +1,7 @@
 package com.av123.video.ui.components
 
+import com.av123.video.ui.icons.AppIcons
+
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.compose.animation.core.Animatable
@@ -40,13 +42,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.automirrored.filled.LastPage
-import androidx.compose.material.icons.filled.FirstPage
-import androidx.compose.material.icons.filled.PlayCircle
-import androidx.compose.material.icons.outlined.Schedule
-import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -311,7 +306,7 @@ fun VideoCompactCard(
 internal fun VideoMetaLine(video: Video) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         if (video.viewsDisplay.isNotBlank()) {
-            MetaIcon(Icons.Outlined.Visibility)
+            MetaIcon(AppIcons.VisibilityOutline)
             Spacer(Modifier.width(3.dp))
             MetaText(video.viewsDisplay)
         }
@@ -324,7 +319,7 @@ internal fun VideoMetaLine(video: Video) {
                 MetaText("·")
                 Spacer(Modifier.width(6.dp))
             }
-            MetaIcon(Icons.Outlined.Schedule)
+            MetaIcon(AppIcons.ScheduleOutline)
             Spacer(Modifier.width(3.dp))
             MetaText(timeText, Modifier.weight(1f))
         }
@@ -456,7 +451,7 @@ fun SectionHeader(
                     style = MaterialTheme.typography.labelLarge
                 )
                 Icon(
-                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                    imageVector = AppIcons.ArrowForward,
                     contentDescription = null,
                     modifier = Modifier
                         .padding(start = 2.dp)
