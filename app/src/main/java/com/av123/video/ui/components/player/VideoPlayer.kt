@@ -504,7 +504,17 @@ fun VideoPlayer(
         onFullscreenChange(false)
     }
 
-    Box(modifier = modifier) {
+    Box(
+        modifier = modifier
+            // 自动隐藏计时挂在播放器根部：控件层若铺满 pointerInput，
+            // 会盖住下面的单击/长按/横滑手势层
+            .pointerInput(Unit) {
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    controlInteractionTick++
+                }
+            }
+    ) {
         // 渲染层
         AndroidView(
             factory = { ctx ->
@@ -782,14 +792,7 @@ fun VideoPlayer(
                 onShowPlaybackStats = { showPlaybackStats = true },
                 resizeMode = resizeMode,
                 onResizeModeChange = onResizeModeChange,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pointerInput(Unit) {
-                        awaitEachGesture {
-                            awaitFirstDown(requireUnconsumed = false)
-                            controlInteractionTick++
-                        }
-                    }
+                modifier = Modifier.fillMaxSize()
             )
         }
 
