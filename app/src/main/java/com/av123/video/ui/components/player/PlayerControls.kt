@@ -121,6 +121,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.Constraints
@@ -264,7 +265,8 @@ internal fun PlayerControls(
                         Brush.verticalGradient(
                             colors = listOf(Color.Black.copy(alpha = 0.7f), Color.Transparent),
                             startY = 0f,
-                            endY = 120f
+                            // 与底部渐变同口径：dp 转 px，否则 4x 屏只渐变 30dp
+                            endY = with(LocalDensity.current) { 120.dp.toPx() }
                         )
                     )
                     .padding(horizontal = 8.dp, vertical = 12.dp)
@@ -284,6 +286,7 @@ internal fun PlayerControls(
                         fontSize = AppTypeScale.Title,
                         fontWeight = FontWeight.Medium,
                         maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
                     PlayerSettingsButton(
@@ -322,7 +325,7 @@ internal fun PlayerControls(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(28.dp)
         ) {
-            ControlCircleButton(onClick = onSeekBack, size = 46.dp) {
+            ControlCircleButton(onClick = onSeekBack, size = 48.dp) {
                 Icon(
                     imageVector = Icons.Filled.Replay10,
                     contentDescription = seekBackDescription,
@@ -338,7 +341,7 @@ internal fun PlayerControls(
                     modifier = Modifier.size(40.dp)
                 )
             }
-            ControlCircleButton(onClick = onSeekForward, size = 46.dp) {
+            ControlCircleButton(onClick = onSeekForward, size = 48.dp) {
                 Icon(
                     imageVector = Icons.Filled.Forward10,
                     contentDescription = seekForwardDescription,
@@ -453,7 +456,10 @@ internal fun PlayerControls(
                                 text = selectedTrack?.label ?: trackAutoLabel,
                                 color = Color.White,
                                 fontSize = AppTypeScale.Label,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.widthIn(max = 72.dp)
                             )
                         }
                         TrackPopupMenu(

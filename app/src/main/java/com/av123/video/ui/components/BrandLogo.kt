@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -37,6 +38,14 @@ fun BrandLogo(
     style: TextStyle = MaterialTheme.typography.titleLarge
 ) {
     val tightSpacing = (-0.03f * style.fontSize.value).sp
+    val scheme = MaterialTheme.colorScheme
+    // 浅色主题下 onSurface 接近纯黑，和渐变“123”并排偏重；只压淡一档，暗色保持原样
+    val avColor = if (scheme.onSurface.luminance() < 0.5f) {
+        // 浅色主题用二级文字色：比 onSurface 轻一档，且是实色
+        scheme.onSurfaceVariant
+    } else {
+        scheme.onSurface
+    }
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
@@ -52,7 +61,7 @@ fun BrandLogo(
         Text(
             text = "AV",
             style = style.copy(
-                color = MaterialTheme.colorScheme.onSurface,
+                color = avColor,
                 fontWeight = FontWeight.ExtraBold,
                 letterSpacing = tightSpacing
             )

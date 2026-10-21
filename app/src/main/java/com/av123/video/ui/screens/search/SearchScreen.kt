@@ -2,6 +2,7 @@ package com.av123.video.ui.screens.search
 
 import com.av123.video.ui.theme.AppShapes
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -66,6 +67,7 @@ import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -77,6 +79,7 @@ import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.ErrorState
 import com.av123.video.ui.components.PaginationBar
 import com.av123.video.ui.components.appErrorText
+import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.components.VideoGridCard
 
 /**
@@ -86,8 +89,29 @@ import com.av123.video.ui.components.VideoGridCard
  * 搜索请求地址：{baseUrl}/cn/search?keyword=<关键词>
  */
 
-/** 搜索关键词最大字数 */
+/** 搜索关键词最大字数（按码点计，避免切断 emoji 等代理对） */
 private const val SEARCH_MAX_LENGTH = 15
+
+/** 连续空白归一，与搜索历史的规范化口径一致 */
+private val SEARCH_WHITESPACE = Regex("\\s+")
+
+/**
+ * 输入阶段清洗：去掉控制字符（粘贴带来的换行/制表符）、全角空格转半角，
+ * 并按码点截断到上限。首尾空白留到提交时处理，避免输入过程中光标跳动。
+ */
+private fun sanitizeSearchInput(text: String): String {
+    val cleaned = buildString(text.length) {
+        text.forEach { ch ->
+            when {
+                ch.isISOControl() -> Unit
+                ch == '\u3000' -> append(' ')
+                else -> append(ch)
+            }
+        }
+    }
+    if (cleaned.codePointCount(0, cleaned.length) <= SEARCH_MAX_LENGTH) return cleaned
+    return cleaned.substring(0, cleaned.offsetByCodePoints(0, SEARCH_MAX_LENGTH))
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -114,11 +138,12 @@ fun SearchScreen(
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     fun submitSearch(keyword: String = input) {
-        val kw = keyword.trim()
-        if (kw.isNotEmpty() && !ui.isLoading) {
-            keyboardController?.hide()
-            viewModel.search(kw)
-        }
+        // 提交时统一去首尾空白并把连续空白压成单个空格，避免同一关键词的多种写法
+        val kw = keyword.trim().replace(SEARCH_WHITESPACE, " ")
+        if (kw.isEmpty() || ui.isLoading) return
+        if (input != kw) input = kw
+        keyboardController?.hide()
+        viewModel.search(kw)
     }
 
     Scaffold(
@@ -137,8 +162,7 @@ fun SearchScreen(
                     TextField(
                         value = input,
                         onValueChange = { newText ->
-                            // 关键词最多 15 个字，超出截断（粘贴长文本时保留前 15 字）
-                            input = newText.take(SEARCH_MAX_LENGTH)
+                            input = sanitizeSearchInput(newText)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -176,7 +200,12 @@ fun SearchScreen(
                             unfocusedIndicatorColor = Color.Transparent,
                             disabledIndicatorColor = Color.Transparent
                         ),
-                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Search,
+                            // 搜索词不做首字母大写/自动纠错，避免站点搜索被改写
+                            capitalization = KeyboardCapitalization.None,
+                            autoCorrectEnabled = false
+                        ),
                         keyboardActions = KeyboardActions(onSearch = { submitSearch() })
                     )
                 },
@@ -202,71 +231,84 @@ fun SearchScreen(
                 .padding(padding)
                 .fillMaxSize()
         ) {
-            when {
-                // 首次搜索：居中加载
-                ui.isLoading && ui.videos.isEmpty() ->
-                    Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator()
+            Crossfade(
+                targetState = when {
+                    ui.isLoading && ui.videos.isEmpty() -> SearchSurface.Loading
+                    ui.error != null && ui.videos.isEmpty() -> SearchSurface.Error
+                    ui.keyword.isBlank() -> SearchSurface.Idle
+                    ui.videos.isEmpty() -> SearchSurface.Empty
+                    else -> SearchSurface.Results
+                },
+                animationSpec = Motion.FadeThrough,
+                label = "searchSurface"
+            ) { surface ->
+                when (surface) {
+                    // 首次搜索：居中加载
+                    SearchSurface.Loading ->
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+
+                    // 搜索失败且无内容可展示。
+                    // Crossfade 淡出期间 error 可能已清空，这里不能强解包
+                    SearchSurface.Error ->
+                        ErrorState(
+                            message = ui.error?.let { appErrorText(it) }.orEmpty(),
+                            onRetry = { viewModel.search(ui.keyword, ui.page) },
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                    // 尚未发起搜索：有历史展示搜索历史（输入中按关键词过滤），无历史展示引导提示
+                    SearchSurface.Idle -> {
+                        val query = input.trim()
+                        val visibleHistory =
+                            if (query.isEmpty()) history
+                            else history.filter { it.contains(query, ignoreCase = true) }
+                        when {
+                            visibleHistory.isNotEmpty() ->
+                                SearchHistoryPanel(
+                                    keywords = visibleHistory,
+                                    onKeywordClick = { keyword ->
+                                        // 点击历史词直接回填并发起搜索
+                                        input = keyword
+                                        submitSearch(keyword)
+                                    },
+                                    onDeleteKeyword = { keyword -> viewModel.deleteHistory(keyword) },
+                                    onClearAll = { showClearHistoryDialog = true }
+                                )
+
+                            // 无历史且输入框为空：居中引导；输入中但无匹配则留白
+                            query.isEmpty() ->
+                                EmptyState(
+                                    icon = Icons.Filled.Search,
+                                    title = stringResource(R.string.search_initial_title),
+                                    subtitle = stringResource(R.string.search_initial_subtitle),
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                        }
                     }
 
-                // 搜索失败且无内容可展示
-                ui.error != null && ui.videos.isEmpty() ->
-                    ErrorState(
-                        message = appErrorText(ui.error!!),
-                        onRetry = { viewModel.search(ui.keyword, ui.page) },
-                        modifier = Modifier.fillMaxSize()
+                    // 搜索完成但无结果
+                    SearchSurface.Empty ->
+                        EmptyState(
+                            icon = Icons.Outlined.SearchOff,
+                            title = stringResource(R.string.search_empty_title),
+                            subtitle = stringResource(R.string.search_empty_subtitle, ui.keyword),
+                            actionText = stringResource(R.string.action_clear_search),
+                            onAction = {
+                                input = ""
+                                viewModel.clear()
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        )
+
+                    // 结果网格
+                    SearchSurface.Results -> SearchResults(
+                        ui = ui,
+                        onVideoClick = onVideoClick,
+                        onPageSelected = { page -> viewModel.search(ui.keyword, page) }
                     )
-
-                // 尚未发起搜索：有历史展示搜索历史（输入中按关键词过滤），无历史展示引导提示
-                ui.keyword.isBlank() -> {
-                    val query = input.trim()
-                    val visibleHistory =
-                        if (query.isEmpty()) history
-                        else history.filter { it.contains(query, ignoreCase = true) }
-                    when {
-                        visibleHistory.isNotEmpty() ->
-                            SearchHistoryPanel(
-                                keywords = visibleHistory,
-                                onKeywordClick = { keyword ->
-                                    // 点击历史词直接回填并发起搜索
-                                    input = keyword
-                                    submitSearch(keyword)
-                                },
-                                onDeleteKeyword = { keyword -> viewModel.deleteHistory(keyword) },
-                                onClearAll = { showClearHistoryDialog = true }
-                            )
-
-                        // 无历史且输入框为空：居中引导；输入中但无匹配则留白
-                        query.isEmpty() ->
-                            EmptyState(
-                                icon = Icons.Filled.Search,
-                                title = stringResource(R.string.search_initial_title),
-                                subtitle = stringResource(R.string.search_initial_subtitle),
-                                modifier = Modifier.fillMaxSize()
-                            )
-                    }
                 }
-
-                // 搜索完成但无结果
-                ui.videos.isEmpty() ->
-                    EmptyState(
-                        icon = Icons.Outlined.SearchOff,
-                        title = stringResource(R.string.search_empty_title),
-                        subtitle = stringResource(R.string.search_empty_subtitle, ui.keyword),
-                        actionText = stringResource(R.string.action_clear_search),
-                        onAction = {
-                            input = ""
-                            viewModel.clear()
-                        },
-                        modifier = Modifier.fillMaxSize()
-                    )
-
-                // 结果网格
-                else -> SearchResults(
-                    ui = ui,
-                    onVideoClick = onVideoClick,
-                    onPageSelected = { page -> viewModel.search(ui.keyword, page) }
-                )
             }
 
             // 已有结果时再次搜索：顶部细进度条，避免整屏闪烁
@@ -422,3 +464,6 @@ private fun SearchResults(
         }
     }
 }
+
+/** 搜索页内容形态：作为 Crossfade 的 targetState，避免加载/空态/结果硬切 */
+private enum class SearchSurface { Loading, Error, Idle, Empty, Results }

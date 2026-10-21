@@ -306,11 +306,9 @@ fun ChannelScreen(
 
     // 长按封面弹出的预览视频；null 表示弹窗关闭
     var previewVideo by remember { mutableStateOf<Video?>(null) }
-    // 弹窗是独立窗口：把开关交给外壳，弹窗期间整体模糊页面内容，遮罩透出磨砂
+    // 弹窗是独立窗口：把开关交给外壳，弹窗期间整体模糊页面内容，遮罩透出磨砂。
+    // 在打开回调里同步置位，避免弹窗与模糊落在不同帧。
     val previewOpen = LocalPreviewOpen.current
-    LaunchedEffect(previewVideo) {
-        previewOpen.value = previewVideo != null
-    }
     DisposableEffect(Unit) {
         onDispose { previewOpen.value = false }
     }
@@ -462,7 +460,10 @@ fun ChannelScreen(
                         else -> VideosGrid(
                             state = state,
                             onVideoClick = onVideoClick,
-                            onPreview = { previewVideo = it },
+                            onPreview = {
+                                previewOpen.value = true
+                                previewVideo = it
+                            },
                             onPageSelected = viewModel::loadPage,
                             modifier = Modifier.fillMaxSize(),
                             actressPath = path
@@ -495,7 +496,10 @@ fun ChannelScreen(
                 VideosGrid(
                     state = state,
                     onVideoClick = onVideoClick,
-                    onPreview = { previewVideo = it },
+                    onPreview = {
+                        previewOpen.value = true
+                        previewVideo = it
+                    },
                     onPageSelected = viewModel::loadPage,
                     modifier = Modifier
                         .fillMaxSize()
@@ -509,9 +513,13 @@ fun ChannelScreen(
     previewVideo?.let { video ->
         VideoPreviewDialog(
             video = video,
-            onDismiss = { previewVideo = null },
+            onDismiss = {
+                previewVideo = null
+                previewOpen.value = false
+            },
             onVideoClick = {
                 previewVideo = null
+                previewOpen.value = false
                 onVideoClick(it.id)
             }
         )

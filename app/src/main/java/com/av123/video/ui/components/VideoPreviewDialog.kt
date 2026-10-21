@@ -75,6 +75,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -199,6 +200,29 @@ fun VideoPreviewDialog(
     val view = LocalView.current
     val isDarkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
     val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+    // 入场：160ms 缩放淡入，避免弹窗和整屏模糊同时硬切
+    var appeared by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) { appeared = true }
+    val cardScale by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0.92f,
+        animationSpec = Motion.Overlay,
+        label = "previewScale"
+    )
+    val cardAlpha by animateFloatAsState(
+        targetValue = if (appeared) 1f else 0f,
+        animationSpec = Motion.Overlay,
+        label = "previewAlpha"
+    )
+    val scrimBase = when {
+        !canBlur -> 0.6f
+        isDarkTheme -> 0.28f
+        else -> 0.35f
+    }
+    val scrimAlpha by animateFloatAsState(
+        targetValue = if (appeared) scrimBase else 0f,
+        animationSpec = Motion.Overlay,
+        label = "previewScrim"
+    )
     DisposableEffect(view, isDarkTheme) {
         val window = (view.parent as? DialogWindowProvider)?.window
         // 去掉窗口自带的 dim，避免和遮罩叠加把背景压死
@@ -224,7 +248,7 @@ fun VideoPreviewDialog(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = if (canBlur) 0.35f else 0.6f))
+                .background(Color.Black.copy(alpha = scrimAlpha))
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null,
@@ -240,6 +264,11 @@ fun VideoPreviewDialog(
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp)
                     .clip(AppShapes.ExtraLarge)
+                    .graphicsLayer {
+                        scaleX = cardScale
+                        scaleY = cardScale
+                        alpha = cardAlpha
+                    }
                     // 拦截卡片区域点击，避免点到内容时关闭弹窗
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

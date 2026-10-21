@@ -140,11 +140,9 @@ fun HomeScreen(
 
     // 长按封面弹出的预览视频；null 表示弹窗关闭
     var previewVideo by remember { mutableStateOf<Video?>(null) }
-    // 弹窗是独立窗口：把开关交给外壳，弹窗期间整体模糊页面内容，遮罩透出磨砂
+    // 弹窗是独立窗口：把开关交给外壳，弹窗期间整体模糊页面内容，遮罩透出磨砂。
+    // 在打开回调里同步置位，避免弹窗与模糊落在不同帧。
     val previewOpen = LocalPreviewOpen.current
-    LaunchedEffect(previewVideo) {
-        previewOpen.value = previewVideo != null
-    }
     DisposableEffect(Unit) {
         onDispose { previewOpen.value = false }
     }
@@ -190,7 +188,10 @@ fun HomeScreen(
                     onSelectCategory = viewModel::selectCategory,
                     onSelectPage = viewModel::selectPage,
                     onVideoClick = onVideoClick,
-                    onVideoLongClick = { previewVideo = it },
+                    onVideoLongClick = {
+                        previewOpen.value = true
+                        previewVideo = it
+                    },
                     onSectionMore = onSectionMore,
                     modifier = Modifier
                         .fillMaxSize()
@@ -204,10 +205,14 @@ fun HomeScreen(
     previewVideo?.let { video ->
         VideoPreviewDialog(
             video = video,
-            onDismiss = { previewVideo = null },
+            onDismiss = {
+                previewVideo = null
+                previewOpen.value = false
+            },
             // 点击预览视频：先关闭弹窗（释放预览播放器），再进入对应播放页
             onVideoClick = {
                 previewVideo = null
+                previewOpen.value = false
                 onVideoClick(it.id)
             }
         )
@@ -494,11 +499,14 @@ private fun FeaturedPager(
     // 自动轮播：每 5s 前进一页；仅页面 STARTED 时运行（后台/详情页返回后停止），
     // 用户手动拖动时跳过当拍
     val lifecycleOwner = LocalLifecycleOwner.current
+    val previewOpen = LocalPreviewOpen.current
     LaunchedEffect(pagerState, lifecycleOwner, featured.size) {
         if (featured.size < 2) return@LaunchedEffect
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.STARTED) {
             while (true) {
                 delay(FEATURED_AUTO_SCROLL_MS)
+                // 预览弹窗期间整屏模糊，轮播继续翻页只会让模糊层持续重绘
+                if (previewOpen.value) continue
                 if (SystemClock.uptimeMillis() - lastTouchAt < FEATURED_AUTO_SCROLL_MS) continue
                 if (pagerState.isScrollInProgress) continue
                 pagerState.animateScrollToPage(pagerState.currentPage + 1)
