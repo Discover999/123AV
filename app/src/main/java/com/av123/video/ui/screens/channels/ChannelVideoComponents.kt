@@ -101,6 +101,7 @@ import com.av123.video.data.model.IndexEntry
 import com.av123.video.data.model.Video
 import com.av123.video.data.repository.CategoryPageState
 import com.av123.video.data.repository.VideoRepository
+import com.av123.video.ui.components.ActressAvatar
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.ErrorState
 import com.av123.video.ui.components.LoadingState
@@ -185,13 +186,10 @@ internal fun ActressHero(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                AsyncImage(
-                    model = profile.avatarUrl,
-                    contentDescription = profile.name,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(CircleShape)
+                ActressAvatar(
+                    url = profile.avatarUrl,
+                    modifier = Modifier.size(96.dp),
+                    iconSize = 40.dp
                 )
                 Column(modifier = Modifier
                     .weight(1f)

@@ -75,6 +75,7 @@ import com.av123.video.data.repository.formatCacheSize
 import com.av123.video.ui.lock.authenticateAppLock
 import com.av123.video.ui.lock.canAuthenticateAppLock
 import com.av123.video.ui.util.findActivity
+import com.av123.video.ui.util.rememberAppHaptics
 import com.av123.video.ui.util.formatWatchDurationMs
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
@@ -82,11 +83,15 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 
-/** 头部用户卡片：头像 + 名称 + 数据统计 */
+/** 头部用户卡片：头像 + 名称 + 数据统计（三格均可点） */
 @Composable
 internal fun ProfileHeader(
     historyCount: Int,
     favoriteCount: Int,
+    followedCount: Int,
+    onOpenHistory: () -> Unit,
+    onOpenFavorites: () -> Unit,
+    onOpenFollowed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = MaterialTheme.colorScheme
@@ -131,22 +136,27 @@ internal fun ProfileHeader(
             Spacer(Modifier.height(22.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 HeaderStat(
                     label = stringResource(R.string.profile_stats_history),
-                    value = stringResource(R.string.profile_stats_history_value, historyCount)
+                    value = stringResource(R.string.profile_stats_history_value, historyCount),
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenHistory
                 )
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .height(36.dp)
-                        .background(colorScheme.onPrimaryContainer.copy(alpha = 0.18f))
-                )
+                HeaderStatDivider()
                 HeaderStat(
                     label = stringResource(R.string.profile_stats_favorites),
-                    value = stringResource(R.string.profile_stats_history_value, favoriteCount)
+                    value = stringResource(R.string.profile_stats_history_value, favoriteCount),
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenFavorites
+                )
+                HeaderStatDivider()
+                HeaderStat(
+                    label = stringResource(R.string.profile_stats_followed),
+                    value = stringResource(R.string.profile_stats_followed_value, followedCount),
+                    modifier = Modifier.weight(1f),
+                    onClick = onOpenFollowed
                 )
             }
         }
@@ -154,8 +164,40 @@ internal fun ProfileHeader(
 }
 
 @Composable
-internal fun HeaderStat(label: String, value: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun HeaderStatDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(36.dp)
+            .background(MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.18f))
+    )
+}
+
+@Composable
+internal fun HeaderStat(
+    label: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
+) {
+    val haptics = rememberAppHaptics()
+    Column(
+        modifier = modifier
+            .then(
+                if (onClick != null) {
+                    Modifier
+                        .clip(AppShapes.Medium)
+                        .clickable {
+                            haptics.tick()
+                            onClick()
+                        }
+                } else {
+                    Modifier
+                }
+            )
+            .padding(vertical = 6.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Text(
             text = value,
             style = MaterialTheme.typography.titleLarge,

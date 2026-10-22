@@ -86,6 +86,7 @@ import java.time.LocalDate
 fun ProfileScreen(
     onOpenFavorites: () -> Unit,
     onOpenFollowed: () -> Unit,
+    onOpenHistory: () -> Unit,
     onOpenStats: () -> Unit,
     onOpenDiagnostics: () -> Unit,
     onOpenStorage: () -> Unit,
@@ -210,6 +211,10 @@ fun ProfileScreen(
                 ProfileHeader(
                     historyCount = historyRecords.size,
                     favoriteCount = favoriteRecords.size,
+                    followedCount = followedActresses.size,
+                    onOpenHistory = onOpenHistory,
+                    onOpenFavorites = onOpenFavorites,
+                    onOpenFollowed = onOpenFollowed,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }

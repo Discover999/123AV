@@ -99,6 +99,7 @@ import com.av123.video.data.model.IndexEntry
 import com.av123.video.data.model.Video
 import com.av123.video.data.repository.CategoryPageState
 import com.av123.video.data.repository.VideoRepository
+import com.av123.video.ui.components.ActressAvatar
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.ErrorState
 import com.av123.video.ui.components.LoadingState
@@ -492,13 +493,10 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            AsyncImage(
-                model = entry.avatarUrl,
-                contentDescription = entry.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .size(84.dp)
-                    .clip(CircleShape)
+            ActressAvatar(
+                url = entry.avatarUrl,
+                modifier = Modifier.size(84.dp),
+                iconSize = 36.dp
             )
             Column(
                 modifier = Modifier

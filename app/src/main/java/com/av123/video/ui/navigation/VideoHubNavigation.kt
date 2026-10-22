@@ -686,6 +686,14 @@ private fun NavGraphBuilder.listDestinations(
         ProfileScreen(
             onOpenFavorites = { navController.navigate(Routes.FAVORITES) },
             onOpenFollowed = { navController.navigate(Routes.FOLLOWED) },
+            onOpenHistory = {
+                // 与底部 Tab 一致：复用已有历史栈，不叠新页面
+                navController.navigate(Routes.HISTORY) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            },
             onOpenStats = { navController.navigate(Routes.STATS) },
             onOpenDiagnostics = { navController.navigate(Routes.DIAGNOSTICS) },
             onOpenStorage = { navController.navigate(Routes.STORAGE) },
@@ -721,6 +729,14 @@ private fun NavGraphBuilder.listDestinations(
             onVideoClick = onVideoClick,
             onOpenChannel = { title, channelPath ->
                 navController.navigate(Routes.channel(title, channelPath))
+            },
+            onOpenChannels = {
+                // 空关注页的“去频道找演员”：切到频道 Tab，复用已有栈
+                navController.navigate(Routes.CHANNELS) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
             }
         )
     }
