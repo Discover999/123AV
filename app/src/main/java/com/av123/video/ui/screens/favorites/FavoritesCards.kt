@@ -79,6 +79,7 @@ import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.VideoListRow
 import kotlinx.coroutines.launch
 
 /** 多选模式下的顶部操作栏：退出 + 已选数量 + 加入收藏夹 + 全选 + 删除 */
@@ -141,7 +142,8 @@ internal fun SwipeableFavoriteCard(
     selected: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    listLayout: Boolean = false
 ) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -162,7 +164,8 @@ internal fun SwipeableFavoriteCard(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(AppShapes.Large)
+                    // 滑动露出的底色要和卡片同一圆角：网格 16dp、单列行 10dp
+                    .clip(if (listLayout) AppShapes.Compact else AppShapes.Large)
                     .background(colorScheme.errorContainer)
                     .padding(horizontal = 24.dp),
                 contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
@@ -180,7 +183,8 @@ internal fun SwipeableFavoriteCard(
             selectionMode = selectionMode,
             selected = selected,
             onClick = onClick,
-            onLongClick = onLongClick
+            onLongClick = onLongClick,
+            listLayout = listLayout
         )
     }
 }
@@ -192,16 +196,26 @@ internal fun SelectableFavoriteCard(
     selectionMode: Boolean,
     selected: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    listLayout: Boolean = false
 ) {
     val colorScheme = MaterialTheme.colorScheme
-    val cardShape = AppShapes.Large
+    // 单列行用 10dp（PressableCard 默认），网格保持收藏页的 16dp
+    val cardShape = if (listLayout) AppShapes.Compact else AppShapes.Large
     Box {
-        VideoGridCard(
-            video = record.video,
-            onClick = onClick,
-            onLongClick = onLongClick
-        )
+        if (listLayout) {
+            VideoListRow(
+                video = record.video,
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+        } else {
+            VideoGridCard(
+                video = record.video,
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+        }
         if (selectionMode) {
             if (selected) {
                 Box(

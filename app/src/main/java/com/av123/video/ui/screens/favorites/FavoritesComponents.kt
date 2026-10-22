@@ -79,6 +79,7 @@ import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.VideoLayoutToggle
 import kotlinx.coroutines.launch
 
 /**
@@ -129,6 +130,8 @@ internal fun FavoritesTopBar(
             }
         },
         actions = {
+            // 网格 / 单列切换（与首页、频道、搜索共用一份偏好）
+            VideoLayoutToggle()
             val filter = (destination as? FavoritesDestination.Content)?.filter
             val groupFilter = filter as? FavoritesFilter.Group
             if (groupFilter != null) {
@@ -374,7 +377,8 @@ internal fun FolderContent(
     onToggleSelection: (String) -> Unit,
     onEnterSelection: (String) -> Unit,
     onVideoClick: (String) -> Unit,
-    onSwipeDelete: (FavoriteRecord) -> Unit
+    onSwipeDelete: (FavoriteRecord) -> Unit,
+    listLayout: Boolean = false
 ) {
     if (records.isEmpty()) {
         val titleRes: Int
@@ -402,11 +406,11 @@ internal fun FolderContent(
         return
     }
     LazyVerticalGrid(
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(if (listLayout) 1 else 2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(if (listLayout) 8.dp else 12.dp)
     ) {
         items(records, key = { it.video.id }) { record ->
             SwipeableFavoriteCard(
@@ -418,7 +422,8 @@ internal fun FolderContent(
                     else onVideoClick(record.video.id)
                 },
                 onLongClick = { onEnterSelection(record.video.id) },
-                onDismiss = { onSwipeDelete(record) }
+                onDismiss = { onSwipeDelete(record) },
+                listLayout = listLayout
             )
         }
     }

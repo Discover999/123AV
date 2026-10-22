@@ -73,6 +73,7 @@ import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.FavoriteRecord
+import com.av123.video.data.prefs.VideoLayout
 import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
@@ -101,6 +102,8 @@ fun FavoritesScreen(
     val container = LocalAppContainer.current
     val viewModel: FavoritesViewModel = viewModel { FavoritesViewModel(container.favoriteRepository) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
+    val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -251,6 +254,7 @@ fun FavoritesScreen(
                             selectedIds = setOf(id)
                         },
                         onVideoClick = onVideoClick,
+                        listLayout = listLayout,
                         onSwipeDelete = { record ->
                             viewModel.delete(setOf(record.video.id))
                             scope.launch {

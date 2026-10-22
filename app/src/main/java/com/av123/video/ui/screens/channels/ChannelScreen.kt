@@ -96,6 +96,7 @@ import com.av123.video.data.model.FilterGroup
 import com.av123.video.data.model.FilterOption
 import com.av123.video.data.model.IndexEntry
 import com.av123.video.data.model.Video
+import com.av123.video.data.prefs.VideoLayout
 import com.av123.video.data.repository.CategoryPageState
 import com.av123.video.data.repository.VideoRepository
 import com.av123.video.ui.components.EmptyState
@@ -105,6 +106,7 @@ import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.components.PaginationBar
 import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.VideoLayoutToggle
 import com.av123.video.ui.components.VideoPreviewDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -274,6 +276,8 @@ fun ChannelScreen(
         ChannelViewModel(container.videoRepository, path, title)
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
+    val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
     val filterSelections by viewModel.filterSelections.collectAsStateWithLifecycle()
     val isPullRefreshing by viewModel.isPullRefreshing.collectAsStateWithLifecycle()
     val refreshTick by viewModel.refreshFinishTick.collectAsStateWithLifecycle()
@@ -377,6 +381,8 @@ fun ChannelScreen(
                                     )
                                 }
                             }
+                            // 网格 / 单列切换（首页、频道、收藏、搜索共用一个偏好）
+                            VideoLayoutToggle()
                         },
                         windowInsets = WindowInsets(0, 0, 0, 0)
                     )
@@ -430,7 +436,7 @@ fun ChannelScreen(
                     )
                     when {
                         state.isLoading && state.videos.isEmpty() ->
-                            LoadingState(Modifier.fillMaxSize())
+                            LoadingState(Modifier.fillMaxSize(), listLayout = listLayout)
                         state.error != null && state.videos.isEmpty() ->
                             ErrorState(
                                 message = appErrorText(state.error!!),
@@ -454,13 +460,14 @@ fun ChannelScreen(
                             },
                             onPageSelected = viewModel::loadPage,
                             modifier = Modifier.fillMaxSize(),
-                            actressPath = path
+                            actressPath = path,
+                            listLayout = listLayout
                         )
                     }
                 }
             }
             // 以下为无筛选表单页面的通用状态（首次加载时筛选表单也尚未解析回来）
-            state.isLoading && !hasContent -> LoadingState(modifier)
+            state.isLoading && !hasContent -> LoadingState(modifier, listLayout = listLayout)
             state.error != null && !hasContent ->
                 ErrorState(
                     message = appErrorText(state.error!!),
@@ -492,7 +499,8 @@ fun ChannelScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .then(refreshFlashModifier),
-                    actressPath = path
+                    actressPath = path,
+                    listLayout = listLayout
                 )
             }
         }

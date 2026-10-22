@@ -262,6 +262,67 @@ fun VideoGridCard(
 }
 
 /**
+ * 单列行（128dp 封面在左）：标题两行、下面接同一行观看数/发布时间。
+ * 外壳与网格卡共用 [PressableCard]，圆角、按压反馈、卡片底一致。
+ */
+@Composable
+fun VideoListRow(
+    video: Video,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null
+) {
+    PressableCard(
+        onClick = onClick,
+        modifier = modifier,
+        onLongClick = onLongClick
+    ) {
+        Row(
+            modifier = Modifier.padding(8.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(128.dp)
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .shimmerPlaceholder()
+            ) {
+                if (video.coverUrl.isNotBlank()) {
+                    AsyncImage(
+                        model = video.coverUrl,
+                        contentDescription = video.title,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
+                if (video.durationText.isNotBlank()) {
+                    DurationBadge(
+                        text = video.durationText,
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(4.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = video.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    // 3 行：72dp 封面旁边可容纳 3×18sp 标题 + 元信息行，
+                    // 行高由文字撑到约 92dp，封面仍顶部对齐
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(6.dp))
+                VideoMetaLine(video)
+            }
+        }
+    }
+}
+
+/**
  * 横向列表用的紧凑卡片；[onLongClick] 非空时长按封面触发预览。
  * [progress] 非 null（0f..1f）时在底部显示播放进度条，用于“继续观看”。
  */

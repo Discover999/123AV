@@ -87,6 +87,7 @@ import com.av123.video.LocalPreviewOpen
 import com.av123.video.R
 import com.av123.video.data.model.Video
 import com.av123.video.data.model.WatchRecord
+import com.av123.video.data.prefs.VideoLayout
 import com.av123.video.ui.components.BrandLogo
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.ErrorState
@@ -97,6 +98,8 @@ import com.av123.video.ui.components.PaginationBar
 import com.av123.video.ui.components.SectionHeader
 import com.av123.video.ui.components.VideoCompactCard
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.VideoLayoutToggle
+import com.av123.video.ui.components.VideoListRow
 import com.av123.video.ui.components.VideoPreviewDialog
 import com.av123.video.ui.theme.Motion
 
@@ -111,6 +114,8 @@ fun HomeScreen(
     val container = LocalAppContainer.current
     val viewModel: HomeViewModel = viewModel { HomeViewModel(container.videoRepository) }
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
+    val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
+    val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
     val refreshTick by viewModel.refreshFinishTick.collectAsStateWithLifecycle()
     // “继续观看”：有进度（>0）且未看完（<95%）的最近 10 条历史。
     // map 必须 remember，否则每次重组都会新建 Flow，collect 反复重订阅
@@ -161,6 +166,8 @@ fun HomeScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
+                    // 网格 / 单列切换：偏好全局生效，四个网格页同步
+                    VideoLayoutToggle()
                 },
                 windowInsets = WindowInsets(0, 0, 0, 0)
             )
@@ -172,7 +179,7 @@ fun HomeScreen(
             .fillMaxSize()
 
         when {
-            ui.isLoading -> LoadingState(modifier)
+            ui.isLoading -> LoadingState(modifier, listLayout = listLayout)
             ui.error != null && ui.feed == null ->
                 ErrorState(message = appErrorText(ui.error!!), onRetry = viewModel::refresh, modifier = modifier)
             else -> PullToRefreshBox(
@@ -183,6 +190,7 @@ fun HomeScreen(
                 HomeContent(
                     ui = ui,
                     continueWatching = continueWatching,
+                    listLayout = listLayout,
                     scrollToTopTick = scrollToTopTick,
                     onSelectCategory = viewModel::selectCategory,
                     onSelectPage = viewModel::selectPage,
@@ -222,6 +230,7 @@ fun HomeScreen(
 private fun HomeContent(
     ui: HomeUiState,
     continueWatching: List<WatchRecord>,
+    listLayout: Boolean,
     scrollToTopTick: Int,
     onSelectCategory: (CategoryFilter) -> Unit,
     onSelectPage: (Int) -> Unit,
@@ -259,7 +268,7 @@ private fun HomeContent(
         val latestTitle = stringResource(R.string.home_section_latest)
         LazyVerticalGrid(
             state = gridState,
-            columns = GridCells.Fixed(2),
+            columns = GridCells.Fixed(if (listLayout) 1 else 2),
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 16.dp,
@@ -267,7 +276,8 @@ private fun HomeContent(
                 bottom = 24.dp + LocalBottomBarInset.current
             ),
             horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+            // 单列行更紧凑：间距 10 → 8
+            verticalArrangement = Arrangement.spacedBy(if (listLayout) 8.dp else 10.dp)
         ) {
             // 分类筛选（网页同款胶囊标签，选中态为站点粉色渐变）
             item(span = { GridItemSpan(maxLineSpan) }) {
@@ -309,8 +319,9 @@ private fun HomeContent(
                         )
                     }
                     items(feed.hot, key = { it.id }) { video ->
-                        VideoGridCard(
+                        HomeVideoItem(
                             video = video,
+                            listLayout = listLayout,
                             onClick = { onVideoClick(video.id) },
                             onLongClick = { if (video.previewUrl.isNotBlank()) onVideoLongClick(video) }
                         )
@@ -340,8 +351,9 @@ private fun HomeContent(
                     }
                 }
                 items(pagedVideos, key = { it.id }) { video ->
-                    VideoGridCard(
+                    HomeVideoItem(
                         video = video,
+                        listLayout = listLayout,
                         onClick = { onVideoClick(video.id) },
                         onLongClick = { if (video.previewUrl.isNotBlank()) onVideoLongClick(video) }
                     )
@@ -381,8 +393,9 @@ private fun HomeContent(
                     }
                 } else {
                     items(fallbackVideos, key = { it.id }) { video ->
-                        VideoGridCard(
+                        HomeVideoItem(
                             video = video,
+                            listLayout = listLayout,
                             onClick = { onVideoClick(video.id) },
                             onLongClick = { if (video.previewUrl.isNotBlank()) onVideoLongClick(video) }
                         )
@@ -390,6 +403,21 @@ private fun HomeContent(
                 }
             }
         }
+    }
+}
+
+/** 首页条目：按全局偏好渲染双列卡或单列行 */
+@Composable
+private fun HomeVideoItem(
+    video: Video,
+    listLayout: Boolean,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)?
+) {
+    if (listLayout) {
+        VideoListRow(video = video, onClick = onClick, onLongClick = onLongClick)
+    } else {
+        VideoGridCard(video = video, onClick = onClick, onLongClick = onLongClick)
     }
 }
 

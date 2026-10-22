@@ -69,6 +69,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
+import com.av123.video.data.prefs.VideoLayout
 import com.av123.video.data.repository.SearchState
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.ErrorState
@@ -76,6 +77,8 @@ import com.av123.video.ui.components.PaginationBar
 import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.VideoLayoutToggle
+import com.av123.video.ui.components.VideoListRow
 
 /**
  * 搜索页：顶部为返回键 + 搜索输入框（回车/搜索按钮提交），
@@ -120,6 +123,8 @@ fun SearchScreen(
     }
     val ui by viewModel.uiState.collectAsStateWithLifecycle()
     val history by viewModel.history.collectAsStateWithLifecycle()
+    val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
+    val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
 
     // 输入框内容用 rememberSaveable：进入详情页再返回时保留已输入关键词
     var input by rememberSaveable { mutableStateOf("") }
@@ -215,6 +220,8 @@ fun SearchScreen(
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
+                    // 结果网格 / 单列切换（与首页、频道、收藏共用一份偏好）
+                    VideoLayoutToggle()
                 },
                 windowInsets = WindowInsets(0, 0, 0, 0)
             )
@@ -300,6 +307,7 @@ fun SearchScreen(
                     // 结果网格
                     SearchSurface.Results -> SearchResults(
                         ui = ui,
+                        listLayout = listLayout,
                         onVideoClick = onVideoClick,
                         onPageSelected = { page -> viewModel.search(ui.keyword, page) }
                     )
@@ -418,6 +426,7 @@ private fun SearchHistoryPanel(
 @Composable
 private fun SearchResults(
     ui: SearchState,
+    listLayout: Boolean,
     onVideoClick: (String) -> Unit,
     onPageSelected: (Int) -> Unit
 ) {
@@ -426,11 +435,11 @@ private fun SearchResults(
     LaunchedEffect(ui.page) { gridState.scrollToItem(0) }
     LazyVerticalGrid(
         state = gridState,
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(if (listLayout) 1 else 2),
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(if (listLayout) 8.dp else 12.dp)
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             // 结果总数取自页面头部 .pagehead__count（如“960个视频”）；
@@ -444,7 +453,11 @@ private fun SearchResults(
             )
         }
         items(ui.videos, key = { it.id }) { video ->
-            VideoGridCard(video = video, onClick = { onVideoClick(video.id) })
+            if (listLayout) {
+                VideoListRow(video = video, onClick = { onVideoClick(video.id) })
+            } else {
+                VideoGridCard(video = video, onClick = { onVideoClick(video.id) })
+            }
         }
         // 仅当网页页脚解析到 .pager 结构（检测到多页）时显示换页组件
         ui.pagination?.let { pager ->

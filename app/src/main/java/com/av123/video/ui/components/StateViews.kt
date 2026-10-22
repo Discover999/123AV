@@ -48,14 +48,16 @@ enum class LoadingSkeleton { List, Detail }
 @Composable
 fun LoadingState(
     modifier: Modifier = Modifier,
-    variant: LoadingSkeleton = LoadingSkeleton.List
+    variant: LoadingSkeleton = LoadingSkeleton.List,
+    /** 单列布局时骨架换成行形态，避免骨架与内容两套列数 */
+    listLayout: Boolean = false
 ) {
     Column(
         modifier = modifier.padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         when (variant) {
-            LoadingSkeleton.List -> ListSkeleton()
+            LoadingSkeleton.List -> if (listLayout) ListRowSkeleton() else ListSkeleton()
             LoadingSkeleton.Detail -> DetailSkeleton()
         }
     }
@@ -79,6 +81,31 @@ private fun ListSkeleton() {
                     SkeletonBlock(Modifier.fillMaxWidth(0.85f).height(14.dp), 4)
                     SkeletonBlock(Modifier.fillMaxWidth(0.5f).height(12.dp), 4)
                 }
+            }
+        }
+    }
+}
+
+/** 单列骨架：精选块 + 胶囊行 + 128×72 封面在左的行，与单列内容同高 */
+@Composable
+private fun ListRowSkeleton() {
+    SkeletonBlock(Modifier.fillMaxWidth().aspectRatio(16f / 9f), 20)
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        repeat(4) { SkeletonBlock(Modifier.width(64.dp).height(28.dp), 14) }
+    }
+    repeat(4) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            SkeletonBlock(Modifier.width(128.dp).aspectRatio(16f / 9f), 8)
+            Column(
+                modifier = Modifier.weight(1f).padding(top = 2.dp),
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                SkeletonBlock(Modifier.fillMaxWidth(0.92f).height(13.dp), 4)
+                SkeletonBlock(Modifier.fillMaxWidth(0.62f).height(13.dp), 4)
+                SkeletonBlock(Modifier.fillMaxWidth(0.42f).height(11.dp), 4)
             }
         }
     }

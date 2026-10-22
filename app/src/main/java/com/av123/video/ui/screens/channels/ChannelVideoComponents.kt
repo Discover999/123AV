@@ -105,6 +105,7 @@ import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.components.PaginationBar
 import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.VideoListRow
 import com.av123.video.ui.components.VideoPreviewDialog
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -336,18 +337,19 @@ internal fun VideosGrid(
     onPreview: (Video) -> Unit,
     onPageSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    actressPath: String? = null
+    actressPath: String? = null,
+    listLayout: Boolean = false
 ) {
     val gridState = rememberLazyGridState()
     // 翻页后回到列表顶部
     LaunchedEffect(state.page) { gridState.scrollToItem(0) }
     LazyVerticalGrid(
         state = gridState,
-        columns = GridCells.Fixed(2),
+        columns = GridCells.Fixed(if (listLayout) 1 else 2),
         modifier = modifier,
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 24.dp),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(if (listLayout) 8.dp else 10.dp)
     ) {
         // 女演员个人页头部资料（.ahero）：始终置顶，翻页加载时也不消失
         state.actressProfile?.let { profile ->
@@ -366,13 +368,20 @@ internal fun VideosGrid(
             }
         }
         items(state.videos, key = { it.id }) { video ->
-            VideoGridCard(
-                video = video,
-                onClick = { onVideoClick(video.id) },
-                onLongClick = {
-                    if (video.previewUrl.isNotBlank()) onPreview(video)
-                }
-            )
+            val onLongClick = { if (video.previewUrl.isNotBlank()) onPreview(video) }
+            if (listLayout) {
+                VideoListRow(
+                    video = video,
+                    onClick = { onVideoClick(video.id) },
+                    onLongClick = onLongClick
+                )
+            } else {
+                VideoGridCard(
+                    video = video,
+                    onClick = { onVideoClick(video.id) },
+                    onLongClick = onLongClick
+                )
+            }
         }
         // 仅当网页页脚解析到 .pager 结构时显示换页组件
         state.pagination?.let { pager ->

@@ -22,6 +22,9 @@ enum class DarkMode { SYSTEM, LIGHT, DARK }
  */
 enum class ResizeModeOption { FIT, FILL, ZOOM }
 
+/** 视频条目布局：双列网格 / 单列一行一条 */
+enum class VideoLayout { GRID, LIST }
+
 /** 应用锁离开后多久重新验证 */
 enum class AppLockTimeout(val millis: Long) {
     IMMEDIATE(0L),
@@ -44,6 +47,8 @@ data class AppSettings(
     val flipToExitEnabled: Boolean = false,
     /** 播放器画面比例（适应/填充/裁切填满），全局默认、跨影片持久化 */
     val videoResizeMode: ResizeModeOption = ResizeModeOption.FIT,
+    /** 视频列表布局：双列网格 / 单列；一处切换，四个网格页同步 */
+    val videoLayout: VideoLayout = VideoLayout.GRID,
     /** 冷启动是否需要生物识别/设备凭据解锁 */
     val appLockEnabled: Boolean = false,
     /** 离开应用超过该时长后重新上锁 */
@@ -104,6 +109,9 @@ class SettingsStore(context: Context) {
             videoResizeMode = runCatching {
                 ResizeModeOption.valueOf(prefs[KEY_VIDEO_RESIZE_MODE] ?: ResizeModeOption.FIT.name)
             }.getOrDefault(ResizeModeOption.FIT),
+            videoLayout = runCatching {
+                VideoLayout.valueOf(prefs[KEY_VIDEO_LAYOUT] ?: VideoLayout.GRID.name)
+            }.getOrDefault(VideoLayout.GRID),
             appLockEnabled = prefs[KEY_APP_LOCK_ENABLED] ?: false,
             appLockTimeout = runCatching {
                 AppLockTimeout.valueOf(
@@ -150,6 +158,10 @@ class SettingsStore(context: Context) {
         store.edit { it[KEY_VIDEO_RESIZE_MODE] = mode.name }
     }
 
+    suspend fun setVideoLayout(layout: VideoLayout) {
+        store.edit { it[KEY_VIDEO_LAYOUT] = layout.name }
+    }
+
     suspend fun setAppLockEnabled(enabled: Boolean) {
         store.edit { it[KEY_APP_LOCK_ENABLED] = enabled }
     }
@@ -174,6 +186,7 @@ class SettingsStore(context: Context) {
         val KEY_AUTO_PLAY_NEXT = booleanPreferencesKey("auto_play_next")
         val KEY_FLIP_TO_EXIT = booleanPreferencesKey("flip_to_exit_enabled")
         val KEY_VIDEO_RESIZE_MODE = stringPreferencesKey("video_resize_mode")
+        val KEY_VIDEO_LAYOUT = stringPreferencesKey("video_layout")
         val KEY_APP_LOCK_ENABLED = booleanPreferencesKey("app_lock_enabled")
         val KEY_APP_LOCK_TIMEOUT = stringPreferencesKey("app_lock_timeout")
         val KEY_SECURE_SCREEN = booleanPreferencesKey("secure_screen")
