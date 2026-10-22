@@ -42,6 +42,13 @@ class WatchStatsTest {
         assertEquals(0, stats.finishedVideos)
         assertEquals(0f, stats.finishedRatio, 0f)
         assertTrue(stats.categories.isEmpty())
+        assertEquals(0L, stats.totalMs)
+        assertEquals(0, stats.longestStreak)
+        assertEquals(0, stats.continueWatching)
+        assertEquals(HEATMAP_DAYS, stats.heatmap.size)
+        assertEquals(today.minusDays((HEATMAP_DAYS - 1).toLong()), stats.heatmap.first().date)
+        assertEquals(today, stats.heatmap.last().date)
+        assertTrue(stats.heatmap.all { it.playMs == 0L })
     }
 
     @Test
@@ -61,6 +68,9 @@ class WatchStatsTest {
         assertEquals(7_000L, stats.last7DaysMs)
         assertEquals(listOf(0L, 1000L, 0L, 2000L, 0L, 0L, 4000L), stats.week7.map { it.playMs })
         assertEquals(4, stats.activeDays)
+        // 累计含窗口外的 3/3
+        assertEquals(12_000L, stats.totalMs)
+        assertEquals(1, stats.longestStreak)
     }
 
     @Test
@@ -76,6 +86,60 @@ class WatchStatsTest {
             today = today
         )
         assertEquals(3, stats.streakDays)
+        assertEquals(3, stats.longestStreak)
+    }
+
+    @Test
+    fun longestStreakUsesAllDaysNotOnlyCurrentStreak() {
+        val stats = buildWatchStats(
+            daily = listOf(
+                daily("2025-02-20", 1L),
+                daily("2025-02-21", 1L),
+                daily("2025-02-22", 1L),
+                daily("2025-02-23", 1L),
+                daily("2025-03-09", 1L),
+                daily("2025-03-10", 1L)
+            ),
+            records = emptyList(),
+            today = today
+        )
+        assertEquals(2, stats.streakDays)
+        assertEquals(4, stats.longestStreak)
+    }
+
+    @Test
+    fun heatmapCovers84DaysEndingToday() {
+        val stats = buildWatchStats(
+            daily = listOf(
+                daily("2025-03-09", 2_000L),
+                daily("2025-03-10", 4_000L),
+                daily("2024-12-16", 9_999L) // today - 84，窗口外
+            ),
+            records = emptyList(),
+            today = today
+        )
+
+        assertEquals(HEATMAP_DAYS, stats.heatmap.size)
+        assertEquals(today.minusDays(83), stats.heatmap.first().date)
+        assertEquals(today, stats.heatmap.last().date)
+        assertEquals(0L, stats.heatmap.first().playMs)
+        assertEquals(2_000L, stats.heatmap[HEATMAP_DAYS - 2].playMs)
+        assertEquals(4_000L, stats.heatmap.last().playMs)
+    }
+
+    @Test
+    fun continueWatchingCountsStartedButUnfinishedOnly() {
+        val records = listOf(
+            record("a", "X", positionMs = 50_000L, durationMs = 100_000L),    // 50%：继续
+            record("b", "X", positionMs = 90_000L, durationMs = 100_000L),    // 90%：看完
+            record("c", "X", positionMs = 0L, durationMs = 100_000L),         // ENDED 写 0：看完
+            record("d", "X", positionMs = 0L, durationMs = 0L),               // 未播
+            record("e", "X", positionMs = 500L, durationMs = 0L),             // 时长未知
+            record("f", "X", positionMs = 99_999L, durationMs = 100_000L),    // 99.999%：不算继续
+            record("g", "X", positionMs = 1L, durationMs = 100_000L)          // 刚开始：继续
+        )
+        val stats = buildWatchStats(emptyList(), records, today)
+        assertEquals(2, stats.continueWatching)
     }
 
     @Test
@@ -131,6 +195,8 @@ class WatchStatsTest {
         assertEquals(5, stats.totalVideos)
         assertEquals(2, stats.finishedVideos)
         assertEquals(0.4f, stats.finishedRatio, 0.0001f)
+        // b 的 89.999% 是唯一「起播但没看完」的记录
+        assertEquals(1, stats.continueWatching)
     }
 
     @Test

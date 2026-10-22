@@ -28,6 +28,10 @@ data class CategoryStat(
  * - [streakDays] 截至今天/昨天的连续观看天数
  * - [activeDays] 有观看时长记录的总天数
  * - [categories] 分类影片数，按数量降序、名称升序，UI 取前 3
+ * - [totalMs] 全部日期累计播放时长
+ * - [longestStreak] 历史上最长的连续观看天数
+ * - [continueWatching] 已起播但未看完的影片数（0 < 进度 < [FINISHED_THRESHOLD]）
+ * - [heatmap] 最近 [HEATMAP_DAYS] 天逐日时长，最旧→今天，缺测补 0
  */
 data class WatchStats(
     val todayMs: Long,
@@ -37,7 +41,11 @@ data class WatchStats(
     val finishedVideos: Int,
     val streakDays: Int,
     val activeDays: Int,
-    val categories: List<CategoryStat>
+    val categories: List<CategoryStat>,
+    val totalMs: Long = 0L,
+    val longestStreak: Int = 0,
+    val continueWatching: Int = 0,
+    val heatmap: List<DayWatch> = emptyList()
 ) {
     /** 已看完比例 0f..1f（无历史时为 0） */
     val finishedRatio: Float
@@ -46,6 +54,9 @@ data class WatchStats(
 
 /** 看完判定阈值：保存的播放进度达到时长 90% 视为看完 */
 const val FINISHED_THRESHOLD = 0.9f
+
+/** 长期热力图覆盖天数：12 周 */
+const val HEATMAP_DAYS = 84
 
 private val DAY_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 
@@ -105,6 +116,31 @@ fun buildWatchStats(
         .map { (category, count) -> CategoryStat(category, count) }
         .sortedWith(compareByDescending<CategoryStat> { it.count }.thenBy { it.category })
 
+    // 历史最长连续：按有观看时长的日期升序，逐段数连续天数
+    val longestStreak = run {
+        var longest = 0
+        var run = 0
+        var previous: LocalDate? = null
+        for (day in msByDay.keys.sorted()) {
+            run = if (previous != null && day == previous.plusDays(1)) run + 1 else 1
+            if (run > longest) longest = run
+            previous = day
+        }
+        longest
+    }
+
+    // 已起播但未看完：0 进度且有时长视为播完（ENDED 写 0），不计入
+    val continueWatching = records.count { record ->
+        record.durationMs > 0L &&
+            record.positionMs > 0L &&
+            record.positionMs.toFloat() / record.durationMs < FINISHED_THRESHOLD
+    }
+
+    val heatmap = (HEATMAP_DAYS - 1 downTo 0).map { offset ->
+        val date = today.minusDays(offset.toLong())
+        DayWatch(date = date, playMs = msByDay[date] ?: 0L)
+    }
+
     return WatchStats(
         todayMs = msByDay[today] ?: 0L,
         last7DaysMs = week7.sumOf { it.playMs },
@@ -113,6 +149,10 @@ fun buildWatchStats(
         finishedVideos = finished,
         streakDays = streak,
         activeDays = msByDay.size,
-        categories = categories
+        categories = categories,
+        totalMs = msByDay.values.sum(),
+        longestStreak = longestStreak,
+        continueWatching = continueWatching,
+        heatmap = heatmap
     )
 }
