@@ -20,8 +20,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.PaddingValues
@@ -552,7 +550,6 @@ private fun DetailContent(
  * 播放区下方的详情正文（标题/元信息/收藏/简介/信息行/剧集），
  * 作为 LazyColumn 的单个 item 随页面滚动。
  */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DetailBody(
     video: Video,
@@ -572,19 +569,36 @@ private fun DetailBody(
         ExpandableTitle(text = video.title)
         Spacer(Modifier.height(10.dp))
 
-        // 元信息：编号 / 时长 / 观看数 / 发布时间 / 年份 / 分类
-        Text(
-            text = buildList {
-                if (video.code.isNotBlank()) add(video.code)
-                if (video.durationText.isNotBlank()) add(video.durationText)
-                if (video.viewsDisplay.isNotBlank()) add(video.viewsDisplay)
-                if (video.publishedAgo.isNotBlank()) add(video.publishedAgo)
-                if (video.year > 0) add(video.year.toString())
-                add(video.category)
-            }.joinToString(" · "),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        // 元信息：第一行编号 + 分类（正文强调），第二行时长 / 观看 / 发布 / 年份（次级）
+        val primaryMeta = buildList {
+            if (video.code.isNotBlank()) add(video.code)
+            if (video.category.isNotBlank()) add(video.category)
+        }
+        val secondaryMeta = buildList {
+            if (video.durationText.isNotBlank()) add(video.durationText)
+            if (video.viewsDisplay.isNotBlank()) add(video.viewsDisplay)
+            if (video.publishedAgo.isNotBlank()) add(video.publishedAgo)
+            if (video.year > 0) add(video.year.toString())
+        }
+        if (primaryMeta.isNotEmpty() || secondaryMeta.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                if (primaryMeta.isNotEmpty()) {
+                    Text(
+                        text = primaryMeta.joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                if (secondaryMeta.isNotEmpty()) {
+                    Text(
+                        text = secondaryMeta.joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
 
         Spacer(Modifier.height(16.dp))
 
