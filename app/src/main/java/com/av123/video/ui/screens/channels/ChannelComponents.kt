@@ -3,6 +3,7 @@ package com.av123.video.ui.screens.channels
 import com.av123.video.ui.icons.AppIcons
 
 import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.util.rememberAppHaptics
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -448,10 +449,15 @@ internal fun MakerCard(entry: IndexEntry, onClick: () -> Unit) {
 internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
     val container = LocalAppContainer.current
     val followScope = rememberCoroutineScope()
+    val haptics = rememberAppHaptics()
     // 关注身份只认演员主页基础路径，不带筛选/排序查询串
     val followPath = entry.path.substringBefore('?')
     val isFollowed by container.followedActressRepository.isFollowed(followPath)
         .collectAsStateWithLifecycle(initialValue = false)
+    val followLabel = stringResource(
+        if (isFollowed) R.string.actress_followed
+        else R.string.actress_follow
+    )
 
     // 胶囊底色 / 爱心色随关注态平滑过渡，爱心带点赞弹出
     val capsuleColor by animateColorAsState(
@@ -531,6 +537,7 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
                             else R.string.actress_follow
                         )
                     ) {
+                        haptics.tick()
                         followScope.launch {
                             if (isFollowed) {
                                 container.followedActressRepository.unfollow(followPath)
@@ -571,7 +578,7 @@ internal fun ActressCard(entry: IndexEntry, onClick: () -> Unit) {
                                 }
                         )
                         Text(
-                            text = entry.followersLabel,
+                            text = entry.followersLabel.ifBlank { followLabel },
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.onSurface,

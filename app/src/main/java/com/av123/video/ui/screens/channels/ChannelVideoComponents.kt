@@ -3,6 +3,7 @@ package com.av123.video.ui.screens.channels
 import com.av123.video.ui.icons.AppIcons
 
 import com.av123.video.ui.theme.AppShapes
+import com.av123.video.ui.util.rememberAppHaptics
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
@@ -21,6 +22,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -126,6 +129,7 @@ import kotlinx.coroutines.flow.update
  * 底部“关注/已关注”为纯本地关注（不依赖站点账号）：关注后可在“我的-我的关注”里
  * 聚合查看新片。[actressPath] 为演员个人页站点路径（关注身份主键），为空时不显示按钮。
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 internal fun ActressHero(
     profile: ActressProfile,
@@ -133,8 +137,15 @@ internal fun ActressHero(
 ) {
     val container = LocalAppContainer.current
     val followScope = rememberCoroutineScope()
+    val haptics = rememberAppHaptics()
     // 关注身份只认演员主页基础路径，不带筛选/排序查询串
     val followPath = actressPath?.substringBefore('?')
+    // 属性原文按中点拆成独立标签（如「38岁 · 163cm · 88-59-85 · E罩杯」）
+    val metaTokens = remember(profile.meta) {
+        profile.meta.split('·', '・', '•')
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+    }
     val followedState = followPath?.let {
         container.followedActressRepository.isFollowed(it)
             .collectAsStateWithLifecycle(initialValue = false)
@@ -193,21 +204,43 @@ internal fun ActressHero(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (profile.meta.isNotBlank()) {
-                        Text(
-                            text = profile.meta,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 6.dp)
-                        )
-                    }
                 }
-                // 关注数胶囊：贴信息行右侧（对应网页 .ahero__follow 位于 .ahero__info 内）
-                if (profile.followersLabel.isNotBlank()) {
+                // 关注数胶囊：贴信息行右侧，本身就是关注开关（与列表卡右侧胶囊一致）
+                if (profile.followersLabel.isNotBlank() || isFollowed) {
+                    val followTarget = followPath
+                    val followLabel = stringResource(
+                        if (isFollowed) R.string.actress_followed
+                        else R.string.actress_follow
+                    )
                     Surface(
                         shape = CircleShape,
                         color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                        modifier = Modifier.padding(start = 12.dp)
+                        modifier = Modifier
+                            .padding(start = 12.dp)
+                            .then(
+                                if (!followTarget.isNullOrBlank()) {
+                                    Modifier.clickable {
+                                        haptics.tick()
+                                        followScope.launch {
+                                            if (isFollowed) {
+                                                container.followedActressRepository
+                                                    .unfollow(followTarget)
+                                            } else {
+                                                container.followedActressRepository.follow(
+                                                    FollowedActress(
+                                                        path = followTarget,
+                                                        name = profile.name,
+                                                        avatarUrl = profile.avatarUrl,
+                                                        meta = profile.meta
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Modifier
+                                }
+                            )
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
@@ -215,13 +248,24 @@ internal fun ActressHero(
                             horizontalArrangement = Arrangement.spacedBy(5.dp)
                         ) {
                             Icon(
-                                imageVector = AppIcons.FavoriteBorder,
-                                contentDescription = stringResource(R.string.actress_follow),
-                                tint = MaterialTheme.colorScheme.primary,
+                                imageVector = if (isFollowed) {
+                                    AppIcons.Favorite
+                                } else {
+                                    AppIcons.FavoriteBorder
+                                },
+                                contentDescription = stringResource(
+                                    if (isFollowed) R.string.actress_followed
+                                    else R.string.actress_follow
+                                ),
+                                tint = if (isFollowed) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                },
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = profile.followersLabel,
+                                text = profile.followersLabel.ifBlank { followLabel },
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface,
@@ -231,6 +275,32 @@ internal fun ActressHero(
                     }
                 }
             }
+            // 属性标签整卡宽度排布，自动换行；不再挤在名字下面的一行里
+            if (metaTokens.isNotEmpty()) {
+                FlowRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    metaTokens.forEach { token ->
+                        Surface(
+                            shape = AppShapes.Small,
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest
+                        ) {
+                            Text(
+                                text = token,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                maxLines = 1
+                            )
+                        }
+                    }
+                }
+            }
+
             // 视频 / 观看 / 关注者 / 出道：等宽四列，某项网页缺失则只留出空位
             val stats = listOf(
                 profile.videos to stringResource(R.string.actress_stat_videos),
@@ -272,6 +342,7 @@ internal fun ActressHero(
                 Spacer(Modifier.height(16.dp))
                 FilledTonalButton(
                     onClick = {
+                        haptics.tick()
                         followScope.launch {
                             if (isFollowed) {
                                 container.followedActressRepository.unfollow(followPath)
