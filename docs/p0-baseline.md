@@ -1,7 +1,7 @@
 # P0 性能基线
 
 测量日期：2026-10-18  
-设备：OnePlus PJD110 / Android 16 / Wi-Fi adb `192.168.31.156:44529`  
+设备：OnePlus PJD110 / Android 16 / Wi-Fi adb `<ip>:<port>`  
 包名：`com.av123.video`
 
 | 指标 | 当前值 | 测量方式 |

@@ -1,7 +1,7 @@
 # P4 性能基线
 
 测量日期：2026-10-19
-设备：OnePlus PJD110 / Android 16 / Wi-Fi adb `192.168.31.156:43807`
+设备：OnePlus PJD110 / Android 16 / Wi-Fi adb `<ip>:<port>`
 包名：`com.av123.video`
 构建：`benchmark` build type（release 级 R8 + debug 签名）
 基线代码：`d8fe594`（P4.4 的 benchmark 模块改动未提交）
@@ -50,7 +50,7 @@
 已接入 `:benchmark` 模块：
 
 ```bash
-set "ANDROID_SERIAL=192.168.31.156:43807" && .\gradlew.bat :benchmark:connectedBenchmarkAndroidTest
+set "ANDROID_SERIAL=<ip>:<port>" && .\gradlew.bat :benchmark:connectedBenchmarkAndroidTest
 ```
 
 - 首次使用默认 `CompilationMode.DEFAULT`、5 轮冷启动运行时，实测耗时约 **532 秒**，Gradle 命令因超时被手动终止；测试 XML 虽记录通过，但未产出可用的 `StartupTimingMetric` 数据。
