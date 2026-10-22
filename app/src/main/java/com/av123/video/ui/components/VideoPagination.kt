@@ -1,6 +1,7 @@
 package com.av123.video.ui.components
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
@@ -172,7 +173,15 @@ internal fun PagerIconButton(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    IconButton(onClick = onClick, enabled = enabled, modifier = Modifier.size(40.dp)) {
+    val haptics = rememberAppHaptics()
+    IconButton(
+        onClick = {
+            haptics.tick()
+            onClick()
+        },
+        enabled = enabled,
+        modifier = Modifier.size(40.dp)
+    ) {
         Icon(
             imageVector = icon,
             contentDescription = description,
@@ -194,6 +203,7 @@ internal fun PageNumberButton(
     else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.07f)
     val contentColor = if (selected) MaterialTheme.colorScheme.onPrimary
     else MaterialTheme.colorScheme.onSurface
+    val haptics = rememberAppHaptics()
     Box(
         modifier = Modifier
             .height(36.dp)
@@ -202,8 +212,17 @@ internal fun PageNumberButton(
             .background(container)
             .combinedClickable(
                 enabled = enabled,
-                onClick = { if (!selected) onClick() },
-                onLongClick = onLongClick
+                onClick = {
+                    if (!selected) {
+                        haptics.tick()
+                        onClick()
+                    }
+                },
+                // 长按弹跳页对话框：打开一个面板同样给反馈
+                onLongClick = {
+                    haptics.tick()
+                    onLongClick()
+                }
             )
             .padding(horizontal = 10.dp),
         contentAlignment = Alignment.Center

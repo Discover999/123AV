@@ -1,6 +1,7 @@
 package com.av123.video.ui.screens.diagnostics
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import android.app.ActivityManager
 import android.os.Process
@@ -100,12 +101,18 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
         loading = false
     }
 
+    val haptics = rememberAppHaptics()
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.diagnostics_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.diagnostics_back)
@@ -113,7 +120,13 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = { epoch += 1 }, enabled = !loading) {
+                    IconButton(
+                        onClick = {
+                            haptics.confirm()
+                            epoch += 1
+                        },
+                        enabled = !loading
+                    ) {
                         Icon(
                             AppIcons.Refresh,
                             contentDescription = stringResource(R.string.diagnostics_refresh)

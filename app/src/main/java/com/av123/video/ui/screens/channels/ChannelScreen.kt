@@ -108,6 +108,7 @@ import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.VideoLayoutToggle
 import com.av123.video.ui.components.VideoPreviewDialog
+import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
@@ -278,6 +279,7 @@ fun ChannelScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
     val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
+    val haptics = rememberAppHaptics()
     val filterSelections by viewModel.filterSelections.collectAsStateWithLifecycle()
     val isPullRefreshing by viewModel.isPullRefreshing.collectAsStateWithLifecycle()
     val refreshTick by viewModel.refreshFinishTick.collectAsStateWithLifecycle()
@@ -331,7 +333,12 @@ fun ChannelScreen(
                             )
                         },
                         navigationIcon = {
-                            IconButton(onClick = { searchExpanded = false }) {
+                            IconButton(
+                                onClick = {
+                                    haptics.tick()
+                                    searchExpanded = false
+                                }
+                            ) {
                                 Icon(
                                     imageVector = AppIcons.ArrowBack,
                                     contentDescription = stringResource(R.string.channel_back)
@@ -363,7 +370,12 @@ fun ChannelScreen(
                             }
                         },
                         navigationIcon = {
-                            IconButton(onClick = onBack) {
+                            IconButton(
+                                onClick = {
+                                    haptics.tick()
+                                    onBack()
+                                }
+                            ) {
                                 Icon(
                                     imageVector = AppIcons.ArrowBack,
                                     contentDescription = stringResource(R.string.channel_back)
@@ -373,7 +385,12 @@ fun ChannelScreen(
                         actions = {
                             // 仅女演员索引页（带 .asearch 表单）显示搜索图标，首页同款
                             if (actressSearchField != null) {
-                                IconButton(onClick = { searchExpanded = true }) {
+                                IconButton(
+                                    onClick = {
+                                        haptics.tick()
+                                        searchExpanded = true
+                                    }
+                                ) {
                                     Icon(
                                         imageVector = AppIcons.Search,
                                         contentDescription = stringResource(R.string.home_search),

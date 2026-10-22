@@ -1,6 +1,7 @@
 package com.av123.video.ui.lock
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import com.av123.video.ui.theme.AppShapes
 
@@ -232,7 +233,13 @@ private fun AppLockOverlay(onUnlockClick: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(28.dp))
-            Button(onClick = onUnlockClick) {
+            val haptics = rememberAppHaptics()
+            Button(
+                onClick = {
+                    haptics.confirm()
+                    onUnlockClick()
+                }
+            ) {
                 Text(stringResource(R.string.app_lock_unlock_button))
             }
         }

@@ -109,6 +109,7 @@ import com.av123.video.ui.screens.storage.StorageDetailScreen
 import com.av123.video.ui.screens.storage.StorageScreen
 import com.av123.video.data.repository.CacheKind
 import com.av123.video.ui.util.EXPANDED_LIST_PANE_WIDTH_DP
+import com.av123.video.ui.util.rememberAppHaptics
 import com.av123.video.ui.util.rememberIsExpandedScreen
 
 /** 预览弹窗打开时，页面内容的模糊半径（与悬浮底栏同一档） */
@@ -287,6 +288,7 @@ private fun MorphingAppBottomBar(
                             .clip(RoundedCornerShape(24.dp))
                             .background(scheme.primaryContainer)
                     )
+                    val haptics = rememberAppHaptics()
                     Row(Modifier.fillMaxSize()) {
                         TopLevelDestination.entries.forEach { destination ->
                             val selected = currentRoute == destination.route
@@ -303,6 +305,8 @@ private fun MorphingAppBottomBar(
                                     .padding(horizontal = 4.dp, vertical = 6.dp)
                                     .clip(RoundedCornerShape(24.dp))
                                     .clickable {
+                                        // 底栏属应用外壳：切换与重复点回顶都给一次轻反馈
+                                        haptics.tick()
                                         if (selected) {
                                             scrollToTopTicks[destination.route] =
                                                 (scrollToTopTicks[destination.route] ?: 0) + 1

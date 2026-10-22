@@ -79,6 +79,7 @@ import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.VideoLayoutToggle
 import com.av123.video.ui.components.VideoListRow
+import com.av123.video.ui.util.rememberAppHaptics
 
 /**
  * 搜索页：顶部为返回键 + 搜索输入框（回车/搜索按钮提交），
@@ -125,6 +126,7 @@ fun SearchScreen(
     val history by viewModel.history.collectAsStateWithLifecycle()
     val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
     val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
+    val haptics = rememberAppHaptics()
 
     // 输入框内容用 rememberSaveable：进入详情页再返回时保留已输入关键词
     var input by rememberSaveable { mutableStateOf("") }
@@ -150,7 +152,12 @@ fun SearchScreen(
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             imageVector = AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.search_back)
@@ -179,6 +186,7 @@ fun SearchScreen(
                         trailingIcon = {
                             if (input.isNotEmpty()) {
                                 IconButton(onClick = {
+                                    haptics.tick()
                                     // 清空输入框的同时清空搜索结果，回到初始引导页
                                     input = ""
                                     viewModel.clear()
@@ -211,7 +219,10 @@ fun SearchScreen(
                 },
                 actions = {
                     IconButton(
-                        onClick = { submitSearch() },
+                        onClick = {
+                            haptics.confirm()
+                            submitSearch()
+                        },
                         enabled = !ui.isLoading && input.isNotBlank()
                     ) {
                         Icon(
@@ -329,6 +340,7 @@ fun SearchScreen(
             text = { Text(stringResource(R.string.search_history_clear_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
+                    haptics.confirm()
                     viewModel.clearHistory()
                     showClearHistoryDialog = false
                 }) { Text(stringResource(R.string.search_history_clear_yes)) }
@@ -354,6 +366,7 @@ private fun SearchHistoryPanel(
     onDeleteKeyword: (String) -> Unit,
     onClearAll: () -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -371,7 +384,12 @@ private fun SearchHistoryPanel(
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
-            IconButton(onClick = onClearAll) {
+            IconButton(
+                onClick = {
+                    haptics.tick()
+                    onClearAll()
+                }
+            ) {
                 Icon(
                     imageVector = AppIcons.DeleteSweep,
                     contentDescription = stringResource(R.string.search_history_clear_all),
@@ -387,7 +405,10 @@ private fun SearchHistoryPanel(
         ) {
             keywords.forEach { keyword ->
                 AssistChip(
-                    onClick = { onKeywordClick(keyword) },
+                    onClick = {
+                        haptics.confirm()
+                        onKeywordClick(keyword)
+                    },
                     label = {
                         Text(
                             text = keyword,
@@ -413,7 +434,10 @@ private fun SearchHistoryPanel(
                             modifier = Modifier
                                 .size(26.dp)
                                 .clip(CircleShape)
-                                .clickable { onDeleteKeyword(keyword) }
+                                .clickable {
+                                    haptics.tick()
+                                    onDeleteKeyword(keyword)
+                                }
                                 .padding(5.dp)
                         )
                     }

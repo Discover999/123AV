@@ -208,6 +208,7 @@
     <string name="detail_resolving">正在解析播放地址，请稍候…</string>
     <string name="detail_resolve_failed">播放地址解析失败，请检查网络后重试</string>
     <string name="detail_retry">重试</string>
+    <string name="common_delete">删除</string>
     <string name="video_layout_to_list">切换为单列</string>
     <string name="video_layout_to_grid">切换为双列</string>
     <string name="detail_not_found">内容不存在或已下线</string>

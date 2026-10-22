@@ -6,6 +6,7 @@ import com.av123.video.ui.icons.AppIcons
 
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
+import com.av123.video.ui.util.rememberAppHaptics
 import com.av123.video.ui.theme.Motion
 
 import android.app.Activity
@@ -200,6 +201,7 @@ internal fun PlayerControls(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val haptics = rememberAppHaptics()
     val playDescription = stringResource(R.string.common_play)
     val pauseDescription = stringResource(R.string.common_pause)
     val exitFullscreenDescription = stringResource(R.string.player_exit_fullscreen)
@@ -365,7 +367,10 @@ internal fun PlayerControls(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(
-                        onClick = onTitleBack,
+                        onClick = {
+                            haptics.tick()
+                            onTitleBack()
+                        },
                         modifier = Modifier.size(48.dp)
                     ) {
                         Icon(
@@ -405,7 +410,10 @@ internal fun PlayerControls(
                             )
                         }
                         IconButton(
-                            onClick = { showSettingsSheet = true },
+                            onClick = {
+                                haptics.tick()
+                                showSettingsSheet = true
+                            },
                             modifier = Modifier.size(40.dp)
                         ) {
                             Icon(
@@ -424,7 +432,10 @@ internal fun PlayerControls(
         if (isFullscreen) {
             CenterPlayButton(
                 isPlaying = isPlaying,
-                onClick = onTogglePlay,
+                onClick = {
+                    haptics.tick()
+                    onTogglePlay()
+                },
                 modifier = Modifier.align(Alignment.Center)
             )
         }
@@ -465,7 +476,10 @@ internal fun PlayerControls(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IconButton(
-                    onClick = onTogglePlay,
+                    onClick = {
+                        haptics.tick()
+                        onTogglePlay()
+                    },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
@@ -493,6 +507,7 @@ internal fun PlayerControls(
                 Box {
                     TextButton(
                         onClick = {
+                            haptics.tick()
                             if (isFullscreen) showSettingsSheet = true
                             else showSpeedSheet = true
                         },
@@ -525,7 +540,10 @@ internal fun PlayerControls(
                     Spacer(modifier = Modifier.width(8.dp))
                     Box {
                         TextButton(
-                            onClick = { showTrackSheet = true },
+                            onClick = {
+                                haptics.tick()
+                                showTrackSheet = true
+                            },
                             shape = AppShapes.Large,
                             colors = ButtonDefaults.textButtonColors(
                                 containerColor = Color.White.copy(alpha = 0.12f)
@@ -563,6 +581,7 @@ internal fun PlayerControls(
                         onClick = {
                             // 点击音量按钮仅弹出音量调节面板，不直接静音；
                             // 静音/音量通过弹出的音量条操作
+                            haptics.tick()
                             showVolumePanel = true
                         },
                         modifier = Modifier.size(36.dp)
@@ -606,7 +625,10 @@ internal fun PlayerControls(
                 }
 
                 IconButton(
-                    onClick = onToggleFullscreen,
+                    onClick = {
+                        haptics.tick()
+                        onToggleFullscreen()
+                    },
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(

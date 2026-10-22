@@ -18,7 +18,9 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -42,12 +44,9 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,9 +71,11 @@ import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.data.model.WatchRecord
 import com.av123.video.ui.components.EmptyState
+import com.av123.video.ui.components.SwipeRevealRow
 import com.av123.video.ui.components.shimmerPlaceholder
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.Motion
+import com.av123.video.ui.util.rememberAppHaptics
 import com.av123.video.ui.theme.appCardContainerColor
 import com.av123.video.ui.util.formatDuration
 import coil.compose.AsyncImage
@@ -109,11 +110,21 @@ fun HistoryScreen(
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
+    val haptics = rememberAppHaptics()
+    // 本页有自己的 SnackbarHost：悬浮底栏占位为 0，需要手动补胶囊与手势条高度
+    val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
+    val floatingNavBar = appSettings.settings.floatingNavBar
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
 
     var showClearDialog by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
     var filter by remember { mutableStateOf(HistoryFilter.ALL) }
+    // 同一时刻只允许一行停在「露出删除」状态
+    var openRowId by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(selectionMode) {
+        if (selectionMode) openRowId = null
+    }
 
     val today = LocalDate.now()
     val filtered = remember(records, filter) { filterHistory(records, filter) }
@@ -188,7 +199,12 @@ fun HistoryScreen(
                         },
                         actions = {
                             if (records.isNotEmpty()) {
-                                IconButton(onClick = { showClearDialog = true }) {
+                                IconButton(
+                                    onClick = {
+                                        haptics.tick()
+                                        showClearDialog = true
+                                    }
+                                ) {
                                     Icon(
                                         AppIcons.DeleteSweep,
                                         contentDescription = stringResource(R.string.history_clear)
@@ -201,7 +217,15 @@ fun HistoryScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                snackbarHostState,
+                // 悬浮底栏时让出胶囊与手势条，撤销提示才点得到
+                modifier = Modifier.padding(
+                    bottom = LocalBottomBarInset.current + if (floatingNavBar) navBarBottom else 0.dp
+                )
+            )
+        },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         if (records.isEmpty()) {
@@ -260,6 +284,14 @@ fun HistoryScreen(
                                 selectionMode = selectionMode,
                                 selected = record.video.id in selectedIds,
                                 swipeEnabled = !selectionMode,
+                                revealed = openRowId == record.video.id,
+                                onRevealedChange = { open ->
+                                    if (open) {
+                                        openRowId = record.video.id
+                                    } else if (openRowId == record.video.id) {
+                                        openRowId = null
+                                    }
+                                },
                                 onClick = {
                                     if (selectionMode) {
                                         val id = record.video.id
@@ -276,7 +308,8 @@ fun HistoryScreen(
                                     selectionMode = true
                                     selectedIds = setOf(record.video.id)
                                 },
-                                onDismiss = {
+                                onDelete = {
+                                    openRowId = null
                                     viewModel.delete(record.video.id)
                                     scope.launch {
                                         val result = snackbarHostState.showSnackbar(
@@ -306,6 +339,7 @@ fun HistoryScreen(
             confirmButton = {
                 TextButton(
                     onClick = {
+                        haptics.confirm()
                         viewModel.clear()
                         showClearDialog = false
                         exitSelection()
@@ -356,6 +390,7 @@ private fun historySummaryText(count: Int, totalPlayMs: Long): String {
 
 @Composable
 private fun HistoryFilterRow(current: HistoryFilter, onSelect: (HistoryFilter) -> Unit) {
+    val haptics = rememberAppHaptics()
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         HistoryFilter.entries.forEach { item ->
             val selected = item == current
@@ -382,7 +417,10 @@ private fun HistoryFilterRow(current: HistoryFilter, onSelect: (HistoryFilter) -
                     .height(32.dp)
                     .clip(CircleShape)
                     .background(background)
-                    .clickable { onSelect(item) }
+                    .clickable {
+                        haptics.tick()
+                        onSelect(item)
+                    }
                     .padding(horizontal = 13.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -455,9 +493,15 @@ private fun SelectionTopBar(
     onToggleAll: () -> Unit,
     onDelete: () -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     TopAppBar(
         navigationIcon = {
-            IconButton(onClick = onClose) {
+            IconButton(
+                onClick = {
+                    haptics.tick()
+                    onClose()
+                }
+            ) {
                 Icon(
                     AppIcons.Close,
                     contentDescription = stringResource(R.string.history_exit_selection)
@@ -466,7 +510,12 @@ private fun SelectionTopBar(
         },
         title = { Text(stringResource(R.string.history_selected_count, count)) },
         actions = {
-            IconButton(onClick = onToggleAll) {
+            IconButton(
+                onClick = {
+                    haptics.tick()
+                    onToggleAll()
+                }
+            ) {
                 Icon(
                     if (allSelected) AppIcons.Deselect else AppIcons.SelectAll,
                     contentDescription = stringResource(
@@ -475,7 +524,13 @@ private fun SelectionTopBar(
                     )
                 )
             }
-            IconButton(onClick = onDelete, enabled = count > 0) {
+            IconButton(
+                onClick = {
+                    haptics.confirm()
+                    onDelete()
+                },
+                enabled = count > 0
+            ) {
                 Icon(
                     AppIcons.Delete,
                     contentDescription = stringResource(R.string.history_delete_selected)
@@ -486,8 +541,7 @@ private fun SelectionTopBar(
     )
 }
 
-/** 包裹滑动删除手势的历史条目 */
-@OptIn(ExperimentalMaterial3Api::class)
+/** 包裹左滑露出删除图标的历史条目；点图标才真正删除 */
 @Composable
 private fun SwipeableHistoryItem(
     record: WatchRecord,
@@ -495,41 +549,18 @@ private fun SwipeableHistoryItem(
     selectionMode: Boolean,
     selected: Boolean,
     swipeEnabled: Boolean,
+    revealed: Boolean,
+    onRevealedChange: (Boolean) -> Unit,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
-    onDismiss: () -> Unit
+    onDelete: () -> Unit
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        // 滑动只作为删除手势，不真正停在滑出位置；删除与撤销交给 ViewModel + Snackbar
-        confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled) {
-                onDismiss()
-            }
-            false
-        }
-    )
-
-    val colorScheme = MaterialTheme.colorScheme
-    val alignStart = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-    SwipeToDismissBox(
-        state = dismissState,
-        gesturesEnabled = swipeEnabled,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(HistoryCardShape)
-                    .background(colorScheme.errorContainer)
-                    .padding(horizontal = 28.dp),
-                contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
-            ) {
-                Icon(
-                    AppIcons.Delete,
-                    contentDescription = null,
-                    tint = colorScheme.onErrorContainer
-                )
-            }
-        }
+    SwipeRevealRow(
+        revealed = revealed,
+        onRevealedChange = onRevealedChange,
+        onDelete = onDelete,
+        enabled = swipeEnabled,
+        shape = HistoryCardShape
     ) {
         HistoryItem(
             record = record,
@@ -552,6 +583,7 @@ private fun HistoryItem(
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     val colorScheme = MaterialTheme.colorScheme
     val finished = record.isFinished()
     val durationText = when {
@@ -597,7 +629,14 @@ private fun HistoryItem(
                 }
             )
             .clip(HistoryCardShape)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            .combinedClickable(
+                onClick = onClick,
+                // 长按进入多选：属有后果的状态切换，给一次确认反馈
+                onLongClick = {
+                    haptics.confirm()
+                    onLongClick()
+                }
+            ),
         shape = HistoryCardShape,
         colors = CardDefaults.elevatedCardColors(
             containerColor = if (selected) {

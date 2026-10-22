@@ -7,14 +7,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.data.prefs.VideoLayout
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.launch
 
 /**
@@ -27,11 +26,11 @@ fun VideoLayoutToggle(modifier: Modifier = Modifier) {
     val settings by container.appSettingsState.collectAsStateWithLifecycle()
     val layout = settings.settings.videoLayout
     val scope = rememberCoroutineScope()
-    val haptic = LocalHapticFeedback.current
+    val haptics = rememberAppHaptics()
 
     IconButton(
         onClick = {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            haptics.tick()
             scope.launch {
                 container.settingsStore.setVideoLayout(
                     if (layout == VideoLayout.LIST) VideoLayout.GRID else VideoLayout.LIST

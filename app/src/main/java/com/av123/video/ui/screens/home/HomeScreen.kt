@@ -102,6 +102,7 @@ import com.av123.video.ui.components.VideoLayoutToggle
 import com.av123.video.ui.components.VideoListRow
 import com.av123.video.ui.components.VideoPreviewDialog
 import com.av123.video.ui.theme.Motion
+import com.av123.video.ui.util.rememberAppHaptics
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,7 +160,13 @@ fun HomeScreen(
                     BrandLogo()
                 },
                 actions = {
-                    IconButton(onClick = onSearchClick) {
+                    val haptics = rememberAppHaptics()
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onSearchClick()
+                        }
+                    ) {
                         Icon(
                             imageVector = AppIcons.Search,
                             contentDescription = stringResource(R.string.home_search),
@@ -464,6 +471,7 @@ private fun CategoryPill(
         label = "pillText"
     )
     val interaction = remember { MutableInteractionSource() }
+    val haptics = rememberAppHaptics()
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.96f else 1f,
@@ -491,7 +499,10 @@ private fun CategoryPill(
             .clickable(
                 interactionSource = interaction,
                 indication = LocalIndication.current,
-                onClick = onClick
+                onClick = {
+                    haptics.tick()
+                    onClick()
+                }
             )
             .padding(horizontal = 14.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center

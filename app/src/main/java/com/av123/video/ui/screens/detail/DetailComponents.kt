@@ -1,6 +1,7 @@
 package com.av123.video.ui.screens.detail
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.AppTypeScale
@@ -124,6 +125,7 @@ internal fun RelatedSection(
     onLoadMore: () -> Unit,
     onVideoClick: (String) -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     Text(
         text = stringResource(R.string.detail_related_title),
         style = MaterialTheme.typography.titleMedium
@@ -150,7 +152,10 @@ internal fun RelatedSection(
             Spacer(Modifier.height(12.dp))
             // 整行描边按钮：向下箭头 + 文案，展开后剩余条数不足一页时隐藏
             TextButton(
-                onClick = onLoadMore,
+                onClick = {
+                    haptics.tick()
+                    onLoadMore()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
@@ -218,6 +223,7 @@ internal fun EpisodeSelector(
     selectedIndex: Int,
     onSelect: (Int) -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     val listState = rememberLazyListState()
     // 选中项变化（手动切集/历史续播恢复）时滚动到可见位置
     LaunchedEffect(selectedIndex, episodes.size) {
@@ -254,7 +260,10 @@ internal fun EpisodeSelector(
                         .widthIn(min = 54.dp)
                         .clip(AppShapes.Medium)
                         .background(container)
-                        .clickable { onSelect(index) }
+                        .clickable {
+                            haptics.tick()
+                            onSelect(index)
+                        }
                         .padding(horizontal = 16.dp),
                     contentAlignment = Alignment.Center
                 ) {
@@ -284,6 +293,7 @@ internal fun MetaChip(
     text: String,
     onClick: () -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -314,7 +324,10 @@ internal fun MetaChip(
             .clickable(
                 interactionSource = interaction,
                 indication = LocalIndication.current,
-                onClick = onClick
+                onClick = {
+                    haptics.tick()
+                    onClick()
+                }
             )
             .padding(horizontal = 13.dp, vertical = 5.dp),
         contentAlignment = Alignment.Center
@@ -463,6 +476,7 @@ internal fun ExpandableTitle(text: String) {
  */
 @Composable
 internal fun ExpandableSynopsis(text: String) {
+    val haptics = rememberAppHaptics()
     var expanded by remember { mutableStateOf(false) }
     var overflowing by remember { mutableStateOf(false) }
     Text(
@@ -477,7 +491,10 @@ internal fun ExpandableSynopsis(text: String) {
     )
     if (overflowing) {
         TextButton(
-            onClick = { expanded = !expanded },
+            onClick = {
+                haptics.tick()
+                expanded = !expanded
+            },
             contentPadding = PaddingValues(horizontal = 0.dp, vertical = 2.dp)
         ) {
             Text(
@@ -561,11 +578,14 @@ internal fun PlayerArea(
     } else {
         // 解析三态：解析中（转圈）/ 解析失败（重试）/ 已就绪（播放三角）
         val isResolving = playbackUrl.isBlank() && !resolveFailed
+        val haptics = rememberAppHaptics()
         Box(
             modifier = modifier
                 .shimmerPlaceholder()
                 // 解析中点击无意义，禁用点击；失败态点击任意处重试，就绪态点击播放
                 .clickable(enabled = !isResolving) {
+                    // 起播与解析失败重试都属于有后果的操作
+                    haptics.confirm()
                     if (resolveFailed) onRetry() else onPlayClick()
                 },
             contentAlignment = Alignment.Center

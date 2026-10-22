@@ -1,6 +1,7 @@
 package com.av123.video.ui.screens.followed
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -65,13 +66,19 @@ fun FollowedScreen(
     }
     val actresses by viewModel.actresses.collectAsStateWithLifecycle()
     val feeds by viewModel.feeds.collectAsStateWithLifecycle()
+    val haptics = rememberAppHaptics()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.followed_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.followed_back)
@@ -80,7 +87,12 @@ fun FollowedScreen(
                 },
                 actions = {
                     if (actresses.isNotEmpty()) {
-                        IconButton(onClick = viewModel::refresh) {
+                        IconButton(
+                            onClick = {
+                                haptics.confirm()
+                                viewModel.refresh()
+                            }
+                        ) {
                             Icon(
                                 AppIcons.Refresh,
                                 contentDescription = stringResource(R.string.followed_refresh)

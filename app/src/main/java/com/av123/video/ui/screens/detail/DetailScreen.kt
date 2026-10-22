@@ -105,6 +105,7 @@ import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.shimmerPlaceholder
 import com.av123.video.ui.theme.Motion
+import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -156,6 +157,7 @@ fun DetailScreen(
     val appSettings = appSettingsState.settings
     // 用户点击播放后才交给播放器播放，不自动播放
     var playbackStarted by remember(videoId) { mutableStateOf(false) }
+    val haptics = rememberAppHaptics()
     // 全屏状态：播放器组件内部同步系统栏与 Activity 方向
     var isFullscreen by remember(videoId) { mutableStateOf(false) }
 
@@ -210,7 +212,12 @@ fun DetailScreen(
                         )
                     },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = {
+                                haptics.tick()
+                                onBack()
+                            }
+                        ) {
                             // 双栏右栏：关闭详情回到空态占位；紧凑态：返回上一页
                             if (paneCloseButton) {
                                 Icon(
@@ -231,6 +238,7 @@ fun DetailScreen(
                             val shareDescription = stringResource(R.string.detail_share)
                             val shareContext = LocalContext.current
                             IconButton(onClick = {
+                                haptics.tick()
                                 val intent = Intent(Intent.ACTION_SEND).apply {
                                     type = "text/plain"
                                     putExtra(
@@ -532,6 +540,7 @@ private fun DetailBody(
     onLoadMoreRelated: () -> Unit,
     onVideoClick: (String) -> Unit
 ) {
+    val haptics = rememberAppHaptics()
     Column(Modifier.padding(16.dp)) {
         ExpandableTitle(text = video.title)
         Spacer(Modifier.height(10.dp))
@@ -574,7 +583,10 @@ private fun DetailBody(
         )
         val favoriteHeartScale = rememberTogglePopScale(active = isFavorite)
         Button(
-            onClick = onToggleFavorite,
+            onClick = {
+                haptics.tick()
+                onToggleFavorite()
+            },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = favoriteContainer,

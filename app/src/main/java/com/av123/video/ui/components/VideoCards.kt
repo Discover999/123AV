@@ -105,6 +105,7 @@ import com.av123.video.R
 import com.av123.video.data.model.Video
 import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.theme.appCardContainerColor
+import com.av123.video.ui.util.rememberAppHaptics
 
 /**
  * 骨架屏波纹占位：浅灰底 + 循环扫过的高亮微光带，用于封面加载中 / 无封面时的空白占位。
@@ -203,6 +204,7 @@ internal fun PressableCard(
     content: @Composable () -> Unit
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val haptics = rememberAppHaptics()
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.97f else 1f,
@@ -217,7 +219,13 @@ internal fun PressableCard(
                 interactionSource = interactionSource,
                 indication = LocalIndication.current,
                 onClick = onClick,
-                onLongClick = onLongClick
+                // 长按封面打开预览属有后果操作；普通点卡进详情保持静默
+                onLongClick = onLongClick?.let { callback ->
+                    {
+                        haptics.confirm()
+                        callback()
+                    }
+                }
             ),
         shape = shape,
         colors = CardDefaults.elevatedCardColors(

@@ -80,6 +80,7 @@ import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.VideoLayoutToggle
+import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.launch
 
 /**
@@ -98,6 +99,7 @@ internal fun FavoritesTopBar(
     onGroupMenu: (FavoriteGroup) -> Unit,
     resolveGroup: (Long) -> FavoriteGroup?
 ) {
+    val haptics = rememberAppHaptics()
     TopAppBar(
         title = {
             when (destination) {
@@ -122,7 +124,12 @@ internal fun FavoritesTopBar(
             }
         },
         navigationIcon = {
-            IconButton(onClick = onBack) {
+            IconButton(
+                onClick = {
+                    haptics.tick()
+                    onBack()
+                }
+            ) {
                 Icon(
                     AppIcons.ArrowBack,
                     contentDescription = stringResource(R.string.favorites_back)
@@ -136,6 +143,7 @@ internal fun FavoritesTopBar(
             val groupFilter = filter as? FavoritesFilter.Group
             if (groupFilter != null) {
                 IconButton(onClick = {
+                    haptics.tick()
                     resolveGroup(groupFilter.groupId)?.let(onGroupMenu)
                 }) {
                     Icon(
@@ -144,7 +152,12 @@ internal fun FavoritesTopBar(
                     )
                 }
             } else {
-                IconButton(onClick = onNewGroup) {
+                IconButton(
+                    onClick = {
+                        haptics.tick()
+                        onNewGroup()
+                    }
+                ) {
                     Icon(
                         AppIcons.CreateNewFolder,
                         contentDescription = stringResource(R.string.favorites_new_group)
@@ -152,7 +165,12 @@ internal fun FavoritesTopBar(
                 }
                 // “清空”只在全部视频范围提供，未分组/空列表不展示
                 if (filter == FavoritesFilter.All && totalCount > 0) {
-                    IconButton(onClick = onClear) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onClear()
+                        }
+                    ) {
                         Icon(
                             AppIcons.DeleteSweep,
                             contentDescription = stringResource(R.string.favorites_clear)

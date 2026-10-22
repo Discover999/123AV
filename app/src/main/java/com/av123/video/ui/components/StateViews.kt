@@ -1,6 +1,7 @@
 package com.av123.video.ui.components
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -176,7 +177,13 @@ fun ErrorState(
             textAlign = TextAlign.Center
         )
         Spacer(Modifier.height(16.dp))
-        Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
+        val haptics = rememberAppHaptics()
+        Button(
+            onClick = {
+                haptics.confirm()
+                onRetry()
+            }
+        ) { Text(stringResource(R.string.common_retry)) }
     }
 }
 
@@ -217,7 +224,13 @@ fun EmptyState(
         )
         if (actionText != null && onAction != null) {
             Spacer(Modifier.height(12.dp))
-            TextButton(onClick = onAction) { Text(actionText) }
+            val haptics = rememberAppHaptics()
+            TextButton(
+                onClick = {
+                    haptics.tick()
+                    onAction()
+                }
+            ) { Text(actionText) }
         }
     }
 }

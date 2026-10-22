@@ -48,12 +48,9 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.SwipeToDismissBox
-import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -78,6 +75,7 @@ import com.av123.video.data.model.FavoriteRecord
 import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
+import com.av123.video.ui.components.SwipeRevealRow
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.VideoListRow
 import kotlinx.coroutines.launch
@@ -145,38 +143,17 @@ internal fun SwipeableFavoriteCard(
     onDismiss: () -> Unit,
     listLayout: Boolean = false
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled) {
-                onDismiss()
-                true
-            } else {
-                false
-            }
-        }
-    )
-    val colorScheme = MaterialTheme.colorScheme
-    val alignStart = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-    SwipeToDismissBox(
-        state = dismissState,
-        gesturesEnabled = !selectionMode,
-        backgroundContent = {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    // 滑动露出的底色要和卡片同一圆角：网格 16dp、单列行 10dp
-                    .clip(if (listLayout) AppShapes.Compact else AppShapes.Large)
-                    .background(colorScheme.errorContainer)
-                    .padding(horizontal = 24.dp),
-                contentAlignment = if (alignStart) Alignment.CenterStart else Alignment.CenterEnd
-            ) {
-                Icon(
-                    AppIcons.Delete,
-                    contentDescription = null,
-                    tint = colorScheme.onErrorContainer
-                )
-            }
-        }
+    // 左滑停在露出态，点删除图标才真正删除（与历史页同一套交互）
+    var revealed by remember { mutableStateOf(false) }
+    SwipeRevealRow(
+        revealed = revealed,
+        onRevealedChange = { revealed = it },
+        onDelete = {
+            revealed = false
+            onDismiss()
+        },
+        enabled = !selectionMode,
+        shape = if (listLayout) AppShapes.Compact else AppShapes.Large
     ) {
         SelectableFavoriteCard(
             record = record,

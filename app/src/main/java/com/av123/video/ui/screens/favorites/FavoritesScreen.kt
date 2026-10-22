@@ -17,7 +17,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -70,6 +72,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
+import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
 import com.av123.video.data.model.FavoriteRecord
@@ -78,6 +81,7 @@ import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.launch
 
 /** 收藏夹新建/重命名编辑弹窗状态 */
@@ -104,6 +108,10 @@ fun FavoritesScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val appSettings by container.appSettingsState.collectAsStateWithLifecycle()
     val listLayout = appSettings.settings.videoLayout == VideoLayout.LIST
+    // 本页有自己的 SnackbarHost：悬浮底栏占位为 0，需要手动补胶囊与手势条高度
+    val floatingNavBar = appSettings.settings.floatingNavBar
+    val navBarBottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val haptics = rememberAppHaptics()
     val resources = LocalResources.current
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -210,7 +218,15 @@ fun FavoritesScreen(
                 }
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            SnackbarHost(
+                snackbarHostState,
+                // 悬浮底栏时让出胶囊与手势条，撤销提示才点得到
+                modifier = Modifier.padding(
+                    bottom = LocalBottomBarInset.current + if (floatingNavBar) navBarBottom else 0.dp
+                )
+            )
+        },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         AnimatedContent(
@@ -283,6 +299,7 @@ fun FavoritesScreen(
             text = { Text(stringResource(R.string.favorites_clear_confirm)) },
             confirmButton = {
                 TextButton(onClick = {
+                    haptics.confirm()
                     // 清空先快照全部记录：Snackbar 撤销可按原收藏时间完整恢复
                     val cleared = state.records
                     viewModel.clear()

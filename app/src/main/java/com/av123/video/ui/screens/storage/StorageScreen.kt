@@ -85,6 +85,7 @@ import com.av123.video.data.repository.CacheManager
 import com.av123.video.data.repository.formatCacheSize
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.appCardContainerColor
+import com.av123.video.ui.util.rememberAppHaptics
 import com.av123.video.ui.util.rememberResumeTick
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -163,12 +164,18 @@ fun StorageScreen(onBack: () -> Unit, onOpenKind: (CacheKind) -> Unit) {
         }
     }
 
+    val haptics = rememberAppHaptics()
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.storage_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.storage_back)
@@ -220,7 +227,10 @@ fun StorageScreen(onBack: () -> Unit, onOpenKind: (CacheKind) -> Unit) {
             }
             item {
                 Button(
-                    onClick = { showConfirm = true },
+                    onClick = {
+                        haptics.confirm()
+                        showConfirm = true
+                    },
                     enabled = chosen.isNotEmpty() && !clearing,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -278,7 +288,10 @@ fun StorageScreen(onBack: () -> Unit, onOpenKind: (CacheKind) -> Unit) {
                 },
                 confirmButton = {
                     TextButton(
-                        onClick = { clearChosen() },
+                        onClick = {
+                            haptics.confirm()
+                            clearChosen()
+                        },
                         colors = ButtonDefaults.textButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
                         )
@@ -308,12 +321,18 @@ fun StorageDetailScreen(kind: CacheKind, onBack: () -> Unit) {
         breakdown = runCatching { container.cacheManager.breakdown() }.getOrNull()
     }
 
+    val haptics = rememberAppHaptics()
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(kind.title()) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.storage_back)
@@ -791,6 +810,7 @@ private fun CacheCheckbox(checked: Boolean, enabled: Boolean, onToggle: () -> Un
         animationSpec = tween(160),
         label = "checkBorder"
     )
+    val haptics = rememberAppHaptics()
     val boxAlpha by animateFloatAsState(
         targetValue = if (enabled) 1f else 0.4f,
         animationSpec = tween(160),
@@ -814,7 +834,10 @@ private fun CacheCheckbox(checked: Boolean, enabled: Boolean, onToggle: () -> Un
                 value = checked,
                 enabled = enabled,
                 role = Role.Checkbox,
-                onValueChange = { onToggle() }
+                onValueChange = {
+                    haptics.tick()
+                    onToggle()
+                }
             ),
         contentAlignment = Alignment.Center
     ) {

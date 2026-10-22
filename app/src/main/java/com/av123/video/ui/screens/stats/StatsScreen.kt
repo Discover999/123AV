@@ -1,6 +1,7 @@
 package com.av123.video.ui.screens.stats
 
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import com.av123.video.ui.theme.AppShapes
 
@@ -69,13 +70,19 @@ fun StatsScreen(onBack: () -> Unit) {
         StatsViewModel(container.historyRepository)
     }
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val haptics = rememberAppHaptics()
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.stats_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(
+                        onClick = {
+                            haptics.tick()
+                            onBack()
+                        }
+                    ) {
                         Icon(
                             AppIcons.ArrowBack,
                             contentDescription = stringResource(R.string.stats_back)
@@ -83,7 +90,13 @@ fun StatsScreen(onBack: () -> Unit) {
                     }
                 },
                 actions = {
-                    IconButton(onClick = viewModel::refresh, enabled = !uiState.loading) {
+                    IconButton(
+                        onClick = {
+                            haptics.confirm()
+                            viewModel.refresh()
+                        },
+                        enabled = !uiState.loading
+                    ) {
                         Icon(
                             AppIcons.Refresh,
                             contentDescription = stringResource(R.string.stats_refresh)

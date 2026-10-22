@@ -73,6 +73,7 @@ import com.av123.video.ui.lock.authenticateAppLock
 import com.av123.video.ui.lock.canAuthenticateAppLock
 import com.av123.video.ui.util.findActivity
 import com.av123.video.ui.util.formatWatchDurationMs
+import com.av123.video.ui.util.rememberAppHaptics
 import com.av123.video.ui.util.rememberResumeTick
 import androidx.fragment.app.FragmentActivity
 import kotlinx.coroutines.Dispatchers
@@ -367,7 +368,7 @@ fun ProfileScreen(
                         title = stringResource(R.string.profile_app_lock),
                         subtitle = stringResource(R.string.profile_app_lock_desc),
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.appLockEnabled,
                                 onCheckedChange = { enabled ->
                                     if (!enabled) {
@@ -383,7 +384,7 @@ fun ProfileScreen(
                                             !canAuthenticateAppLock(activity)
                                         ) {
                                             showLockUnavailableDialog = true
-                                            return@Switch
+                                            return@HapticSwitch
                                         }
                                         authenticateAppLock(
                                             activity = activity,
@@ -432,7 +433,7 @@ fun ProfileScreen(
                         title = stringResource(R.string.profile_secure_screen),
                         subtitle = stringResource(R.string.profile_secure_screen_desc),
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.secureScreenEnabled,
                                 onCheckedChange = { enabled ->
                                     scope.launch {
@@ -450,7 +451,7 @@ fun ProfileScreen(
                         title = stringResource(R.string.profile_flip_to_exit),
                         subtitle = stringResource(R.string.profile_flip_to_exit_desc),
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.flipToExitEnabled,
                                 onCheckedChange = { enabled ->
                                     scope.launch {
@@ -480,7 +481,7 @@ fun ProfileScreen(
                             stringResource(R.string.profile_dynamic_color_unsupported)
                         },
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.dynamicColor && dynamicColorSupported,
                                 enabled = dynamicColorSupported,
                                 onCheckedChange = { enabled ->
@@ -499,7 +500,7 @@ fun ProfileScreen(
                         title = stringResource(R.string.profile_floating_nav),
                         subtitle = stringResource(R.string.profile_floating_nav_desc),
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.floatingNavBar,
                                 onCheckedChange = { enabled ->
                                     scope.launch {
@@ -547,7 +548,7 @@ fun ProfileScreen(
                         title = stringResource(R.string.profile_pip),
                         subtitle = stringResource(R.string.profile_pip_desc),
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.pipEnabled,
                                 onCheckedChange = { enabled ->
                                     scope.launch {
@@ -565,7 +566,7 @@ fun ProfileScreen(
                         title = stringResource(R.string.profile_auto_next),
                         subtitle = stringResource(R.string.profile_auto_next_desc),
                         trailing = {
-                            Switch(
+                            HapticSwitch(
                                 checked = settings.autoPlayNext,
                                 onCheckedChange = { enabled ->
                                     scope.launch {
@@ -708,4 +709,27 @@ fun ProfileScreen(
             }
         )
     }
+}
+
+/**
+ * 设置开关统一带一次轻反馈：开关属于会改变行为的操作。
+ * 视觉与布局沿用 Material3 默认 Switch，不改尺寸。
+ */
+@Composable
+private fun HapticSwitch(
+    checked: Boolean,
+    onCheckedChange: ((Boolean) -> Unit)?,
+    enabled: Boolean = true
+) {
+    val haptics = rememberAppHaptics()
+    Switch(
+        checked = checked,
+        onCheckedChange = onCheckedChange?.let { callback ->
+            { value ->
+                haptics.tick()
+                callback(value)
+            }
+        },
+        enabled = enabled
+    )
 }
