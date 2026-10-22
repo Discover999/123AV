@@ -46,7 +46,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -668,37 +667,20 @@ internal fun PlayerArea(
                             .background(Color.Black.copy(alpha = 0.35f))
                             .padding(horizontal = 14.dp, vertical = 6.dp)
                     )
-                    // 失败：失败原因胶囊 + 明确的重试按钮
-                    resolveFailed -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = stringResource(R.string.detail_resolve_failed),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = Color.White.copy(alpha = 0.92f),
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(Color.Black.copy(alpha = 0.35f))
-                                .padding(horizontal = 14.dp, vertical = 6.dp)
-                        )
-                        TextButton(
-                            onClick = onRetry,
-                            colors = ButtonDefaults.textButtonColors(
-                                contentColor = Color.White
-                            ),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp)
-                        ) {
-                            Icon(
-                                imageVector = AppIcons.Replay,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(Modifier.size(6.dp))
-                            Text(
-                                text = stringResource(R.string.detail_retry),
-                                style = MaterialTheme.typography.labelLarge
-                            )
-                        }
-                    }
+                    // 失败：只留一行原因说明。重试入口就是中央的 Replay 圆钮（整块封面点击也重试），
+                    // 不再叠第二个文字按钮——16:9 卡片只有 202dp 高，两层按钮会压到中间的圆钮上
+                    resolveFailed -> Text(
+                        text = stringResource(R.string.detail_resolve_failed),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.92f),
+                        textAlign = TextAlign.Center,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(50))
+                            .background(Color.Black.copy(alpha = 0.35f))
+                            .padding(horizontal = 14.dp, vertical = 6.dp)
+                    )
                 }
             }
         }
