@@ -1,5 +1,6 @@
 package com.av123.video.ui.components
 
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -12,6 +13,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.data.prefs.VideoLayout
+import com.av123.video.ui.icons.AppIconSize
 import com.av123.video.ui.icons.AppIcons
 import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.launch
@@ -40,12 +42,13 @@ fun VideoLayoutToggle(modifier: Modifier = Modifier) {
         modifier = modifier
     ) {
         Icon(
-            imageVector = if (layout == VideoLayout.LIST) AppIcons.GridView else AppIcons.ViewList,
+            imageVector = if (layout == VideoLayout.LIST) AppIcons.GridView else AppIcons.ViewAgendaOutlined,
             contentDescription = stringResource(
                 if (layout == VideoLayout.LIST) R.string.video_layout_to_grid
                 else R.string.video_layout_to_list
             ),
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(AppIconSize.AppBar)
         )
     }
 }
