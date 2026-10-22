@@ -106,6 +106,7 @@ import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.shimmerPlaceholder
 import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.util.rememberAppHaptics
+import androidx.compose.ui.platform.LocalResources
 import kotlinx.coroutines.launch
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -137,6 +138,7 @@ fun DetailScreen(
     val loadError by detailViewModel.loadError.collectAsStateWithLifecycle()
     // 当前视频是否已收藏（收藏数据在本机持久化，返回详情页时即时反映）
     val isFavorite by detailViewModel.isFavorite.collectAsStateWithLifecycle()
+    val favoriteGroups by detailViewModel.favoriteGroups.collectAsStateWithLifecycle()
     // WebView 拦截到的真实播放地址（m3u8 + Referer 等请求头）
     val playback by detailViewModel.playback.collectAsStateWithLifecycle()
     // 播放地址解析是否失败（超时/播放页不可达），失败后封面展示重试入口
@@ -168,6 +170,9 @@ fun DetailScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
+    // 收藏分组弹层：详情页收藏按钮点开，可就地选择收藏夹或取消收藏
+    var showFavoritePicker by remember(videoId) { mutableStateOf(false) }
 
     // 分享链接：优先列表解析到的完整地址，否则用站点根 + 详情相对路径兜底，
     // 两者都缺（异常缓存）时不显示分享按钮
@@ -189,13 +194,14 @@ fun DetailScreen(
     val favoriteRemovedText = stringResource(R.string.detail_favorite_removed)
     val autoNextText = stringResource(R.string.detail_auto_next)
 
-    // 收藏按钮：写入/取消本机收藏，并用 Snackbar 反馈当前状态
+    // 收藏按钮：未收藏时打开分组弹层；已收藏时再点直接取消收藏
     val onToggleFavorite: () -> Unit = {
-        val nowFavorite = detailViewModel.toggleFavorite()
-        scope.launch {
-            snackbarHostState.showSnackbar(
-                if (nowFavorite) favoriteAddedText else favoriteRemovedText
-            )
+        haptics.tick()
+        if (isFavorite) {
+            detailViewModel.removeFavorite()
+            scope.launch { snackbarHostState.showSnackbar(favoriteRemovedText) }
+        } else {
+            showFavoritePicker = true
         }
     }
 
@@ -404,6 +410,27 @@ fun DetailScreen(
                 )
             }
         }
+    }
+
+    if (showFavoritePicker) {
+        FavoritePickerSheet(
+            groups = favoriteGroups,
+            createGroup = { detailViewModel.createFavoriteGroup(it) },
+            onConfirm = { groupId ->
+                detailViewModel.favoriteWithGroup(groupId)
+                val groupName = favoriteGroups.firstOrNull { it.id == groupId }?.name
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        if (groupName != null) {
+                            resources.getString(R.string.detail_favorited_to, groupName)
+                        } else {
+                            favoriteAddedText
+                        }
+                    )
+                }
+            },
+            onDismiss = { showFavoritePicker = false }
+        )
     }
 }
 

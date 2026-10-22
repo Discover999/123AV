@@ -74,8 +74,14 @@ class FavoriteRepository(
         if (videoIds.isNotEmpty()) favoriteDao.delete(videoIds)
     }
 
-    /** 撤销删除：按原始收藏时间完整恢复记录 */
-    suspend fun restore(records: List<FavoriteRecord>) {
+    /**
+     * 撤销删除：按原始收藏时间恢复记录，并恢复删除时被
+     * favorite_group_items 的 ON DELETE CASCADE 清掉的收藏夹归属。
+     */
+    suspend fun restore(
+        records: List<FavoriteRecord>,
+        groupItems: List<FavoriteGroupItem> = emptyList()
+    ) {
         if (records.isEmpty()) return
         favoriteDao.upsertAll(
             records.map { record ->
@@ -86,6 +92,18 @@ class FavoriteRepository(
                 )
             }
         )
+        if (groupItems.isNotEmpty()) {
+            // 先有收藏行再写成员关系，否则外键失败；addedAt 用原值，别把「最近添加」改到今天
+            groupDao.upsertItems(
+                groupItems.map {
+                    FavoriteGroupItemEntity(
+                        groupId = it.groupId,
+                        videoId = it.videoId,
+                        addedAt = it.addedAt
+                    )
+                }
+            )
+        }
     }
 
     suspend fun clear() {

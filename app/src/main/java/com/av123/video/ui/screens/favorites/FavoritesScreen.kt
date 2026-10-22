@@ -120,6 +120,9 @@ fun FavoritesScreen(
     var showClearDialog by remember { mutableStateOf(false) }
     var selectionMode by remember { mutableStateOf(false) }
     var selectedIds by remember { mutableStateOf(emptySet<String>()) }
+    var sort by remember { mutableStateOf(FavoritesSort.RECENT) }
+    var searchActive by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
 
     // 新建/重命名弹窗；null 不展示
     var groupEditor by remember { mutableStateOf<GroupEditorState?>(null) }
@@ -143,6 +146,9 @@ fun FavoritesScreen(
     LaunchedEffect(destination) {
         if (selectionMode) selectionMode = false
         selectedIds = emptySet()
+        // 搜索属于当前范围：换范围就收起并清空
+        searchActive = false
+        searchQuery = ""
     }
 
     fun exitSelection() {
@@ -155,7 +161,8 @@ fun FavoritesScreen(
         if (selectionMode) exitSelection() else destination = FavoritesDestination.Overview
     }
 
-    val visibleRecords = contentFilter?.let { state.filtered(it) } ?: emptyList()
+    val scopedRecords = contentFilter?.let { state.filtered(it) } ?: emptyList()
+    val visibleRecords = sortFavorites(searchFavorites(scopedRecords, searchQuery), sort)
 
     Scaffold(
         topBar = {
@@ -179,8 +186,12 @@ fun FavoritesScreen(
                             }
                         },
                         onDelete = {
-                            val deleted = visibleRecords.filter { it.video.id in selectedIds }
-                            viewModel.delete(selectedIds)
+                            val deletedIds = selectedIds
+                            val deleted = visibleRecords.filter { it.video.id in deletedIds }
+                            // 删除会级联清掉分组关系：先快照，撤销时一并写回
+                            val deletedMemberships =
+                                state.groupItems.filter { it.videoId in deletedIds }
+                            viewModel.delete(deletedIds)
                             exitSelection()
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
@@ -192,7 +203,7 @@ fun FavoritesScreen(
                                     duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.restore(deleted)
+                                    viewModel.restore(deleted, deletedMemberships)
                                 }
                             }
                         },
@@ -206,14 +217,19 @@ fun FavoritesScreen(
                             if (dest is FavoritesDestination.Overview) onBack()
                             else destination = FavoritesDestination.Overview
                         },
-                        onNewGroup = {
-                            groupEditor = GroupEditorState(renaming = null, initialName = "")
-                        },
                         onClear = { showClearDialog = true },
                         onGroupMenu = { group ->
                             folderActionsFor = group
                         },
-                        resolveGroup = { id -> state.groups.firstOrNull { it.id == id } }
+                        resolveGroup = { id -> state.groups.firstOrNull { it.id == id } },
+                        onSearchClick = if (dest is FavoritesDestination.Content) {
+                            {
+                                searchActive = !searchActive
+                                if (!searchActive) searchQuery = ""
+                            }
+                        } else {
+                            null
+                        }
                     )
                 }
             }
@@ -255,10 +271,24 @@ fun FavoritesScreen(
                         onFolderActions = { group -> folderActionsFor = group }
                     )
 
-                is FavoritesDestination.Content ->
-                    FolderContent(
+                is FavoritesDestination.Content -> {
+                    val isAll = dest.filter == FavoritesFilter.All
+                    val lastAddedAt = when (val f = dest.filter) {
+                        FavoritesFilter.All -> state.totalLastFavoritedAt
+                        FavoritesFilter.Ungrouped -> scopedRecords.firstOrNull()?.favoritedAt
+                        is FavoritesFilter.Group -> state.lastAddedAt(f.groupId)
+                            ?: state.groups.firstOrNull { it.id == f.groupId }?.createdAt
+                    }
+                    FavoritesContent(
                         filter = dest.filter,
-                        records = state.filtered(dest.filter),
+                        records = visibleRecords,
+                        totalCount = scopedRecords.size,
+                        lastAddedAt = lastAddedAt,
+                        sort = sort,
+                        onSortChange = { sort = it },
+                        searchActive = searchActive,
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
                         selectionMode = selectionMode,
                         selectedIds = selectedIds,
                         onToggleSelection = { id ->
@@ -272,6 +302,9 @@ fun FavoritesScreen(
                         onVideoClick = onVideoClick,
                         listLayout = listLayout,
                         onSwipeDelete = { record ->
+                            // 删除会级联清掉分组关系：先快照，撤销时一并写回
+                            val removedMemberships =
+                                state.groupItems.filter { it.videoId == record.video.id }
                             viewModel.delete(setOf(record.video.id))
                             scope.launch {
                                 val result = snackbarHostState.showSnackbar(
@@ -283,11 +316,20 @@ fun FavoritesScreen(
                                     duration = SnackbarDuration.Short
                                 )
                                 if (result == SnackbarResult.ActionPerformed) {
-                                    viewModel.restore(listOf(record))
+                                    viewModel.restore(listOf(record), removedMemberships)
                                 }
                             }
-                        }
+                        },
+                        onEmptyAction = {
+                            if (isAll) onNavigateHome()
+                            else destination = FavoritesDestination.Content(FavoritesFilter.All)
+                        },
+                        emptyActionLabel = stringResource(
+                            if (isAll) R.string.action_go_home
+                            else R.string.favorites_empty_group_action
+                        )
                     )
+                }
             }
         }
     }
@@ -300,8 +342,9 @@ fun FavoritesScreen(
             confirmButton = {
                 TextButton(onClick = {
                     haptics.confirm()
-                    // 清空先快照全部记录：Snackbar 撤销可按原收藏时间完整恢复
+                    // 清空先快照全部记录与分组归属：撤销可按原收藏时间与收藏夹完整恢复
                     val cleared = state.records
+                    val clearedMemberships = state.groupItems
                     viewModel.clear()
                     showClearDialog = false
                     scope.launch {
@@ -314,7 +357,7 @@ fun FavoritesScreen(
                             duration = SnackbarDuration.Short
                         )
                         if (result == SnackbarResult.ActionPerformed) {
-                            viewModel.restore(cleared)
+                            viewModel.restore(cleared, clearedMemberships)
                         }
                     }
                 }) { Text(stringResource(R.string.favorites_clear_confirm_yes)) }

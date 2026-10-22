@@ -14,6 +14,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -88,25 +90,33 @@ fun SwipeRevealRow(
         )
     }
 
+    // 只有真正在滑动/展开时才铺红色删除底：
+    // 常驻的话，长按卡片缩放到 0.97 时四周（尤其底部）会漏出红色
+    val showDeleteBackground by remember(enabled, revealed) {
+        derivedStateOf { enabled && (revealed || offset.value < -0.5f) }
+    }
+
     Box(modifier = modifier.clip(shape)) {
-        // 底层：整条删除底色，右侧露出区可点
-        Box(Modifier.matchParentSize().background(containerColor)) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterEnd)
-                    .fillMaxHeight()
-                    .width(RevealWidth)
-                    .clickable(enabled = revealed) {
-                        haptics.confirm()
-                        onDelete()
-                    },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = AppIcons.Delete,
-                    contentDescription = deleteLabel,
-                    tint = contentColor
-                )
+        if (showDeleteBackground) {
+            // 底层：整条删除底色，右侧露出区可点
+            Box(Modifier.matchParentSize().background(containerColor)) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .fillMaxHeight()
+                        .width(RevealWidth)
+                        .clickable(enabled = revealed) {
+                            haptics.confirm()
+                            onDelete()
+                        },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = AppIcons.Delete,
+                        contentDescription = deleteLabel,
+                        tint = contentColor
+                    )
+                }
             }
         }
 

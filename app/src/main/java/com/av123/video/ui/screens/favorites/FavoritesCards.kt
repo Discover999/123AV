@@ -141,10 +141,16 @@ internal fun SwipeableFavoriteCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     onDismiss: () -> Unit,
-    listLayout: Boolean = false
+    listLayout: Boolean = false,
+    /** 只有单列（一行一条）才允许滑动删除；网格卡片关闭，避免吃掉长按多选 */
+    swipeEnabled: Boolean = true
 ) {
     // 左滑停在露出态，点删除图标才真正删除（与历史页同一套交互）
     var revealed by remember { mutableStateOf(false) }
+    // 从单列切回网格（滑动被关闭）时，把已经滑开的行收回去
+    LaunchedEffect(swipeEnabled) {
+        if (!swipeEnabled) revealed = false
+    }
     SwipeRevealRow(
         revealed = revealed,
         onRevealedChange = { revealed = it },
@@ -152,7 +158,7 @@ internal fun SwipeableFavoriteCard(
             revealed = false
             onDismiss()
         },
-        enabled = !selectionMode,
+        enabled = swipeEnabled && !selectionMode,
         shape = if (listLayout) AppShapes.Compact else AppShapes.Large
     ) {
         SelectableFavoriteCard(

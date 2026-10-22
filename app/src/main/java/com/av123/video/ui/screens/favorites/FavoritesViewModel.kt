@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.av123.video.data.model.FavoriteRecord
 import com.av123.video.data.repository.FavoriteGroup
+import com.av123.video.data.repository.FavoriteGroupItem
 import com.av123.video.data.repository.FavoriteRepository
 import com.av123.video.data.repository.GroupEditResult
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,8 +24,18 @@ sealed interface FavoritesFilter {
 data class FavoritesUiState(
     val records: List<FavoriteRecord> = emptyList(),
     val groups: List<FavoriteGroup> = emptyList(),
-    val memberships: Map<String, Set<Long>> = emptyMap()
+    val memberships: Map<String, Set<Long>> = emptyMap(),
+    /** 每个收藏夹最近一次加入的时间，总览卡片用它显示「3 天前」 */
+    val groupLastAdded: Map<Long, Long> = emptyMap(),
+    /** 原始成员关系（含 addedAt），撤销删除时用来还原收藏夹归属 */
+    val groupItems: List<FavoriteGroupItem> = emptyList()
 ) {
+    /** 收藏夹最近添加时间；空收藏夹回退到创建时间 */
+    fun lastAddedAt(groupId: Long): Long? = groupLastAdded[groupId]
+
+    /** 全部收藏的最近收藏时间 */
+    val totalLastFavoritedAt: Long?
+        get() = records.firstOrNull()?.favoritedAt
     /** 未分组收藏数（不属于任何收藏夹） */
     val ungroupedCount: Int
         get() = records.count { it.video.id !in memberships || memberships[it.video.id]?.isEmpty() == true }
@@ -62,7 +73,16 @@ class FavoritesViewModel(
         val memberships = items
             .groupBy { it.videoId }
             .mapValues { (_, groupItems) -> groupItems.map { it.groupId }.toSet() }
-        FavoritesUiState(records = records, groups = groups, memberships = memberships)
+        val groupLastAdded = items
+            .groupBy { it.groupId }
+            .mapValues { (_, groupItems) -> groupItems.maxOf { it.addedAt } }
+        FavoritesUiState(
+            records = records,
+            groups = groups,
+            memberships = memberships,
+            groupLastAdded = groupLastAdded,
+            groupItems = items
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000L),
@@ -74,9 +94,12 @@ class FavoritesViewModel(
         viewModelScope.launch { favoriteRepository.delete(videoIds) }
     }
 
-    /** 撤销删除：按原始收藏时间恢复一条或多条记录 */
-    fun restore(records: List<FavoriteRecord>) {
-        viewModelScope.launch { favoriteRepository.restore(records) }
+    /** 撤销删除：恢复记录 + 删除时被级联清掉的收藏夹归属 */
+    fun restore(
+        records: List<FavoriteRecord>,
+        groupItems: List<FavoriteGroupItem> = emptyList()
+    ) {
+        viewModelScope.launch { favoriteRepository.restore(records, groupItems) }
     }
 
     fun clear() {

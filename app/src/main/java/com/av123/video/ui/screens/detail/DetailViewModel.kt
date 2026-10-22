@@ -6,7 +6,9 @@ import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
 import com.av123.video.data.repository.DetailRepository
 import com.av123.video.data.repository.DetailResult
+import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.FavoriteRepository
+import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.data.repository.HistoryRepository
 import com.av123.video.data.repository.PlaybackSource
 import com.av123.video.data.repository.VideoRepository
@@ -408,15 +410,36 @@ class DetailViewModel(
     /** 防止连点重试并发刷新详情、重复重建抓流 WebView */
     private var retryInFlight = false
 
-    /** 收藏 / 取消收藏当前视频；返回操作后是否为收藏态，便于 UI 弹提示 */
-    fun toggleFavorite(): Boolean {
-        val video = _video.value ?: return isFavorite.value
-        val nowFavorite = !isFavorite.value
+    /** 收藏夹列表：详情页收藏分组弹层用 */
+    val favoriteGroups: StateFlow<List<FavoriteGroup>> = favoriteRepository.groups
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000L),
+            initialValue = emptyList()
+        )
+
+    /**
+     * 收藏并归入指定分组（弹层点「完成」时调用）；groupId 为 null 表示未分组。
+     * 先落收藏再写成员关系：favorite_group_items.videoId 外键指向 favorites。
+     */
+    fun favoriteWithGroup(groupId: Long?) {
+        val video = _video.value ?: return
         viewModelScope.launch {
-            if (nowFavorite) favoriteRepository.add(video)
-            else favoriteRepository.remove(video.id)
+            favoriteRepository.add(video)
+            if (groupId != null) {
+                favoriteRepository.setGroupMembership(groupId, listOf(video.id), true)
+            }
         }
-        return nowFavorite
+    }
+
+    /** 详情页「添加分组」：新建收藏夹，重名结果交给命名弹窗就地提示 */
+    suspend fun createFavoriteGroup(name: String): GroupEditResult =
+        favoriteRepository.createGroup(name)
+
+    /** 取消收藏（收藏夹关系由外键级联清理） */
+    fun removeFavorite() {
+        val video = _video.value ?: return
+        viewModelScope.launch { favoriteRepository.remove(video.id) }
     }
 
     private companion object {
