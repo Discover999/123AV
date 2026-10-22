@@ -184,7 +184,8 @@ interface PageCacheDao {
 @Dao
 interface FavoriteGroupDao {
 
-    @Query("SELECT * FROM favorite_groups ORDER BY createdAt ASC")
+    // 新建的收藏夹排在最前：总览封面墙与选择器都以这个顺序展示
+    @Query("SELECT * FROM favorite_groups ORDER BY createdAt DESC")
     fun observeGroups(): Flow<List<FavoriteGroupEntity>>
 
     @Query("SELECT * FROM favorite_group_items")

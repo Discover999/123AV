@@ -142,8 +142,9 @@ internal fun FolderPickerSheet(
                         label = { Text(stringResource(R.string.favorites_group_name_hint)) },
                         modifier = Modifier.weight(1f)
                     )
+                    val canSubmit = newName.isNotBlank() && !submitting
                     IconButton(
-                        enabled = newName.isNotBlank() && !submitting,
+                        enabled = canSubmit,
                         onClick = {
                             submitting = true
                             scope.launch {
@@ -164,7 +165,11 @@ internal fun FolderPickerSheet(
                         Icon(
                             AppIcons.Check,
                             contentDescription = stringResource(R.string.favorites_dialog_done),
-                            tint = MaterialTheme.colorScheme.primary
+                            tint = if (canSubmit) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
+                            }
                         )
                     }
                     IconButton(onClick = {

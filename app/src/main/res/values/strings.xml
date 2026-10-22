@@ -212,9 +212,8 @@
     <string name="detail_favorite_removed">已取消收藏</string>
     <string name="detail_favorite_picker_title">收藏到</string>
     <string name="detail_favorite_only">未分组</string>
-    <string name="detail_favorite_add_group">添加分组</string>
     <string name="detail_favorite_pick_group">或选择一个收藏夹</string>
-    <string name="detail_favorite_no_groups">还没有收藏夹，在「我的收藏」里新建</string>
+    <string name="detail_favorite_no_groups_short">还没有收藏夹</string>
     <string name="detail_favorited_to">已收藏到「%1$s」</string>
     <string name="detail_favorite_done">完成</string>
     <string name="detail_episodes">选集</string>
