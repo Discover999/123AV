@@ -82,12 +82,14 @@ jobs:
           "$APKSIGNER" verify --print-certs app/build/outputs/apk/release/app-release.apk
 
       - name: Rename APK with version
-        run: cp app/build/outputs/apk/release/app-release.apk "123AV-${{ steps.ver.outputs.name }}.apk"
+        # 资产名同样带 v 前缀：123AV-v0.1.1.apk
+        run: cp app/build/outputs/apk/release/app-release.apk "123AV-${{ steps.ver.outputs.tag }}.apk"
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.ver.outputs.tag }}
-          name: 123AV ${{ steps.ver.outputs.name }}
+          # 发布标题与 tag 一致（v0.1.1），不再拼 "123AV 0.1.1"
+          name: ${{ steps.ver.outputs.tag }}
           generate_release_notes: true
           files: 123AV-*.apk
