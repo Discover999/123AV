@@ -272,7 +272,6 @@ fun FavoritesScreen(
                     )
 
                 is FavoritesDestination.Content -> {
-                    val isAll = dest.filter == FavoritesFilter.All
                     val lastAddedAt = when (val f = dest.filter) {
                         FavoritesFilter.All -> state.totalLastFavoritedAt
                         FavoritesFilter.Ungrouped -> scopedRecords.firstOrNull()?.favoritedAt
@@ -320,14 +319,8 @@ fun FavoritesScreen(
                                 }
                             }
                         },
-                        onEmptyAction = {
-                            if (isAll) onNavigateHome()
-                            else destination = FavoritesDestination.Content(FavoritesFilter.All)
-                        },
-                        emptyActionLabel = stringResource(
-                            if (isAll) R.string.action_go_home
-                            else R.string.favorites_empty_group_action
-                        )
+                        onEmptyAction = onNavigateHome,
+                        emptyActionLabel = stringResource(R.string.action_go_home)
                     )
                 }
             }

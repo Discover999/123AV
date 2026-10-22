@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.av123.video.R
 import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
+import com.av123.video.data.repository.MAX_FAVORITE_GROUPS
 import com.av123.video.ui.icons.AppIcons
 import com.av123.video.ui.screens.favorites.GroupNameDialog
 import com.av123.video.ui.theme.AppShapes
@@ -67,22 +68,24 @@ internal fun FavoritePickerSheet(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f)
                 )
-                // 就地新建收藏夹：建完只选中，点「完成」才真正加入
-                TextButton(
-                    onClick = {
-                        haptics.tick()
-                        showCreateGroup = true
+                // 就地新建收藏夹：建完只选中，点「完成」才真正加入；到上限不再显示入口
+                if (groups.size < MAX_FAVORITE_GROUPS) {
+                    TextButton(
+                        onClick = {
+                            haptics.tick()
+                            showCreateGroup = true
+                        }
+                    ) {
+                        Icon(
+                            imageVector = AppIcons.Add,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = stringResource(R.string.detail_favorite_add_group),
+                            modifier = Modifier.padding(start = 4.dp)
+                        )
                     }
-                ) {
-                    Icon(
-                        imageVector = AppIcons.Add,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = stringResource(R.string.detail_favorite_add_group),
-                        modifier = Modifier.padding(start = 4.dp)
-                    )
                 }
             }
 

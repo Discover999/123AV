@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import com.av123.video.R
 import com.av123.video.data.model.FavoriteRecord
 import com.av123.video.data.repository.FavoriteGroup
+import com.av123.video.data.repository.MAX_FAVORITE_GROUPS
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.icons.AppIcons
 import com.av123.video.ui.theme.AppShapes
@@ -113,13 +114,15 @@ internal fun FavoritesOverview(
                 group = group,
                 previews = state.groupPreview(group.id),
                 count = state.groupCount(group.id),
-                lastAddedAt = state.lastAddedAt(group.id) ?: group.createdAt,
                 onClick = { onOpenFilter(FavoritesFilter.Group(group.id)) },
                 onLongClick = { onFolderActions(group) }
             )
         }
         item {
-            NewFolderCard(onClick = onNewGroup)
+            NewFolderCard(
+                enabled = state.groups.size < MAX_FAVORITE_GROUPS,
+                onClick = onNewGroup
+            )
         }
     }
 }
@@ -235,7 +238,6 @@ private fun FolderCard(
     group: FavoriteGroup,
     previews: List<FavoriteRecord>,
     count: Int,
-    lastAddedAt: Long,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
@@ -272,11 +274,7 @@ private fun FolderCard(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                text = stringResource(
-                    R.string.favorites_group_meta,
-                    count,
-                    relativeTime(lastAddedAt)
-                ),
+                text = stringResource(R.string.favorites_group_item_count, count),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
@@ -285,10 +283,15 @@ private fun FolderCard(
     }
 }
 
-/** 新建收藏夹：与文件夹同尺寸的虚线卡 */
+/** 新建收藏夹：与文件夹同尺寸的虚线卡；到上限时变灰并显示「已达上限」 */
 @Composable
-private fun NewFolderCard(onClick: () -> Unit) {
+private fun NewFolderCard(enabled: Boolean, onClick: () -> Unit) {
     val haptics = rememberAppHaptics()
+    val tint = if (enabled) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -296,13 +299,19 @@ private fun NewFolderCard(onClick: () -> Unit) {
             .clip(AppShapes.Large)
             .border(
                 width = 1.5.dp,
-                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f),
+                color = tint.copy(alpha = 0.35f),
                 shape = AppShapes.Large
             )
-            .clickable {
-                haptics.tick()
-                onClick()
-            },
+            .then(
+                if (enabled) {
+                    Modifier.clickable {
+                        haptics.tick()
+                        onClick()
+                    }
+                } else {
+                    Modifier
+                }
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
@@ -310,20 +319,24 @@ private fun NewFolderCard(onClick: () -> Unit) {
             modifier = Modifier
                 .size(36.dp)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
+                .background(tint.copy(alpha = 0.12f)),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = AppIcons.Add,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = tint,
                 modifier = Modifier.size(20.dp)
             )
         }
         Text(
-            text = stringResource(R.string.favorites_new_group),
+            text = if (enabled) {
+                stringResource(R.string.favorites_new_group)
+            } else {
+                stringResource(R.string.favorites_group_limit_card, MAX_FAVORITE_GROUPS)
+            },
             style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.primary,
+            color = tint,
             modifier = Modifier.padding(top = 6.dp)
         )
     }

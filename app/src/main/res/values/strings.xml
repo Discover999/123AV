@@ -121,14 +121,13 @@
     <string name="favorites_dialog_done">完成</string>
     <string name="favorites_manage_groups">加入收藏夹</string>
     <string name="favorites_empty_group_title">这个收藏夹还是空的</string>
-    <string name="favorites_empty_group_subtitle">返回总览，长按或点击管理即可把视频加入收藏夹</string>
     <!-- 收藏分组重构：文件夹总览 + 单选选择器 -->
     <string name="favorites_all_videos">全部视频</string>
     <string name="favorites_ungrouped_label">未分组</string>
     <string name="favorites_section_groups">我的收藏夹</string>
     <string name="favorites_group_count">%1$d 个视频</string>
     <string name="favorites_group_total">%1$d 个</string>
-    <string name="favorites_group_meta">%1$d 部 · %2$s</string>
+    <string name="favorites_group_item_count">%1$d 部</string>
     <string name="favorites_total_meta">最近收藏 · %1$s</string>
     <string name="favorites_last_added">最近添加 %1$s</string>
     <string name="favorites_recently_favorited">最近收藏 %1$s</string>
@@ -138,7 +137,8 @@
     <string name="favorites_search_hint">搜索当前收藏</string>
     <string name="favorites_search_clear">清空搜索</string>
     <string name="favorites_search_empty">没有匹配的收藏</string>
-    <string name="favorites_empty_group_action">去全部收藏</string>
+    <string name="favorites_group_limit_reached">最多只能创建 %1$d 个收藏夹</string>
+    <string name="favorites_group_limit_card">已达上限 %1$d 个</string>
     <string name="favorites_no_groups_hint">还没有收藏夹，新建后会显示在这里</string>
     <string name="favorites_picker_title">把 %1$d 个视频添加到收藏夹</string>
     <string name="favorites_picker_done">完成</string>

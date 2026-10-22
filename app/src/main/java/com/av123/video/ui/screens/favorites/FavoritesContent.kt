@@ -70,19 +70,21 @@ internal fun FavoritesContent(
 
     if (records.isEmpty() && query.isBlank()) {
         val isAll = filter == FavoritesFilter.All
+        // 空收藏夹只留一句标题；全部收藏为空才给副标题与「去首页」
         EmptyState(
             icon = if (isAll) AppIcons.VideoLibrary else AppIcons.Folder,
             title = stringResource(
                 if (isAll) R.string.favorites_empty_title
                 else R.string.favorites_empty_group_title
             ),
-            subtitle = stringResource(
-                if (isAll) R.string.favorites_empty_subtitle
-                else R.string.favorites_empty_group_subtitle
-            ),
-            actionText = emptyActionLabel,
-            onAction = onEmptyAction,
-            modifier = Modifier.fillMaxSize()
+            subtitle = if (isAll) {
+                stringResource(R.string.favorites_empty_subtitle)
+            } else {
+                null
+            },
+            modifier = Modifier.fillMaxSize(),
+            actionText = if (isAll) emptyActionLabel else null,
+            onAction = if (isAll) onEmptyAction else null
         )
         return
     }

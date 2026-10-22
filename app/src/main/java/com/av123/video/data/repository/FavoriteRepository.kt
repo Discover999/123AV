@@ -26,10 +26,17 @@ data class FavoriteGroupItem(
     val addedAt: Long
 )
 
-/** 新建/重命名收藏夹的结果（重名时由 UI 提示） */
+/** 收藏夹数量上限：到顶后新建入口给出提示，不静默失败 */
+const val MAX_FAVORITE_GROUPS = 20
+
+/** 收藏夹名称输入上限（UTF-16 字符数，一个 emoji 算 2 个） */
+const val MAX_FAVORITE_GROUP_NAME_LENGTH = 12
+
+/** 新建/重命名收藏夹的结果（重名/到上限时由 UI 提示） */
 sealed interface GroupEditResult {
     data class Success(val group: FavoriteGroup) : GroupEditResult
     data object DuplicateName : GroupEditResult
+    data object LimitReached : GroupEditResult
 }
 
 /**
@@ -129,6 +136,7 @@ class FavoriteRepository(
     suspend fun createGroup(rawName: String): GroupEditResult {
         val name = rawName.trim()
         if (name.isBlank()) return GroupEditResult.DuplicateName
+        if (groupDao.count() >= MAX_FAVORITE_GROUPS) return GroupEditResult.LimitReached
         if (groupDao.findByName(name) != null) return GroupEditResult.DuplicateName
         val id = groupDao.insert(
             FavoriteGroupEntity(name = name, createdAt = System.currentTimeMillis())

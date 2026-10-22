@@ -76,6 +76,8 @@ import com.av123.video.LocalAppContainer
 import com.av123.video.R
 import com.av123.video.data.model.FavoriteRecord
 import com.av123.video.data.repository.FavoriteGroup
+import com.av123.video.data.repository.MAX_FAVORITE_GROUPS
+import com.av123.video.data.repository.MAX_FAVORITE_GROUP_NAME_LENGTH
 import com.av123.video.data.repository.GroupEditResult
 import com.av123.video.ui.components.EmptyState
 import com.av123.video.ui.components.VideoGridCard
@@ -103,9 +105,14 @@ internal fun FolderPickerSheet(
     var selectedGroupId by remember { mutableStateOf(preselected) }
     var creating by remember { mutableStateOf(false) }
     var newName by remember { mutableStateOf("") }
-    var duplicate by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
     var submitting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val duplicateText = stringResource(R.string.favorites_group_duplicate)
+    val limitText = stringResource(
+        R.string.favorites_group_limit_reached,
+        MAX_FAVORITE_GROUPS
+    )
 
     ModalBottomSheet(onDismissRequest = onDismiss) {
         Column(
@@ -124,15 +131,13 @@ internal fun FolderPickerSheet(
                     OutlinedTextField(
                         value = newName,
                         onValueChange = {
-                            newName = it.take(20)
-                            duplicate = false
+                            newName = it.take(MAX_FAVORITE_GROUP_NAME_LENGTH)
+                            errorText = null
                         },
                         singleLine = true,
-                        isError = duplicate,
-                        supportingText = if (duplicate) {
-                            { Text(stringResource(R.string.favorites_group_duplicate)) }
-                        } else {
-                            null
+                        isError = errorText != null,
+                        supportingText = errorText?.let { message ->
+                            { Text(message) }
                         },
                         label = { Text(stringResource(R.string.favorites_group_name_hint)) },
                         modifier = Modifier.weight(1f)
@@ -147,8 +152,10 @@ internal fun FolderPickerSheet(
                                         selectedGroupId = result.group.id
                                         creating = false
                                         newName = ""
+                                        errorText = null
                                     }
-                                    GroupEditResult.DuplicateName -> duplicate = true
+                                    GroupEditResult.DuplicateName -> errorText = duplicateText
+                                    GroupEditResult.LimitReached -> errorText = limitText
                                 }
                                 submitting = false
                             }
@@ -163,12 +170,12 @@ internal fun FolderPickerSheet(
                     IconButton(onClick = {
                         creating = false
                         newName = ""
-                        duplicate = false
+                        errorText = null
                     }) {
                         Icon(AppIcons.Close, contentDescription = null)
                     }
                 }
-            } else {
+            } else if (groups.size < MAX_FAVORITE_GROUPS) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
@@ -332,9 +339,14 @@ internal fun GroupNameDialog(
     onSubmit: suspend (String) -> GroupEditResult
 ) {
     var name by remember { mutableStateOf(initialName) }
-    var duplicate by remember { mutableStateOf(false) }
+    var errorText by remember { mutableStateOf<String?>(null) }
     var submitting by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    val duplicateText = stringResource(R.string.favorites_group_duplicate)
+    val limitText = stringResource(
+        R.string.favorites_group_limit_reached,
+        MAX_FAVORITE_GROUPS
+    )
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
@@ -342,15 +354,13 @@ internal fun GroupNameDialog(
             OutlinedTextField(
                 value = name,
                 onValueChange = {
-                    name = it.take(20)
-                    duplicate = false
+                    name = it.take(MAX_FAVORITE_GROUP_NAME_LENGTH)
+                    errorText = null
                 },
                 singleLine = true,
-                isError = duplicate,
-                supportingText = if (duplicate) {
-                    { Text(stringResource(R.string.favorites_group_duplicate)) }
-                } else {
-                    null
+                isError = errorText != null,
+                supportingText = errorText?.let { message ->
+                    { Text(message) }
                 },
                 label = { Text(stringResource(R.string.favorites_group_name_hint)) }
             )
@@ -362,7 +372,11 @@ internal fun GroupNameDialog(
                     submitting = true
                     scope.launch {
                         val result = onSubmit(name.trim())
-                        duplicate = result is GroupEditResult.DuplicateName
+                        errorText = when (result) {
+                            is GroupEditResult.Success -> null
+                            GroupEditResult.DuplicateName -> duplicateText
+                            GroupEditResult.LimitReached -> limitText
+                        }
                         submitting = false
                     }
                 }

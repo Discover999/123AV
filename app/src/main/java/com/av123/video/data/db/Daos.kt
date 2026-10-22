@@ -196,6 +196,9 @@ interface FavoriteGroupDao {
     @Query("SELECT * FROM favorite_group_items")
     suspend fun getAllItems(): List<FavoriteGroupItemEntity>
 
+    @Query("SELECT COUNT(*) FROM favorite_groups")
+    suspend fun count(): Int
+
     @Query("SELECT * FROM favorite_groups WHERE name = :name LIMIT 1")
     suspend fun findByName(name: String): FavoriteGroupEntity?
 

@@ -193,7 +193,7 @@ fun ErrorState(
 fun EmptyState(
     icon: ImageVector,
     title: String,
-    subtitle: String,
+    subtitle: String? = null,
     modifier: Modifier = Modifier,
     actionText: String? = null,
     onAction: (() -> Unit)? = null
@@ -215,13 +215,15 @@ fun EmptyState(
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(6.dp))
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+        if (subtitle != null) {
+            Spacer(Modifier.height(6.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
         if (actionText != null && onAction != null) {
             Spacer(Modifier.height(12.dp))
             val haptics = rememberAppHaptics()
