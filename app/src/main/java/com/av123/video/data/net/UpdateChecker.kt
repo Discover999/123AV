@@ -84,13 +84,20 @@ object UpdateChecker {
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) error("HTTP ${response.code}")
             val xml = response.body.string()
-            val entry = Regex(
-                """<entry>.*?<title>([^<]+)</title>.*?href="([^"]+)"""",
-                RegexOption.DOT_MATCHES_ALL
-            ).find(xml) ?: error("no release entry")
-            val tag = entry.groupValues[1].trim()
-            if (tag.isBlank()) error("empty tag")
-            return Release(tag = tag, pageUrl = entry.groupValues[2].trim())
+            // 先切出第一条 entry 再在段内找链接：<title> 之前是 rel="alternate" 的 Release 页，
+            // 之后是 <content> 里的 compare 链接（compare/v0.1.4...v0.1.5），
+            // 直接取「title 之后的第一个 href」会跳到两版对比页
+            val entry = Regex("""<entry>([\s\S]*?)</entry>""").find(xml)
+                ?.groupValues?.get(1) ?: error("no release entry")
+            val tag = Regex("""<title>([^<]+)</title>""").find(entry)
+                ?.groupValues?.get(1)?.trim()?.takeIf { it.isNotBlank() }
+                ?: error("empty tag")
+            val pageUrl = Regex("""<link[^>]*rel="alternate"[^>]*href="([^"]+)"""")
+                .find(entry)?.groupValues?.get(1)
+                ?: Regex("""href="([^"]*/releases/tag/[^"]+)"""")
+                    .find(entry)?.groupValues?.get(1)
+                ?: "https://github.com/$REPO/releases/tag/$tag"
+            return Release(tag = tag, pageUrl = pageUrl)
         }
     }
 
