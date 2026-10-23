@@ -82,7 +82,7 @@
     <string name="history_total_less_than_minute">不足 1 分钟</string>
     <string name="history_finished">已看完</string>
     <string name="history_not_started">未开始</string>
-    <string name="history_episode_badge">第 %1$d 集</string>
+    <string name="history_episode_badge">选集 %1$d</string>
     <string name="history_time_today">今天 %1$s</string>
     <string name="history_time_yesterday">昨天 %1$s</string>
     <string name="history_filter_empty_title">没有符合条件的记录</string>

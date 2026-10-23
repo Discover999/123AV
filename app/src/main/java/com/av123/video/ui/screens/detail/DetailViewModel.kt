@@ -19,8 +19,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.launch
+
+/** 用缓存地址起播后，等这么久还没进 READY 就判定失效并重新抓流 */
+private const val CACHED_PLAYBACK_TIMEOUT_MS = 5_000L
 
 class DetailViewModel(
     private val videoRepository: VideoRepository,
@@ -62,6 +67,9 @@ class DetailViewModel(
     /** 历史记录里上次停留的选集下标（0 起）；详情到达后据此自动切回该集 */
     private var resumeEpisodeIndex = 0
 
+    /** 本会话内每集最后停留的位置：换回看过的集时从那里续播，而不是从头开始 */
+    private val episodePositions = mutableMapOf<Int, Long>()
+
     /** 当前选中的选集下标（0 起）；切换后驱动抓流目标页与播放器换源 */
     private val _selectedEpisodeIndex = MutableStateFlow(0)
     val selectedEpisodeIndex: StateFlow<Int> = _selectedEpisodeIndex.asStateFlow()
@@ -76,6 +84,12 @@ class DetailViewModel(
      */
     private val _captureEpoch = MutableStateFlow(0)
     val captureEpoch: StateFlow<Int> = _captureEpoch.asStateFlow()
+
+    /**
+     * 缓存播放地址的起播兜底：用缓存地址起播后若迟迟进不了 READY，
+     * 说明这条 m3u8 已失效（站点签名/防盗链），作废缓存并重新抓流。
+     */
+    private var cachedPlaybackWatchdog: Job? = null
 
     /**
      * 详情页“相关推荐”当前**可见**的卡片（完整池的第一页，点“加载更多”就地追加）。
@@ -136,6 +150,10 @@ class DetailViewModel(
      * 历史列表展示进度条，再次进入同一影片时自动切回上次选集并从该位置续播。
      */
     fun savePlaybackProgress(episodeIndex: Int, positionMs: Long, durationMs: Long) {
+        // 记住这一集停留的位置：换走再换回来时从这儿续播
+        if (episodeIndex >= 0 && positionMs >= 0L) {
+            episodePositions[episodeIndex] = positionMs
+        }
         val video = _video.value ?: return
         viewModelScope.launch {
             historyRepository.updateProgress(video, positionMs, durationMs, episodeIndex)
@@ -285,12 +303,28 @@ class DetailViewModel(
         if (index !in episodes.indices) return
         if (index == _selectedEpisodeIndex.value) return
         _selectedEpisodeIndex.value = index
-        if (!keepResumePosition) _resumePositionMs.value = 0L
+        // 手动换集：换回看过的集就从该集上次离开的位置接着播；没看过的集仍从头
+        if (!keepResumePosition) {
+            _resumePositionMs.value = episodePositions[index] ?: 0L
+        }
         _resolveFailed.value = false
+        cachedPlaybackWatchdog?.cancel()
         val cached = videoRepository.getCachedPlayback(videoId, index)
         if (cached != null) {
             _playback.value = cached
             playbackFromCache = true
+            // 缓存里的地址只证明「曾经能播」：起来之前挂一个兜底，
+            // 到点仍未进 READY 就作废并重新抓流，避免失效地址把播放器静默挂住
+            cachedPlaybackWatchdog = viewModelScope.launch {
+                delay(CACHED_PLAYBACK_TIMEOUT_MS)
+                if (playbackFromCache && _playback.value?.url == cached.url) {
+                    videoRepository.invalidatePlayback(videoId, index)
+                    playbackFromCache = false
+                    _playback.value = null
+                    _resolveFailed.value = false
+                    _captureEpoch.value += 1
+                }
+            }
         } else {
             // 播放源置空 -> 播放区显示“解析中”，抓流 WebView 以新代次重建抓该集
             playbackFromCache = false
@@ -305,6 +339,8 @@ class DetailViewModel(
      */
     fun onPlaybackCaptured(url: String, headers: Map<String, String>) {
         if (url.isBlank()) return
+        // 抓到新地址说明走的不是缓存那条路，兜底计时作废
+        cachedPlaybackWatchdog?.cancel()
         val existing = _playback.value
         when {
             existing == null -> _playback.value = PlaybackSource(url, headers)
@@ -323,6 +359,8 @@ class DetailViewModel(
      * 本会话内再次进入该影片即可直接起播、无需重新抓流。
      */
     fun onPlaybackReady() {
+        // 地址已被播放器验证可用，缓存兜底计时作废
+        cachedPlaybackWatchdog?.cancel()
         val current = _playback.value ?: return
         videoRepository.savePlayback(
             videoId,
@@ -337,6 +375,7 @@ class DetailViewModel(
      * 实时抓流得到的地址失败则不干预，由播放器自身的错误重试层处理。
      */
     fun onPlaybackError() {
+        cachedPlaybackWatchdog?.cancel()
         val wasCached = playbackFromCache
         videoRepository.invalidatePlayback(videoId, _selectedEpisodeIndex.value)
         if (wasCached) {

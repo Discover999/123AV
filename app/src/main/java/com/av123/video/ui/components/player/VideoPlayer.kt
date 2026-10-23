@@ -309,14 +309,15 @@ fun VideoPlayer(
     }
 
     // 播放器状态聚合
-    var isPlaying by remember { mutableStateOf(player.playWhenReady) }
-    var playbackState by remember { mutableIntStateOf(player.playbackState) }
-    var position by remember { mutableLongStateOf(player.currentPosition) }
-    var duration by remember { mutableLongStateOf(player.duration.coerceAtLeast(0L)) }
+    // 全部以 player 为 key：换源会换一个播放器实例，旧实例的读数不能残留
+    var isPlaying by remember(player) { mutableStateOf(player.playWhenReady) }
+    var playbackState by remember(player) { mutableIntStateOf(player.playbackState) }
+    var position by remember(player) { mutableLongStateOf(player.currentPosition) }
+    var duration by remember(player) { mutableLongStateOf(player.duration.coerceAtLeast(0L)) }
     // 以 player 为 key：缓存地址失效后重新抓流会换播放器实例，
     // 旧实例上的错误状态不能残留到新实例的错误层上
     var error by remember(player) { mutableStateOf<PlaybackException?>(player.playerError) }
-    var bufferedPosition by remember { mutableLongStateOf(player.bufferedPosition) }
+    var bufferedPosition by remember(player) { mutableLongStateOf(player.bufferedPosition) }
     var isControllerVisible by remember { mutableStateOf(true) }
     // 控制层任意触摸都重置 3s 自动隐藏计时
     var controlInteractionTick by remember { mutableIntStateOf(0) }
@@ -452,7 +453,9 @@ fun VideoPlayer(
     // 协程以 isPlaying/playbackState 为 key 重启：暂停/缓冲/结束期间协程取消，
     // lastTick 复位，恢复播放后不会把暂停期间补偿计入；单次增量钳制为 2 个轮询间隔，
     // 防止主线程卡顿或 tick 漂移造成虚高。
-    LaunchedEffect(isPlaying, playbackState) {
+    // player 也是 key：换源后必须重启轮询，否则协程还在读已 release 的旧实例，
+    // 进度条与时间会一直停在切换前（2026-10-23 换集后进度条卡住）
+    LaunchedEffect(player, isPlaying, playbackState) {
         var lastTickMs = SystemClock.elapsedRealtime()
         while (true) {
             val now = SystemClock.elapsedRealtime()
@@ -602,10 +605,13 @@ fun VideoPlayer(
                     this.player = player
                 }.also { playerViewHolder[0] = it }
             },
-            // 切换画面比例只走 update：同一 PlayerView 改 resizeMode，
-            // 绝不重新 factory 或重绑 player（防止 SurfaceView 重建黑帧）
+            // update 只改属性、不重建 factory（避免 SurfaceView 重建黑帧），
+            // 但 URL 变化时 remember 会换一个新的 ExoPlayer 实例，必须重新绑到同一个视图上：
+            // 否则 PlayerView 仍指向已 release 的旧实例，画面黑、无声，
+            // 而新实例照样回调 READY——换回播过的集会一直卡住（2026-10-23）
             update = { playerView ->
                 playerView.resizeMode = resizeMode.toMedia3ResizeMode()
+                if (playerView.player !== player) playerView.player = player
             },
             // 离开组合（如全屏/竖屏切换导致分支重建）时解绑 player，
             // 避免销毁的 PlayerView 继续持有 surface；重建时由 factory 重新绑定
