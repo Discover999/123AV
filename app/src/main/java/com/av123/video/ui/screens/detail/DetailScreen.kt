@@ -526,6 +526,8 @@ private fun DetailContent(
             resizeMode = resizeMode,
             onResizeModeChange = onResizeModeChange,
             onEpisodeEnded = onEpisodeEnded,
+            episodes = video.episodes,
+            onSelectEpisode = onSelectEpisode,
             modifier = if (isFullscreen) {
                 Modifier.fillMaxSize()
             } else {

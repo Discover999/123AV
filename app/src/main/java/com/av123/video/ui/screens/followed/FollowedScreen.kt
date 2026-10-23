@@ -63,8 +63,7 @@ import com.av123.video.ui.theme.appCardContainerColor
 fun FollowedScreen(
     onBack: () -> Unit,
     onVideoClick: (String) -> Unit,
-    onOpenChannel: (title: String, path: String) -> Unit,
-    onOpenChannels: () -> Unit
+    onOpenChannel: (title: String, path: String) -> Unit
 ) {
     val container = LocalAppContainer.current
     val viewModel: FollowedViewModel = viewModel {
@@ -116,8 +115,6 @@ fun FollowedScreen(
                 icon = AppIcons.PersonAddAltOutline,
                 title = stringResource(R.string.followed_empty_title),
                 subtitle = stringResource(R.string.followed_empty_subtitle),
-                actionText = stringResource(R.string.followed_empty_action),
-                onAction = onOpenChannels,
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()

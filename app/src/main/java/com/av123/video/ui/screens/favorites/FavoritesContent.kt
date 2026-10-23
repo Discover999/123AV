@@ -59,9 +59,7 @@ internal fun FavoritesContent(
     onEnterSelection: (String) -> Unit,
     onVideoClick: (String) -> Unit,
     onSwipeDelete: (FavoriteRecord) -> Unit,
-    listLayout: Boolean,
-    onEmptyAction: () -> Unit,
-    emptyActionLabel: String
+    listLayout: Boolean
 ) {
     val searchFocus = remember { FocusRequester() }
     LaunchedEffect(searchActive) {
@@ -82,9 +80,7 @@ internal fun FavoritesContent(
             } else {
                 null
             },
-            modifier = Modifier.fillMaxSize(),
-            actionText = if (isAll) emptyActionLabel else null,
-            onAction = if (isAll) onEmptyAction else null
+            modifier = Modifier.fillMaxSize()
         )
         return
     }

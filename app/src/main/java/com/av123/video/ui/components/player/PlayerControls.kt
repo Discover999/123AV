@@ -153,6 +153,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.av123.video.MainActivity
 import com.av123.video.R
+import com.av123.video.data.model.Episode
 import com.av123.video.data.prefs.ResizeModeOption
 import com.av123.video.ui.util.AppLog
 import com.av123.video.ui.util.findActivity
@@ -181,6 +182,8 @@ internal fun PlayerControls(
     selectedSpeed: Float,
     availableTracks: List<VideoTrack>,
     selectedTrack: VideoTrack?,
+    episodes: List<Episode>,
+    selectedEpisodeIndex: Int,
     onTitleBack: () -> Unit,
     onTogglePlay: () -> Unit,
     onSeekBack: () -> Unit,
@@ -189,6 +192,7 @@ internal fun PlayerControls(
     onSeekDragStateChange: (Boolean) -> Unit,
     onSpeedChange: (Float) -> Unit,
     onTrackSelected: (VideoTrack?) -> Unit,
+    onSelectEpisode: (Int) -> Unit,
     onControlPopupVisibleChange: (Boolean) -> Unit,
     onToggleFullscreen: () -> Unit,
     onShowPlaybackStats: () -> Unit,
@@ -536,6 +540,32 @@ internal fun PlayerControls(
                     )
                 }
 
+                // 选集：只在全屏且确实有多集时出现，紧挨倍速右侧；点开右侧设置面板
+                if (isFullscreen && episodes.size > 1) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    TextButton(
+                        onClick = {
+                            haptics.tick()
+                            showSettingsSheet = true
+                        },
+                        shape = AppShapes.Large,
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.12f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 0.dp),
+                        modifier = Modifier.height(30.dp)
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.player_episodes_n, selectedEpisodeIndex + 1
+                            ),
+                            color = Color.White,
+                            fontSize = AppTypeScale.Label,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
                 if (isFullscreen && availableTracks.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Box {
@@ -672,6 +702,9 @@ internal fun PlayerControls(
                 onResizeModeChange = onResizeModeChange,
                 selectedSpeed = selectedSpeed,
                 onSpeedChange = onSpeedChange,
+                episodes = episodes,
+                selectedEpisodeIndex = selectedEpisodeIndex,
+                onSelectEpisode = onSelectEpisode,
                 autoPlayNext = autoPlayNext,
                 onAutoPlayNextChange = onAutoPlayNextChange,
                 flipToExitEnabled = flipToExitEnabled,
@@ -696,6 +729,9 @@ private fun SettingsSheet(
     onResizeModeChange: (ResizeModeOption) -> Unit,
     selectedSpeed: Float,
     onSpeedChange: (Float) -> Unit,
+    episodes: List<Episode>,
+    selectedEpisodeIndex: Int,
+    onSelectEpisode: (Int) -> Unit,
     autoPlayNext: Boolean,
     onAutoPlayNextChange: (Boolean) -> Unit,
     flipToExitEnabled: Boolean,
@@ -763,6 +799,55 @@ private fun SettingsSheet(
                         else FontWeight.Normal,
                         maxLines = 1
                     )
+                }
+            }
+        }
+        // 选集：画面比例下方，只在多集时出现；点一集即切换并收起面板
+        if (episodes.size > 1) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.player_episodes),
+                color = Color.White.copy(alpha = 0.55f),
+                fontSize = AppTypeScale.Label
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                episodes.indices.chunked(4).forEach { row ->
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        row.forEach { index ->
+                            val selected = index == selectedEpisodeIndex
+                            Box(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(36.dp)
+                                    .clip(AppShapes.Small)
+                                    .background(
+                                        if (selected) MaterialTheme.colorScheme.primary
+                                        else Color.White.copy(alpha = 0.08f)
+                                    )
+                                    .clickable {
+                                        onSelectEpisode(index)
+                                        onDismiss()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = episodes[index].name.ifBlank {
+                                        stringResource(R.string.detail_episode_n, index + 1)
+                                    },
+                                    color = if (selected) Color.White
+                                    else Color.White.copy(alpha = 0.75f),
+                                    fontSize = AppTypeScale.Label,
+                                    fontWeight = if (selected) FontWeight.SemiBold
+                                    else FontWeight.Normal,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        }
+                        // 最后一行不足 4 个时用空位撑住，避免格子被拉宽
+                        repeat(4 - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
                 }
             }
         }

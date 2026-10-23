@@ -101,7 +101,6 @@ private val HistoryEarlierFormat = DateTimeFormatter.ofPattern("MM-dd HH:mm", Lo
 @Composable
 fun HistoryScreen(
     onVideoClick: (String) -> Unit,
-    onNavigateHome: () -> Unit,
     scrollToTopTick: Int = 0
 ) {
     val container = LocalAppContainer.current
@@ -236,8 +235,6 @@ fun HistoryScreen(
                 icon = AppIcons.HistoryOutline,
                 title = stringResource(R.string.history_empty_title),
                 subtitle = stringResource(R.string.history_empty_subtitle),
-                actionText = stringResource(R.string.action_go_home),
-                onAction = onNavigateHome,
                 modifier = Modifier
                     .padding(padding)
                     .fillMaxSize()

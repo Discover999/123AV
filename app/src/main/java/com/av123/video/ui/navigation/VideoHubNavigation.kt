@@ -678,13 +678,6 @@ private fun NavGraphBuilder.listDestinations(
     composable(Routes.HISTORY) {
         HistoryScreen(
             onVideoClick = onVideoClick,
-            onNavigateHome = {
-                navController.navigate(Routes.HOME) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
             scrollToTopTick = scrollToTopTicks[Routes.HISTORY] ?: 0
         )
     }
@@ -714,13 +707,6 @@ private fun NavGraphBuilder.listDestinations(
     ) {
         FavoritesScreen(
             onBack = { navController.popBackStack() },
-            onNavigateHome = {
-                navController.navigate(Routes.HOME) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            },
             onVideoClick = onVideoClick
         )
     }
@@ -735,14 +721,6 @@ private fun NavGraphBuilder.listDestinations(
             onVideoClick = onVideoClick,
             onOpenChannel = { title, channelPath ->
                 navController.navigate(Routes.channel(title, channelPath))
-            },
-            onOpenChannels = {
-                // 空关注页的“去频道找演员”：切到频道 Tab，复用已有栈
-                navController.navigate(Routes.CHANNELS) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
             }
         )
     }

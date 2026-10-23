@@ -546,7 +546,9 @@ internal fun PlayerArea(
     onFlipToExitChange: (Boolean) -> Unit = {},
     resizeMode: ResizeModeOption = ResizeModeOption.FIT,
     onResizeModeChange: (ResizeModeOption) -> Unit = {},
-    onEpisodeEnded: () -> Unit = {}
+    onEpisodeEnded: () -> Unit = {},
+    episodes: List<Episode> = emptyList(),
+    onSelectEpisode: (Int) -> Unit = {}
 ) {
     val detailCode = video.detailCodeFromInfoRows()
 
@@ -563,6 +565,8 @@ internal fun PlayerArea(
             onPlaybackError = onPlaybackError,
             startPositionMs = startPositionMs,
             episodeIndex = selectedEpisodeIndex,
+            episodes = episodes,
+            onSelectEpisode = onSelectEpisode,
             onPlaybackProgress = onPlaybackProgress,
             onPlayingElapsed = onPlayingElapsed,
             pipEnabled = pipEnabled,

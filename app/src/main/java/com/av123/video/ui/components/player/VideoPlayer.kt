@@ -146,6 +146,7 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.av123.video.MainActivity
 import com.av123.video.R
+import com.av123.video.data.model.Episode
 import com.av123.video.data.prefs.ResizeModeOption
 import com.av123.video.ui.util.AppLog
 import com.av123.video.ui.util.findActivity
@@ -231,6 +232,8 @@ fun VideoPlayer(
     onPlaybackError: () -> Unit = {},
     startPositionMs: Long = 0L,
     episodeIndex: Int = 0,
+    episodes: List<Episode> = emptyList(),
+    onSelectEpisode: (Int) -> Unit = {},
     onPlaybackProgress: (episodeIndex: Int, positionMs: Long, durationMs: Long) -> Unit = { _, _, _ -> },
     onPlayingElapsed: (deltaMs: Long) -> Unit = {},
     onEpisodeEnded: () -> Unit = {},
@@ -880,6 +883,9 @@ fun VideoPlayer(
                 selectedSpeed = selectedSpeed,
                 availableTracks = availableTracks,
                 selectedTrack = selectedTrack,
+                episodes = episodes,
+                selectedEpisodeIndex = episodeIndex,
+                onSelectEpisode = onSelectEpisode,
                 onTitleBack = { onFullscreenChange(false) },
                 onTogglePlay = {
                     togglePlayOrReplay()

@@ -96,7 +96,6 @@
     <string name="favorites_empty_subtitle">在详情页点击收藏，喜欢的内容会出现在这里</string>
     <string name="profile_floating_nav">悬浮导航栏</string>
     <string name="profile_floating_nav_desc">底部导航改为悬浮胶囊样式</string>
-    <string name="action_go_home">去首页</string>
     <string name="action_clear_search">清空搜索</string>
     <string name="favorites_clear">清空收藏</string>
     <string name="favorites_clear_confirm">确定清空全部收藏吗？</string>
@@ -151,7 +150,6 @@
     <string name="followed_refresh">刷新新片</string>
     <string name="followed_empty_title">还没有关注的演员</string>
     <string name="followed_empty_subtitle">在女演员个人页点击“关注”，新片会聚合到这里</string>
-    <string name="followed_empty_action">去频道找演员</string>
     <string name="followed_summary">%1$d 位关注 · %2$d 位暂无新片</string>
     <string name="followed_view_all">查看全部</string>
     <string name="followed_section_failed">这个演员的新片加载失败</string>
@@ -268,6 +266,8 @@
     <string name="player_mute">静音</string>
     <string name="player_unmute">取消静音</string>
     <string name="player_track_auto">自动</string>
+    <string name="player_episodes">选集</string>
+    <string name="player_episodes_n">选集%1$d</string>
     <string name="player_settings">设置</string>
     <string name="player_settings_title">播放设置</string>
     <string name="player_speed_title">倍速</string>
