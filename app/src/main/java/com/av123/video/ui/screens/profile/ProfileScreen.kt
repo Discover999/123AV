@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -63,6 +64,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.av123.video.LocalAppContainer
+import com.av123.video.ui.screens.about.AboutSheet
 import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.data.prefs.AppLockTimeout
@@ -109,6 +111,7 @@ fun ProfileScreen(
     val scope = rememberCoroutineScope()
     var showDarkModeSheet by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
+    var showAboutSheet by remember { mutableStateOf(false) }
     var showLockUnavailableDialog by remember { mutableStateOf(false) }
     var showLockTimeoutSheet by remember { mutableStateOf(false) }
     var showImportConfirm by remember { mutableStateOf(false) }
@@ -590,26 +593,34 @@ fun ProfileScreen(
                     title = stringResource(R.string.profile_group_about),
                     modifier = Modifier.padding(horizontal = 16.dp)
                 ) {
+                    // 免责声明在前，版本在后
+                    SettingsItem(
+                        icon = AppIcons.DescriptionOutline,
+                        iconContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        title = stringResource(R.string.about_disclaimer),
+                        trailing = {
+                            Icon(
+                                AppIcons.ChevronRight,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        },
+                        onClick = { showAboutDialog = true }
+                    )
                     SettingsItem(
                         icon = AppIcons.Info,
                         iconContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                         iconTint = MaterialTheme.colorScheme.onSurfaceVariant,
                         title = stringResource(R.string.profile_about_version),
                         trailing = {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text(
-                                    text = "v$versionName",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Icon(
-                                    AppIcons.ChevronRight,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
+                            Text(
+                                text = "v$versionName",
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         },
-                        onClick = { showAboutDialog = true }
+                        onClick = { showAboutSheet = true }
                     )
                 }
             }
@@ -661,30 +672,43 @@ fun ProfileScreen(
         )
     }
 
+    if (showAboutSheet) {
+        AboutSheet(onDismiss = { showAboutSheet = false })
+    }
+
     if (showAboutDialog) {
         AlertDialog(
             onDismissRequest = { showAboutDialog = false },
-            title = { Text(stringResource(R.string.profile_about_dialog_title)) },
+            title = { Text(stringResource(R.string.about_disclaimer)) },
             text = {
                 Column(
-                    modifier = Modifier.verticalScroll(rememberScrollState()),
+                    modifier = Modifier
+                        .heightIn(max = 420.dp)
+                        .verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = stringResource(R.string.profile_about_dialog_intro),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = stringResource(R.string.profile_about_dialog_disclaimer_title),
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = stringResource(R.string.profile_about_dialog_disclaimer),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    listOf(
+                        R.string.about_disclaimer_scope_title to
+                            R.string.about_disclaimer_scope_body,
+                        R.string.about_disclaimer_content_title to
+                            R.string.about_disclaimer_content_body,
+                        R.string.about_disclaimer_data_title to
+                            R.string.about_disclaimer_data_body,
+                        R.string.about_disclaimer_liability_title to
+                            R.string.about_disclaimer_liability_body
+                    ).forEach { (titleRes, bodyRes) ->
+                        Text(
+                            text = stringResource(titleRes),
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = stringResource(bodyRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             },
             confirmButton = {
