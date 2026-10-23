@@ -570,9 +570,6 @@ fun VideoPlayer(
         }
     }
 
-    // 全屏/退出全屏时同步系统 UI
-    FullscreenSystemUiSync(isFullscreen)
-
     // 返回键：锁定态先解锁，未锁定再退出全屏
     BackHandler(enabled = isFullscreen) {
         if (isLocked) {

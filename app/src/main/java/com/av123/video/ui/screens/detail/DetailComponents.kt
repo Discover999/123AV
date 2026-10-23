@@ -94,6 +94,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.av123.video.LocalAppContainer
+import com.av123.video.ui.components.player.FullscreenSystemUiSync
 import com.av123.video.ui.components.player.VideoPlayer
 import com.av123.video.R
 import com.av123.video.ui.theme.Motion
@@ -552,6 +553,10 @@ internal fun PlayerArea(
 ) {
     val detailCode = video.detailCodeFromInfoRows()
 
+    // 方向与系统栏同步挂在这一层：换集会清空 playbackUrl、VideoPlayer 会短暂离开组合，
+    // 若同步写在 VideoPlayer 里，onDispose 会把全屏还原成竖屏，解析完再切回来
+    FullscreenSystemUiSync(isFullscreen)
+
     if (playbackStarted && playbackUrl.isNotBlank()) {
         // 尺寸（竖屏 16:9 / 全屏 fillMaxSize）由调用方通过 modifier 显式给定，
         // 内部不再叠加，保证全屏切换时 PlayerView 只做同一节点的尺寸变化
@@ -585,7 +590,11 @@ internal fun PlayerArea(
         val haptics = rememberAppHaptics()
         Box(
             modifier = modifier
-                .shimmerPlaceholder()
+                // 全屏换集时会短暂回到这一层：铺黑底而不是整屏封面，避免画面闪一下
+                .then(
+                    if (isFullscreen) Modifier.background(Color.Black)
+                    else Modifier.shimmerPlaceholder()
+                )
                 // 解析中点击无意义，禁用点击；失败态点击任意处重试，就绪态点击播放
                 .clickable(enabled = !isResolving) {
                     // 起播与解析失败重试都属于有后果的操作
@@ -594,8 +603,9 @@ internal fun PlayerArea(
                 },
             contentAlignment = Alignment.Center
         ) {
-            // 与首页列表流一致的封面图；加载中/无封面时显示波纹空白占位
-            if (video.coverUrl.isNotBlank()) {
+            // 与首页列表流一致的封面图；加载中/无封面时显示波纹空白占位。
+            // 全屏换集只铺黑底，不铺封面——整屏封面会和上一集画面割裂
+            if (!isFullscreen && video.coverUrl.isNotBlank()) {
                 AsyncImage(
                     model = video.coverUrl,
                     contentDescription = video.title,
