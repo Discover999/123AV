@@ -43,7 +43,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
@@ -79,8 +78,11 @@ import com.av123.video.data.model.FavoriteRecord
 import com.av123.video.data.prefs.VideoLayout
 import com.av123.video.data.repository.FavoriteGroup
 import com.av123.video.data.repository.GroupEditResult
+import com.av123.video.ui.components.AppSnackbarHost
 import com.av123.video.ui.components.EmptyState
+import com.av123.video.ui.components.SnackbarTone
 import com.av123.video.ui.components.VideoGridCard
+import com.av123.video.ui.components.showAppSnackbar
 import com.av123.video.ui.util.rememberAppHaptics
 import kotlinx.coroutines.launch
 
@@ -194,10 +196,11 @@ fun FavoritesScreen(
                             viewModel.delete(deletedIds)
                             exitSelection()
                             scope.launch {
-                                val result = snackbarHostState.showSnackbar(
+                                val result = snackbarHostState.showAppSnackbar(
                                     message = resources.getString(
                                         R.string.favorites_deleted_multi, deleted.size
                                     ),
+                                    tone = SnackbarTone.Removal,
                                     actionLabel = resources.getString(R.string.favorites_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
@@ -235,7 +238,7 @@ fun FavoritesScreen(
             }
         },
         snackbarHost = {
-            SnackbarHost(
+            AppSnackbarHost(
                 snackbarHostState,
                 // 悬浮底栏时让出胶囊与手势条，撤销提示才点得到
                 modifier = Modifier.padding(
@@ -306,10 +309,11 @@ fun FavoritesScreen(
                                 state.groupItems.filter { it.videoId == record.video.id }
                             viewModel.delete(setOf(record.video.id))
                             scope.launch {
-                                val result = snackbarHostState.showSnackbar(
+                                val result = snackbarHostState.showAppSnackbar(
                                     message = resources.getString(
                                         R.string.favorites_deleted_single
                                     ),
+                                    tone = SnackbarTone.Removal,
                                     actionLabel = resources.getString(R.string.favorites_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
@@ -341,10 +345,11 @@ fun FavoritesScreen(
                     viewModel.clear()
                     showClearDialog = false
                     scope.launch {
-                        val result = snackbarHostState.showSnackbar(
+                        val result = snackbarHostState.showAppSnackbar(
                             message = resources.getString(
                                 R.string.favorites_deleted_multi, cleared.size
                             ),
+                            tone = SnackbarTone.Removal,
                             actionLabel = resources.getString(R.string.favorites_undo),
                             withDismissAction = true,
                             duration = SnackbarDuration.Short
@@ -417,8 +422,9 @@ fun FavoritesScreen(
                 if (toAdd.isNotEmpty()) {
                     viewModel.addToGroup(group.id, toAdd)
                     scope.launch {
-                        val result = snackbarHostState.showSnackbar(
+                        val result = snackbarHostState.showAppSnackbar(
                             message = resources.getString(R.string.favorites_added_group, group.name),
+                            tone = SnackbarTone.Success,
                             actionLabel = resources.getString(R.string.favorites_undo),
                             withDismissAction = true,
                             duration = SnackbarDuration.Short

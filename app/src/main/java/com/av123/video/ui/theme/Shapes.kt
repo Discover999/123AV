@@ -3,6 +3,7 @@ package com.av123.video.ui.theme
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -13,8 +14,9 @@ object AppShapes {
     /** 角标、小标签、小色块 */
     val Small: Shape = RoundedCornerShape(8.dp)
 
-    /** 视频缩略图卡片（用户确认过的 10dp） */
-    val Compact: Shape = RoundedCornerShape(10.dp)
+    /** 视频缩略图卡片（用户确认过的 10dp）；卡片内贴边的图要照这个值裁，否则会露出卡片底 */
+    val CompactRadius: Dp = 10.dp
+    val Compact: Shape = RoundedCornerShape(CompactRadius)
 
     /** 缩略图、输入框、次级容器 */
     val Medium: Shape = RoundedCornerShape(12.dp)

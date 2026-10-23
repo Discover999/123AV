@@ -38,7 +38,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.VerticalDivider
@@ -92,8 +91,11 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeEffect
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
+import com.av123.video.ui.components.AppSnackbarHost
 import com.av123.video.ui.components.BrandLogo
+import com.av123.video.ui.components.SnackbarTone
 import com.av123.video.ui.components.appErrorText
+import com.av123.video.ui.components.showAppSnackbar
 import com.av123.video.ui.screens.channels.ChannelScreen
 import com.av123.video.ui.screens.channels.ChannelsScreen
 import com.av123.video.ui.screens.detail.DetailScreen
@@ -206,7 +208,10 @@ private fun rememberGlobalSnackbarHostState(): SnackbarHostState {
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(container) {
         container.errorReporter.events.collect { event ->
-            snackbarHostState.showSnackbar(appErrorText(appContext, event.error))
+            snackbarHostState.showAppSnackbar(
+                message = appErrorText(appContext, event.error),
+                tone = SnackbarTone.Error
+            )
         }
     }
     return snackbarHostState
@@ -434,12 +439,13 @@ private fun CompactShell() {
     ) {
         Scaffold(
             snackbarHost = {
-                SnackbarHost(
+                AppSnackbarHost(
                     snackbarHostState,
-                    // 悬浮态底栏槽位高度为 0，Scaffold 不会为 Snackbar 让位：
-                    // 手动补上胶囊高度与手势条，提示才落在胶囊上缘之上
+                    // 悬浮态或没有底栏（详情等页面）时槽位高度为 0，Scaffold 不会为提示让位：
+                    // 手动补上胶囊高度与手势条，提示才不会贴到屏幕最底
                     modifier = Modifier.padding(
-                        bottom = listBottomInset + if (floatingNavBar) navBarBottom else 0.dp
+                        bottom = listBottomInset +
+                            if (floatingNavBar || !showBottomBar) navBarBottom else 0.dp
                     )
                 )
             },
@@ -542,7 +548,7 @@ private fun ExpandedShell() {
                 .fillMaxHeight()
         ) {
             Scaffold(
-                snackbarHost = { SnackbarHost(snackbarHostState) },
+                snackbarHost = { AppSnackbarHost(snackbarHostState) },
                 bottomBar = {
                     BottomBarWithAnimation(
                         visible = !detailFullscreen &&

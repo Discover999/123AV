@@ -153,7 +153,12 @@ fun VideoCover(
     Box(
         modifier = modifier
             .aspectRatio(ratio)
-            .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+            .clip(
+                RoundedCornerShape(
+                    topStart = AppShapes.CompactRadius,
+                    topEnd = AppShapes.CompactRadius
+                )
+            )
             .shimmerPlaceholder()
     ) {
         if (video.coverUrl.isNotBlank()) {

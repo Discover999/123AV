@@ -138,8 +138,16 @@ fun appErrorText(context: Context, error: AppError): String = when (error.kind) 
     AppErrorKind.TIMEOUT -> context.getString(R.string.error_timeout)
     AppErrorKind.SSL -> context.getString(R.string.error_ssl)
     AppErrorKind.NETWORK -> context.getString(R.string.error_network)
-    AppErrorKind.HTTP_CLIENT ->
-        context.getString(R.string.error_http_client, error.httpCode ?: 0)
+    AppErrorKind.HTTP_CLIENT -> {
+        val code = error.httpCode ?: 0
+        when (code) {
+            401, 403 -> context.getString(R.string.error_http_forbidden, code)
+            404, 410 -> context.getString(R.string.error_http_not_found)
+            408 -> context.getString(R.string.error_timeout)
+            429 -> context.getString(R.string.error_http_too_many, code)
+            else -> context.getString(R.string.error_http_client, code)
+        }
+    }
     AppErrorKind.HTTP_SERVER ->
         context.getString(R.string.error_http_server, error.httpCode ?: 0)
     AppErrorKind.PARSE -> context.getString(R.string.error_parse)

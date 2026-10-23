@@ -41,7 +41,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
@@ -70,9 +69,12 @@ import com.av123.video.LocalAppContainer
 import com.av123.video.LocalBottomBarInset
 import com.av123.video.R
 import com.av123.video.data.model.WatchRecord
+import com.av123.video.ui.components.AppSnackbarHost
 import com.av123.video.ui.components.EmptyState
+import com.av123.video.ui.components.SnackbarTone
 import com.av123.video.ui.components.SwipeRevealRow
 import com.av123.video.ui.components.shimmerPlaceholder
+import com.av123.video.ui.components.showAppSnackbar
 import com.av123.video.ui.theme.AppShapes
 import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.util.rememberAppHaptics
@@ -172,10 +174,11 @@ fun HistoryScreen(
                             viewModel.delete(selectedIds)
                             exitSelection()
                             scope.launch {
-                                val result = snackbarHostState.showSnackbar(
+                                val result = snackbarHostState.showAppSnackbar(
                                     message = resources.getString(
                                         R.string.history_deleted_multi, deleted.size
                                     ),
+                                    tone = SnackbarTone.Removal,
                                     actionLabel = resources.getString(R.string.history_undo),
                                     withDismissAction = true,
                                     duration = SnackbarDuration.Short
@@ -218,7 +221,7 @@ fun HistoryScreen(
             }
         },
         snackbarHost = {
-            SnackbarHost(
+            AppSnackbarHost(
                 snackbarHostState,
                 // 悬浮底栏时让出胶囊与手势条，撤销提示才点得到
                 modifier = Modifier.padding(
@@ -312,8 +315,9 @@ fun HistoryScreen(
                                     openRowId = null
                                     viewModel.delete(record.video.id)
                                     scope.launch {
-                                        val result = snackbarHostState.showSnackbar(
+                                        val result = snackbarHostState.showAppSnackbar(
                                             message = resources.getString(R.string.history_deleted_single),
+                                            tone = SnackbarTone.Removal,
                                             actionLabel = resources.getString(R.string.history_undo),
                                             withDismissAction = true,
                                             duration = SnackbarDuration.Short

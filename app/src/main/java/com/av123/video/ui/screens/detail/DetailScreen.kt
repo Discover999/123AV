@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -47,7 +48,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -95,13 +95,16 @@ import com.av123.video.data.model.InfoChip
 import com.av123.video.data.model.Video
 import com.av123.video.data.model.VideoInfoRow
 import com.av123.video.data.prefs.ResizeModeOption
+import com.av123.video.ui.components.AppSnackbarHost
 import com.av123.video.ui.components.ErrorState
 import com.av123.video.ui.components.LoadingSkeleton
 import com.av123.video.ui.components.LoadingState
+import com.av123.video.ui.components.SnackbarTone
 import com.av123.video.ui.components.VideoGridCard
 import com.av123.video.ui.components.appErrorText
 import com.av123.video.ui.components.rememberTogglePopScale
 import com.av123.video.ui.components.shimmerPlaceholder
+import com.av123.video.ui.components.showAppSnackbar
 import com.av123.video.ui.theme.Motion
 import com.av123.video.ui.util.rememberAppHaptics
 import androidx.compose.ui.platform.LocalResources
@@ -197,7 +200,12 @@ fun DetailScreen(
         haptics.tick()
         if (isFavorite) {
             detailViewModel.removeFavorite()
-            scope.launch { snackbarHostState.showSnackbar(favoriteRemovedText) }
+            scope.launch {
+                snackbarHostState.showAppSnackbar(
+                    message = favoriteRemovedText,
+                    tone = SnackbarTone.Removal
+                )
+            }
         } else {
             showFavoritePicker = true
         }
@@ -267,7 +275,13 @@ fun DetailScreen(
                 )
             }
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        snackbarHost = {
+            // 详情页没有底栏，Scaffold 不会为提示让出手势条
+            AppSnackbarHost(
+                snackbarHostState,
+                modifier = Modifier.navigationBarsPadding()
+            )
+        },
         contentWindowInsets = WindowInsets(0, 0, 0, 0)
     ) { padding ->
         when {
@@ -297,7 +311,9 @@ fun DetailScreen(
                         when {
                             playback != null -> playbackStarted = true
                             resolveFailed -> detailViewModel.retryResolve()
-                            else -> scope.launch { snackbarHostState.showSnackbar(resolvingText) }
+                            else -> scope.launch {
+                                snackbarHostState.showAppSnackbar(resolvingText)
+                            }
                         }
                     },
                     onRetry = { detailViewModel.retryResolve() },
@@ -334,7 +350,7 @@ fun DetailScreen(
                         ) {
                             detailViewModel.selectEpisode(nextIndex)
                             scope.launch {
-                                snackbarHostState.showSnackbar(autoNextText)
+                                snackbarHostState.showAppSnackbar(autoNextText)
                             }
                         }
                     }
@@ -418,12 +434,13 @@ fun DetailScreen(
                 detailViewModel.favoriteWithGroup(groupId)
                 val groupName = favoriteGroups.firstOrNull { it.id == groupId }?.name
                 scope.launch {
-                    snackbarHostState.showSnackbar(
-                        if (groupName != null) {
+                    snackbarHostState.showAppSnackbar(
+                        message = if (groupName != null) {
                             resources.getString(R.string.detail_favorited_to, groupName)
                         } else {
                             favoriteAddedText
-                        }
+                        },
+                        tone = SnackbarTone.Success
                     )
                 }
             },
