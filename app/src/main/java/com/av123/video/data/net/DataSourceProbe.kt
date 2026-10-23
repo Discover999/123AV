@@ -88,10 +88,17 @@ class DataSourceProbe(
                 url = siteUrl,
                 headers = mapOf("User-Agent" to userAgent),
                 timeoutMs = timeoutMs,
-                eventListenerFactory = listenerFactory
+                eventListenerFactory = listenerFactory,
+                // 不复用连接，否则复用时 DNS/TCP/TLS 不发生、三段显示「—」
+                freshConnection = true
             )
             val latencyMs = (System.nanoTime() - start) / 1_000_000L
-            val timings = listenerFactory.latest?.snapshot()
+            // 走 HTTP 代理时 OkHttp 只连代理 IP，目标域名由代理解析，本机不会触发 DNS 事件；
+            // 这种情况下在设备侧补一次真实解析，让 DNS 这一格有数（测的是本机解析器）。
+            val timings = listenerFactory.latest?.snapshot()?.let { snapshot ->
+                if (snapshot.dnsMs != null) snapshot
+                else snapshot.copy(dnsMs = measureDnsMs(siteUrl))
+            }
             val code = response.code
             if (code in 200..399) SiteProbe.Ok(code, latencyMs, timings)
             else SiteProbe.HttpError(code, latencyMs, timings)
@@ -114,6 +121,17 @@ class DataSourceProbe(
             if (lastKind == null) lastKind = failureKind(result.exceptionOrNull())
         }
         IpProbe.Failed(lastKind ?: ProbeFailureKind.OTHER)
+    }
+
+    /** 设备侧解析一次域名，仅用于代理连接时补 DNS 读数；IP 字面量或失败返回 null */
+    private fun measureDnsMs(url: String): Long? {
+        val host = runCatching { java.net.URI(url).host }.getOrNull() ?: return null
+        if (host.isBlank() || host.matches(Regex("""\d{1,3}(\.\d{1,3}){3}"""))) return null
+        return runCatching {
+            val start = System.nanoTime()
+            java.net.InetAddress.getAllByName(host)
+            (System.nanoTime() - start) / 1_000_000L
+        }.getOrNull()
     }
 
     /** 按不同服务商的字段结构解析；ip 字段缺失视为失败，尝试下一个服务商 */

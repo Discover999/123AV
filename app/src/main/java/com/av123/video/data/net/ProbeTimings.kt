@@ -99,15 +99,16 @@ class ProbeEventListener(
     }
 
     /** callStart 未发生（极早期失败）时返回 null */
-    fun snapshot(): ProbeTimings? =
-        if (callStartNs == 0L) null
-        else ProbeTimings(
+    fun snapshot(): ProbeTimings? {
+        if (callStartNs == 0L) return null
+        return ProbeTimings(
             dnsMs = dnsMs,
             tcpMs = tcpMs,
             tlsMs = tlsMs,
             ttfbMs = ttfbMs,
             totalMs = totalMs
         )
+    }
 
     private companion object {
         const val NS_PER_MS = 1_000_000L

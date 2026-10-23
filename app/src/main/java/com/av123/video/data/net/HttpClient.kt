@@ -7,6 +7,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import okhttp3.ConnectionPool
 import okhttp3.EventListener
+import okhttp3.Protocol
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.ResponseBody
@@ -96,14 +97,20 @@ object HttpClient {
          * 既有抓取/图片等调用路径零改动。非 null 时走 per-call newBuilder，
          * 仍共享主 client 的连接池与 Dispatcher。
          */
-        eventListenerFactory: EventListener.Factory? = null
+        eventListenerFactory: EventListener.Factory? = null,
+        /**
+         * 诊断探测专用：不复用连接（空连接池 + HTTP/1.1），保证每轮都真的走
+         * DNS → TCP → TLS。默认 false，其它调用路径不受影响。
+         */
+        freshConnection: Boolean = false
     ): HttpResponse = withContext(Dispatchers.IO) {
         val requestBuilder = Request.Builder().url(url).get()
         headers.forEach { (key, value) -> requestBuilder.header(key, value) }
         val request = requestBuilder.build()
 
         // per-call 超时覆盖 / EventListener：newBuilder 共享连接池与 Dispatcher，成本很低
-        val needsCustomClient = timeoutMs != null || eventListenerFactory != null
+        val needsCustomClient = timeoutMs != null || eventListenerFactory != null ||
+            freshConnection
         val httpClient = if (needsCustomClient) {
             client.newBuilder().apply {
                 if (timeoutMs != null) {
@@ -113,6 +120,12 @@ object HttpClient {
                 }
                 if (eventListenerFactory != null) {
                     eventListenerFactory(eventListenerFactory)
+                }
+                if (freshConnection) {
+                    // 空池 + 关掉失败重连换连接：每次都重新建连
+                    connectionPool(ConnectionPool(0, 1, TimeUnit.NANOSECONDS))
+                    protocols(listOf(Protocol.HTTP_1_1))
+                    retryOnConnectionFailure(false)
                 }
             }.build()
         } else {
