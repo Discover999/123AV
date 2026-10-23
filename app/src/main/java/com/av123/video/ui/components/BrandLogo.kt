@@ -1,11 +1,6 @@
 package com.av123.video.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,13 +61,15 @@ fun BrandLogo(
                 letterSpacing = tightSpacing
             )
         )
-        // <i></i>：logo 尾部的渐变小装饰块
-        Box(
-            modifier = Modifier
-                .padding(start = 4.dp)
-                .size(6.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(brandGradient)
+        // 尾部就是句号本身：直接用「.」字符，天然落在基线上、随字号缩放，
+        // 不需要再手算偏移（用 Box 时要么飘到字上方、要么突出底边）
+        Text(
+            text = ".",
+            style = style.copy(
+                brush = brandGradient,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.sp
+            )
         )
     }
 }

@@ -2,6 +2,9 @@ package com.av123.video.ui.screens.detail
 
 import com.av123.video.ui.icons.AppIcons
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
@@ -210,6 +213,18 @@ fun DetailScreen(
         }
     }
 
+    // 详情表「代码」行：长按复制编号
+    val clipboard = LocalContext.current
+        .getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
+    val copiedText = stringResource(R.string.player_url_copied)
+    val onCopyValue: (String) -> Unit = { value ->
+        if (value.isNotBlank()) {
+            haptics.tick()
+            clipboard?.setPrimaryClip(ClipData.newPlainText(null, value))
+            scope.launch { snackbarHostState.showAppSnackbar(copiedText) }
+        }
+    }
+
     Scaffold(
         // 全屏时隐藏 TopAppBar。始终走同一个 Scaffold 分支：全屏切换只改播放区
         // 尺寸、不替换组合树，避免 AndroidView(PlayerView) 销毁重建产生黑帧
@@ -264,7 +279,7 @@ fun DetailScreen(
                                 }
                             }) {
                                 Icon(
-                                    imageVector = AppIcons.Share,
+                                    imageVector = AppIcons.IosShare,
                                     contentDescription = shareDescription
                                 )
                             }
@@ -317,6 +332,7 @@ fun DetailScreen(
                     },
                     onRetry = { detailViewModel.retryResolve() },
                     onChipClick = { chip -> onChannelClick(chip.text, chip.path) },
+                    onCopyValue = onCopyValue,
                     relatedVideos = relatedVideos,
                     relatedLoading = relatedLoading,
                     canLoadMoreRelated = canLoadMoreRelated,
@@ -474,6 +490,7 @@ private fun DetailContent(
     onPlay: () -> Unit,
     onRetry: () -> Unit,
     onChipClick: (InfoChip) -> Unit,
+    onCopyValue: (String) -> Unit,
     relatedVideos: List<Video>,
     relatedLoading: Boolean,
     canLoadMoreRelated: Boolean,
@@ -552,6 +569,7 @@ private fun DetailContent(
                         onSelectEpisode = onSelectEpisode,
                         onToggleFavorite = onToggleFavorite,
                         onChipClick = onChipClick,
+                        onCopyValue = onCopyValue,
                         relatedVideos = relatedVideos,
                         relatedLoading = relatedLoading,
                         canLoadMoreRelated = canLoadMoreRelated,
@@ -576,6 +594,7 @@ private fun DetailBody(
     onSelectEpisode: (Int) -> Unit,
     onToggleFavorite: () -> Unit,
     onChipClick: (InfoChip) -> Unit,
+    onCopyValue: (String) -> Unit,
     relatedVideos: List<Video>,
     relatedLoading: Boolean,
     canLoadMoreRelated: Boolean,
@@ -701,7 +720,12 @@ private fun DetailBody(
             // 缺失的行网页中不存在，自然不渲染
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 video.infoRows.forEach { row ->
-                    DetailInfoRow(row = row, onChipClick = onChipClick)
+                    DetailInfoRow(
+                        row = row,
+                        onChipClick = onChipClick,
+                        // 只有「代码」这一行支持长按复制
+                        onValueLongPress = if (row.label.contains("代码")) onCopyValue else null
+                    )
                 }
             }
         }

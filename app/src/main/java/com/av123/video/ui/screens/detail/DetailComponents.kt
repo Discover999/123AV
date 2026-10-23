@@ -20,6 +20,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -355,7 +356,9 @@ internal fun MetaChip(
 @Composable
 internal fun DetailInfoRow(
     row: VideoInfoRow,
-    onChipClick: (InfoChip) -> Unit
+    onChipClick: (InfoChip) -> Unit,
+    /** 非 null 时该行的纯文本值支持长按（目前只有「代码」行传入） */
+    onValueLongPress: ((String) -> Unit)? = null
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(
@@ -373,6 +376,16 @@ internal fun DetailInfoRow(
                 modifier = Modifier
                     .weight(1f)
                     .align(Alignment.CenterVertically)
+                    .then(
+                        if (onValueLongPress != null) {
+                            Modifier.combinedClickable(
+                                onClick = {},
+                                onLongClick = { onValueLongPress(row.value) }
+                            )
+                        } else {
+                            Modifier
+                        }
+                    )
             )
         } else {
             FlowRow(

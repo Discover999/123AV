@@ -1,6 +1,8 @@
 package com.av123.video.ui.screens.diagnostics
 
+import com.av123.video.ui.icons.AppIconSize
 import com.av123.video.ui.icons.AppIcons
+import com.av123.video.ui.util.rememberAppHaptics
 
 import com.av123.video.ui.theme.AppShapes
 
@@ -8,8 +10,11 @@ import android.app.ActivityManager
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.Process
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -88,7 +93,33 @@ internal fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
     val host = remember(result.siteUrl) {
         result.siteUrl.toUri().host?.takeIf { it.isNotBlank() } ?: result.siteUrl
     }
-    DiagnosticsCard(title = stringResource(R.string.diagnostics_section_site_host, host)) {
+    DiagnosticsCard(
+        title = stringResource(R.string.diagnostics_section_site_host, host),
+        trailing = {
+            val context = LocalContext.current
+            val haptics = rememberAppHaptics()
+            Box(
+                modifier = Modifier
+                    .clip(AppShapes.Small)
+                    .clickable {
+                        haptics.tick()
+                        runCatching {
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(result.siteUrl))
+                            )
+                        }
+                    }
+                    .padding(4.dp)
+            ) {
+                Icon(
+                    imageVector = AppIcons.OpenInNew,
+                    contentDescription = stringResource(R.string.diagnostics_open_site),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(AppIconSize.Inline)
+                )
+            }
+        }
+    ) {
         when (val site = result.site) {
             is SiteProbe.Ok -> {
                 StatusHeader(
@@ -565,10 +596,11 @@ internal fun StatusHeader(
     }
 }
 
-/** 统一诊断卡片容器 */
+/** 统一诊断卡片容器；[trailing] 可放标题右侧的操作（如站点状态卡的「在浏览器打开」） */
 @Composable
 internal fun DiagnosticsCard(
     title: String,
+    trailing: (@Composable () -> Unit)? = null,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit
 ) {
     ElevatedCard(
@@ -580,11 +612,15 @@ internal fun DiagnosticsCard(
         elevation = CardDefaults.elevatedCardElevation(defaultElevation = 1.dp)
     ) {
         Column(Modifier.padding(18.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.weight(1f)
+                )
+                trailing?.invoke()
+            }
             Spacer(Modifier.height(14.dp))
             content()
         }

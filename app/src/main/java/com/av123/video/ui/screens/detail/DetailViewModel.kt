@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.av123.video.data.model.Video
 import com.av123.video.data.net.AppError
+import com.av123.video.data.net.PlaybackValidator
 import com.av123.video.data.repository.DetailRepository
 import com.av123.video.data.repository.DetailResult
 import com.av123.video.data.repository.FavoriteGroup
@@ -351,6 +352,23 @@ class DetailViewModel(
         playbackFromCache = false
         // 迟到的成功回调（如失败页正在展示时后台突然抓到）也要清除失败态
         _resolveFailed.value = false
+
+        // 只校验「被采纳的那条地址」，迟到或次要的清单不参与缓存
+        if (_playback.value?.url != url) return
+        val capturedIndex = _selectedEpisodeIndex.value
+        viewModelScope.launch {
+            // 轻量校验：取清单前 2KB，200 + #EXTM3U 才算可用；不点播放也能缓存
+            if (!PlaybackValidator.isPlayable(url, headers)) return@launch
+            // 校验期间可能已切集或换了地址，只在仍是这条时落库
+            if (_playback.value?.url != url || _selectedEpisodeIndex.value != capturedIndex) {
+                return@launch
+            }
+            videoRepository.savePlayback(
+                videoId,
+                capturedIndex,
+                PlaybackSource(url, headers)
+            )
+        }
     }
 
     /**

@@ -5,7 +5,9 @@ import com.av123.video.ui.icons.AppIcons
 import com.av123.video.ui.theme.AppShapes
 
 import androidx.compose.animation.Crossfade
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +60,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -165,57 +168,73 @@ fun SearchScreen(
                     }
                 },
                 title = {
-                    // 全圆角填充式搜索框，颜色取自 colorScheme（动态取色/品牌粉兜底）
-                    TextField(
-                        value = input,
-                        onValueChange = { newText ->
-                            input = sanitizeSearchInput(newText)
-                        },
+                    // 自排的紧凑搜索框：M3 TextField 最小高度固定 56dp，靠 Modifier 压不下去
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .focusRequester(focusRequester),
-                        placeholder = {
-                            Text(
-                                text = stringResource(R.string.search_hint),
-                                maxLines = 1
-                            )
-                        },
-                        leadingIcon = {
-                            Icon(imageVector = AppIcons.Search, contentDescription = null)
-                        },
-                        trailingIcon = {
-                            if (input.isNotEmpty()) {
-                                IconButton(onClick = {
-                                    haptics.tick()
-                                    // 清空输入框的同时清空搜索结果，回到初始引导页
-                                    input = ""
-                                    viewModel.clear()
-                                }) {
-                                    Icon(
-                                        imageVector = AppIcons.Close,
-                                        contentDescription = stringResource(R.string.search_clear)
-                                    )
+                            .height(42.dp)
+                            .clip(AppShapes.Pill)
+                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .padding(start = 14.dp, end = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicTextField(
+                            value = input,
+                            onValueChange = { newText ->
+                                input = sanitizeSearchInput(newText)
+                            },
+                            modifier = Modifier
+                                .weight(1f)
+                                .focusRequester(focusRequester),
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                color = MaterialTheme.colorScheme.onSurface
+                            ),
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                            keyboardOptions = KeyboardOptions(
+                                imeAction = ImeAction.Search,
+                                // 搜索词不做首字母大写/自动纠错，避免站点搜索被改写
+                                capitalization = KeyboardCapitalization.None,
+                                autoCorrectEnabled = false
+                            ),
+                            keyboardActions = KeyboardActions(onSearch = { submitSearch() }),
+                            decorationBox = { innerTextField ->
+                                Box(contentAlignment = Alignment.CenterStart) {
+                                    if (input.isEmpty()) {
+                                        Text(
+                                            text = stringResource(R.string.search_hint),
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
+                                        )
+                                    }
+                                    innerTextField()
                                 }
                             }
-                        },
-                        singleLine = true,
-                        shape = AppShapes.Hero,
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            disabledIndicatorColor = Color.Transparent
-                        ),
-                        keyboardOptions = KeyboardOptions(
-                            imeAction = ImeAction.Search,
-                            // 搜索词不做首字母大写/自动纠错，避免站点搜索被改写
-                            capitalization = KeyboardCapitalization.None,
-                            autoCorrectEnabled = false
-                        ),
-                        keyboardActions = KeyboardActions(onSearch = { submitSearch() })
-                    )
+                        )
+                        if (input.isNotEmpty()) {
+                            Box(
+                                modifier = Modifier
+                                    .size(28.dp)
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        haptics.tick()
+                                        // 清空输入框的同时清空搜索结果，回到初始引导页
+                                        input = ""
+                                        viewModel.clear()
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = AppIcons.Close,
+                                    contentDescription = stringResource(R.string.search_clear),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
+                    }
                 },
                 actions = {
                     IconButton(

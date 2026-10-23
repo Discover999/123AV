@@ -199,8 +199,8 @@
     <string name="profile_dark_mode_system_desc">根据系统设置自动切换浅色 / 深色</string>
     <string name="profile_dark_mode_light_desc">始终使用浅色主题</string>
     <string name="profile_dark_mode_dark_desc">始终使用深色主题</string>
-    <string name="profile_data_source">数据源状态</string>
-    <string name="profile_data_source_value">在线网页解析 · Jsoup</string>
+    <string name="profile_data_source">网络诊断</string>
+    <string name="profile_data_source_value">数据源状态</string>
     <!-- profile_probe_* 文案由网络诊断页复用 -->
     <string name="profile_probe_ok">可以正常访问</string>
     <string name="profile_probe_http_error">站点返回错误</string>
@@ -424,6 +424,7 @@
     <string name="diagnostics_config_updated">更新时间</string>
     <string name="diagnostics_config_checked">上次检查</string>
     <string name="diagnostics_section_site_host">站点状态 · %1$s</string>
+    <string name="diagnostics_open_site">在浏览器打开首页</string>
     <string name="diagnostics_config_never">未检查</string>
     <string name="diagnostics_config_remote">远程刷新</string>
     <string name="diagnostics_config_remote_on">已开启 · %1$d 小时</string>
