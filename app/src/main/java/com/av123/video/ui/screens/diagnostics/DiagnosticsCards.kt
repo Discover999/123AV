@@ -88,7 +88,7 @@ internal fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
     val host = remember(result.siteUrl) {
         result.siteUrl.toUri().host?.takeIf { it.isNotBlank() } ?: result.siteUrl
     }
-    DiagnosticsCard(title = host) {
+    DiagnosticsCard(title = stringResource(R.string.diagnostics_section_site_host, host)) {
         when (val site = result.site) {
             is SiteProbe.Ok -> {
                 StatusHeader(
@@ -115,34 +115,26 @@ internal fun SiteDiagnosticsCard(result: DataSourceProbeResult) {
             }
 
             is SiteProbe.Failed -> {
-                val reasonText = site.kind.failureText()
+                // 原因已经在结论头的副标题里，不再重复一行；失败时也没有分段耗时可画
                 StatusHeader(
                     icon = AppIcons.CloudOff,
                     containerColor = MaterialTheme.colorScheme.errorContainer,
                     tint = MaterialTheme.colorScheme.onErrorContainer,
                     title = stringResource(R.string.profile_probe_unreachable),
-                    subtitle = reasonText
+                    subtitle = site.kind.failureText()
                 )
-                Spacer(Modifier.height(12.dp))
-                InfoLine(
-                    label = stringResource(R.string.diagnostics_fail_reason),
-                    value = reasonText
-                )
-                Spacer(Modifier.height(12.dp))
-                TimingSegments(timings = null, totalMs = null)
             }
         }
     }
 }
 
-/** 站点配置只读卡：配置来源、版本、缓存/检查时间、ETag、远程刷新与最近错误 */
+/** 站点配置只读卡：配置来源、版本、缓存/检查时间、远程刷新与最近错误 */
 @Composable
 internal fun SiteConfigCard(
     source: SiteConfigSource,
     version: String,
     updatedText: String,
     checkedText: String,
-    etagText: String,
     remoteText: String,
     error: String?
 ) {
@@ -167,20 +159,13 @@ internal fun SiteConfigCard(
         )
         Spacer(Modifier.height(10.dp))
         InfoLine(
-            label = stringResource(R.string.diagnostics_config_checked),
-            value = checkedText
-        )
-        Spacer(Modifier.height(10.dp))
-        InfoLine(
-            label = stringResource(R.string.diagnostics_config_etag),
-            value = etagText,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Spacer(Modifier.height(10.dp))
-        InfoLine(
             label = stringResource(R.string.diagnostics_config_remote),
             value = remoteText
+        )
+        Spacer(Modifier.height(10.dp))
+        InfoLine(
+            label = stringResource(R.string.diagnostics_config_checked),
+            value = checkedText
         )
         if (error != null) {
             Spacer(Modifier.height(12.dp))
@@ -416,7 +401,8 @@ internal fun RuntimeDiagnosticsCard(text: RuntimeMetricText) {
                 modifier = Modifier.weight(1f),
                 value = text.cacheValue,
                 label = stringResource(R.string.diagnostics_runtime_cache),
-                detail = text.cacheDetail
+                // 三个分项挪到卡底一行，格子只留总量
+                detail = ""
             )
             RuntimeMetricTile(
                 modifier = Modifier.weight(1f),
@@ -425,6 +411,12 @@ internal fun RuntimeDiagnosticsCard(text: RuntimeMetricText) {
                 detail = text.webViewDetail
             )
         }
+        Spacer(Modifier.height(6.dp))
+        Text(
+            text = text.cacheDetail,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
         Spacer(Modifier.height(12.dp))
         Text(
             text = stringResource(R.string.diagnostics_runtime_session_note),
@@ -454,14 +446,16 @@ internal fun RuntimeMetricTile(
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        Spacer(Modifier.height(2.dp))
-        Text(
-            text = detail,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis
-        )
+        if (detail.isNotBlank()) {
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = detail,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 

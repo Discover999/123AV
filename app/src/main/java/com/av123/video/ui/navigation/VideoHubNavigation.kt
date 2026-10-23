@@ -731,15 +731,7 @@ private fun NavGraphBuilder.listDestinations(
         popExitTransition = { horizontalPopExit() }
     ) {
         StatsScreen(
-            onBack = { navController.popBackStack() },
-            onOpenHistory = {
-                // 统计页的「继续观看」：切到历史 Tab，复用已有栈
-                navController.navigate(Routes.HISTORY) {
-                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                    launchSingleTop = true
-                    restoreState = true
-                }
-            }
+            onBack = { navController.popBackStack() }
         )
     }
     composable(

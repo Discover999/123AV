@@ -151,6 +151,8 @@ fun HomeScreen(
     DisposableEffect(Unit) {
         onDispose { previewOpen.value = false }
     }
+    // 下拉刷新与顶栏按钮共用同一个触感入口
+    val haptics = rememberAppHaptics()
 
     Scaffold(
         topBar = {
@@ -160,7 +162,6 @@ fun HomeScreen(
                     BrandLogo()
                 },
                 actions = {
-                    val haptics = rememberAppHaptics()
                     IconButton(
                         onClick = {
                             haptics.tick()
@@ -191,7 +192,10 @@ fun HomeScreen(
                 ErrorState(message = appErrorText(ui.error!!), onRetry = viewModel::refresh, modifier = modifier)
             else -> PullToRefreshBox(
                 isRefreshing = ui.isRefreshing,
-                onRefresh = viewModel::refresh,
+                onRefresh = {
+                    haptics.confirm()
+                    viewModel.refresh()
+                },
                 modifier = modifier
             ) {
                 HomeContent(

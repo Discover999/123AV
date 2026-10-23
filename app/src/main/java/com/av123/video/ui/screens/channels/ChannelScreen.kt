@@ -440,7 +440,10 @@ fun ChannelScreen(
             // 内部自行处理加载中/出错/0 结果/有列表四种状态，筛选栏始终保留。
             state.filters.isNotEmpty() -> PullToRefreshBox(
                 isRefreshing = isPullRefreshing,
-                onRefresh = viewModel::refresh,
+                onRefresh = {
+                    haptics.confirm()
+                    viewModel.refresh()
+                },
                 modifier = modifier
             ) {
                 Column(Modifier.fillMaxSize().then(refreshFlashModifier)) {
@@ -502,7 +505,10 @@ fun ChannelScreen(
             // 无筛选表单的视频流页（如部分快捷入口）：直接渲染视频网格
             else -> PullToRefreshBox(
                 isRefreshing = isPullRefreshing,
-                onRefresh = viewModel::refresh,
+                onRefresh = {
+                    haptics.confirm()
+                    viewModel.refresh()
+                },
                 modifier = modifier
             ) {
                 VideosGrid(

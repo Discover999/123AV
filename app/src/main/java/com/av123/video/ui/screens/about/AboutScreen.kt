@@ -43,6 +43,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import com.av123.video.R
 import com.av123.video.data.net.UpdateChecker
+import com.av123.video.ui.components.BrandLogo
 import com.av123.video.ui.icons.AppIconSize
 import com.av123.video.ui.icons.AppIcons
 import com.av123.video.ui.theme.AppShapes
@@ -125,6 +126,12 @@ fun AboutSheet(onDismiss: () -> Unit) {
                     .size(96.dp)
             )
             Spacer(Modifier.height(10.dp))
+            // 图标下面的应用名（品牌字标就是 123AV），再下面才是版本号
+            BrandLogo(
+                style = MaterialTheme.typography.headlineMedium,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            Spacer(Modifier.height(8.dp))
             AboutBadge(
                 text = "v$versionName",
                 accent = true,

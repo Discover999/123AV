@@ -75,7 +75,7 @@
     <string name="history_group_yesterday">昨天</string>
     <string name="history_group_earlier">更早</string>
     <string name="history_group_count">%1$s · %2$d</string>
-    <string name="history_summary">共 %1$d 部 · 观看 %2$s</string>
+    <string name="history_summary">共 %1$d 部 · 已观看 %2$s</string>
     <string name="history_summary_short">共 %1$d 部</string>
     <string name="history_total_hours_minutes">%1$d 小时 %2$d 分</string>
     <string name="history_total_minutes">%1$d 分钟</string>
@@ -317,7 +317,6 @@
     <string name="stats_finished_count">已看完 %1$d 部</string>
     <string name="stats_completion_sub">共 %1$d 部 · 还有 %2$d 部没看完</string>
     <string name="stats_completion_sub_all">共 %1$d 部</string>
-    <string name="stats_continue_watching">继续观看</string>
     <string name="stats_categories">分类偏好</string>
     <string name="stats_category_value">%1$d 部 · %2$d%%</string>
     <string name="stats_categories_other">其他 %1$d 类 · %2$d 部</string>
@@ -423,9 +422,9 @@
     <string name="diagnostics_config_source">来源</string>
     <string name="diagnostics_config_version">版本</string>
     <string name="diagnostics_config_updated">更新时间</string>
-    <string name="diagnostics_config_checked">最近检查</string>
+    <string name="diagnostics_config_checked">上次检查</string>
+    <string name="diagnostics_section_site_host">站点状态 · %1$s</string>
     <string name="diagnostics_config_never">未检查</string>
-    <string name="diagnostics_config_etag">ETag</string>
     <string name="diagnostics_config_remote">远程刷新</string>
     <string name="diagnostics_config_remote_on">已开启 · %1$d 小时</string>
     <string name="diagnostics_config_remote_off">已关闭</string>

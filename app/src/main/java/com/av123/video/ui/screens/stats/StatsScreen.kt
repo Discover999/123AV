@@ -69,14 +69,13 @@ import kotlin.math.roundToInt
 
 /**
  * 观看统计页：累计时长 + 今日/近 7 天、近 7 天柱图（数值/均值/最佳）、
- * 完成度环与继续观看入口、分类偏好占比、最近 12 周热力图。
+ * 完成度环、分类偏好占比、最近 12 周热力图。
  * 全部数据为本机 Room 聚合，页面进入时一次性快照，右上角可手动刷新。
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StatsScreen(
-    onBack: () -> Unit,
-    onOpenHistory: () -> Unit
+    onBack: () -> Unit
 ) {
     val container = LocalAppContainer.current
     val viewModel: StatsViewModel = viewModel {
@@ -145,7 +144,6 @@ fun StatsScreen(
             stats != null ->
                 StatsContent(
                     stats = stats,
-                    onOpenHistory = onOpenHistory,
                     modifier = Modifier.padding(padding)
                 )
         }
@@ -155,7 +153,6 @@ fun StatsScreen(
 @Composable
 private fun StatsContent(
     stats: WatchStats,
-    onOpenHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -165,7 +162,7 @@ private fun StatsContent(
     ) {
         item { HeroCard(stats = stats) }
         item { WeekChartCard(week7 = stats.week7, last7DaysMs = stats.last7DaysMs) }
-        item { CompletionCard(stats = stats, onOpenHistory = onOpenHistory) }
+        item { CompletionCard(stats = stats) }
         if (stats.categories.isNotEmpty()) {
             item { CategoryCard(categories = stats.categories) }
         }
@@ -447,7 +444,7 @@ private fun chartValue(ms: Long): String {
 
 /** 完成度：环形比例 + 已看完/共 N 部 + 继续观看入口 */
 @Composable
-private fun CompletionCard(stats: WatchStats, onOpenHistory: () -> Unit) {
+private fun CompletionCard(stats: WatchStats) {
     val colorScheme = MaterialTheme.colorScheme
     ElevatedCard(
         modifier = Modifier.fillMaxWidth(),
@@ -522,29 +519,6 @@ private fun CompletionCard(stats: WatchStats, onOpenHistory: () -> Unit) {
                         style = MaterialTheme.typography.bodySmall,
                         color = colorScheme.onSurfaceVariant
                     )
-                    if (stats.continueWatching > 0) {
-                        Spacer(Modifier.height(6.dp))
-                        Row(
-                            modifier = Modifier
-                                .clip(AppShapes.Small)
-                                .clickable(onClick = onOpenHistory)
-                                .padding(horizontal = 2.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = stringResource(R.string.stats_continue_watching),
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = colorScheme.primary
-                            )
-                            Icon(
-                                AppIcons.KeyboardArrowRight,
-                                contentDescription = null,
-                                tint = colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
                 }
             }
         }

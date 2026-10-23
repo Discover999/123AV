@@ -59,6 +59,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 
@@ -159,19 +160,15 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
         }
         if (snapshot == null) return@Scaffold
 
-        val timeFormatter = remember { SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()) }
-        val checkedAtText = timeFormatter.format(Date(snapshot.result.checkedAt))
+        val checkedAtText = diagnosticStamp(snapshot.result.checkedAt)
 
         val configVersionText = "${configState.config.id}@${configState.config.version}"
         val configUpdatedText = configState.cachedAt
-            ?.let { timeFormatter.format(Date(it)) }
+            ?.let { diagnosticStamp(it) }
             ?: stringResource(R.string.diagnostics_dash)
         val configCheckedText = configState.lastCheckedAt
-            ?.let { timeFormatter.format(Date(it)) }
+            ?.let { diagnosticStamp(it) }
             ?: stringResource(R.string.diagnostics_config_never)
-        val configEtagText = configState.etag
-            ?.takeIf { it.isNotBlank() }
-            ?: stringResource(R.string.diagnostics_dash)
         val configRemoteText = if (configState.config.remoteEnabled) {
             stringResource(
                 R.string.diagnostics_config_remote_on,
@@ -196,7 +193,6 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
                     version = configVersionText,
                     updatedText = configUpdatedText,
                     checkedText = configCheckedText,
-                    etagText = configEtagText,
                     remoteText = configRemoteText,
                     error = configState.lastError
                 )
@@ -205,6 +201,27 @@ fun DiagnosticsScreen(onBack: () -> Unit) {
             item { NetworkDiagnosticsCard(result = snapshot.result, env = snapshot.env) }
             item { DeviceEnvironmentCard(env = snapshot.env, checkedAtText = checkedAtText) }
         }
+    }
+}
+
+/** 诊断页时间：今天 / 昨天只显示时分，更早显示月-日 时:分，与历史页同一套口径 */
+@Composable
+private fun diagnosticStamp(ms: Long): String {
+    val date = Date(ms)
+    val target = Calendar.getInstance().apply { time = date }
+    val today = Calendar.getInstance()
+    val timeText = remember(date) {
+        SimpleDateFormat("HH:mm", Locale.getDefault()).format(date)
+    }
+    val sameDay = target.get(Calendar.YEAR) == today.get(Calendar.YEAR) &&
+        target.get(Calendar.DAY_OF_YEAR) == today.get(Calendar.DAY_OF_YEAR)
+    if (sameDay) return stringResource(R.string.history_time_today, timeText)
+    val yesterday = (today.clone() as Calendar).apply { add(Calendar.DAY_OF_YEAR, -1) }
+    val isYesterday = target.get(Calendar.YEAR) == yesterday.get(Calendar.YEAR) &&
+        target.get(Calendar.DAY_OF_YEAR) == yesterday.get(Calendar.DAY_OF_YEAR)
+    if (isYesterday) return stringResource(R.string.history_time_yesterday, timeText)
+    return remember(date) {
+        SimpleDateFormat("MM-dd HH:mm", Locale.getDefault()).format(date)
     }
 }
 
