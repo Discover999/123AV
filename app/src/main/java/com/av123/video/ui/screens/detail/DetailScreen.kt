@@ -77,7 +77,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -586,35 +585,20 @@ private fun DetailBody(
         ExpandableTitle(text = video.title)
         Spacer(Modifier.height(10.dp))
 
-        // 元信息：第一行编号 + 分类（正文强调），第二行时长 / 观看 / 发布 / 年份（次级）
-        val primaryMeta = buildList {
-            if (video.code.isNotBlank()) add(video.code)
-            if (video.category.isNotBlank()) add(video.category)
-        }
+        // 元信息：时长 / 观看 / 发布 / 年份。
+        // 编号与分类在下方「详情」表里已有对应行，顶栏也显示编号，这里不再重复
         val secondaryMeta = buildList {
             if (video.durationText.isNotBlank()) add(video.durationText)
             if (video.viewsDisplay.isNotBlank()) add(video.viewsDisplay)
             if (video.publishedAgo.isNotBlank()) add(video.publishedAgo)
             if (video.year > 0) add(video.year.toString())
         }
-        if (primaryMeta.isNotEmpty() || secondaryMeta.isNotEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                if (primaryMeta.isNotEmpty()) {
-                    Text(
-                        text = primaryMeta.joinToString(" · "),
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                if (secondaryMeta.isNotEmpty()) {
-                    Text(
-                        text = secondaryMeta.joinToString(" · "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
+        if (secondaryMeta.isNotEmpty()) {
+            Text(
+                text = secondaryMeta.joinToString(" · "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         Spacer(Modifier.height(16.dp))
