@@ -88,8 +88,10 @@ class HistoryRepository(
      */
     suspend fun getSavedProgress(videoId: String): SavedProgress {
         val entity = historyDao.get(videoId) ?: return SavedProgress(0L, 0)
+        // 播到片尾（STATE_ENDED 回传完整时长）视为看完，下次从头播；否则从上次位置续播
+        val ended = entity.durationMs > 0L && entity.positionMs >= entity.durationMs
         return SavedProgress(
-            positionMs = entity.positionMs,
+            positionMs = if (ended) 0L else entity.positionMs,
             episodeIndex = entity.episodeIndex
         )
     }

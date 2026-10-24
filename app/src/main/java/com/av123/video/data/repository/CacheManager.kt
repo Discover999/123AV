@@ -6,7 +6,6 @@ import coil.imageLoader
 import com.av123.video.data.playback.MediaCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 import java.util.Locale
 
 /** 可单独清理的缓存分区 */
@@ -77,23 +76,50 @@ class CacheManager(
     @androidx.annotation.OptIn(UnstableApi::class)
     suspend fun breakdown(): CacheBreakdown = withContext(Dispatchers.IO) {
         val cacheRoot = context.cacheDir
-        val imageDir = File(cacheRoot, IMAGE_CACHE_DIR)
-        val mediaDir = File(cacheRoot, MEDIA_CACHE_DIR)
-        val webViewDir = File(cacheRoot, WEBVIEW_CACHE_DIR)
+        var imageBytes = 0L
+        var imageCount = 0
+        var mediaBytes = 0L
+        var mediaCount = 0
+        var webViewBytes = 0L
+        var tempBytes = 0L
 
-        val imageBytes = directorySize(imageDir)
-        val mediaBytes = directorySize(mediaDir)
-        val webViewBytes = directorySize(webViewDir)
+        // 单次遍历 cacheRoot、按顶层目录归类到四桶，替代旧实现「image/media/webView 各扫一遍、
+        // 再为 temp 把整个根目录扫一遍」的重复扫盘；applyDefaultBudget 冷启动最多调用 4 次，
+        // 1GB 媒体缓存下重复遍历会被放大成十几轮文件树扫描。
+        runCatching {
+            cacheRoot.listFiles()?.forEach { top ->
+                val files = top.walkTopDown().filter { it.isFile }
+                when {
+                    top.name == IMAGE_CACHE_DIR -> files.forEach {
+                        imageBytes += it.length()
+                        // Coil 的 DiskCache 目录里还有一个 journal 文件，不算缓存图片
+                        if (!it.name.startsWith("journal")) imageCount++
+                    }
+
+                    top.name == MEDIA_CACHE_DIR -> files.forEach {
+                        mediaBytes += it.length()
+                        if (it.name.endsWith(".exo")) mediaCount++
+                    }
+
+                    top.name == WEBVIEW_CACHE_DIR -> files.forEach {
+                        webViewBytes += it.length()
+                    }
+
+                    else -> files.forEach {
+                        tempBytes += it.length()
+                    }
+                }
+            }
+        }
+
         CacheBreakdown(
             mediaBytes = mediaBytes,
-            mediaCount = countFiles(mediaDir) { it.name.endsWith(".exo") },
+            mediaCount = mediaCount,
             imageBytes = imageBytes,
-            // Coil 的 DiskCache 目录里还有一个 journal 文件，不算缓存图片
-            imageCount = countFiles(imageDir) { !it.name.startsWith("journal") },
+            imageCount = imageCount,
             pageStats = pageCacheStore.stats(),
             webViewBytes = webViewBytes,
-            tempBytes = (directorySize(cacheRoot) - imageBytes - mediaBytes - webViewBytes)
-                .coerceAtLeast(0L),
+            tempBytes = tempBytes,
             mediaClearable = !MediaCache.isPlaybackActive
         )
     }
@@ -173,24 +199,6 @@ class CacheManager(
             runCatching { child.deleteRecursively() }
         }
     }
-
-    private fun directorySize(dir: File): Long =
-        if (!dir.exists()) {
-            0L
-        } else {
-            runCatching {
-                dir.walkTopDown().filter { it.isFile }.sumOf { it.length() }
-            }.getOrDefault(0L)
-        }
-
-    private fun countFiles(dir: File, predicate: (File) -> Boolean): Int =
-        if (!dir.exists()) {
-            0
-        } else {
-            runCatching {
-                dir.walkTopDown().count { it.isFile && predicate(it) }
-            }.getOrDefault(0)
-        }
 
     companion object {
         /** 四类缓存合计的固定预算（不再暴露设置项） */

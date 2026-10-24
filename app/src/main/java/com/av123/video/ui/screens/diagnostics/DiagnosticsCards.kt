@@ -400,6 +400,7 @@ internal fun AppErrorKind.label(): String = when (this) {
     AppErrorKind.HTTP_CLIENT -> stringResource(R.string.diagnostics_kind_http_client)
     AppErrorKind.HTTP_SERVER -> stringResource(R.string.diagnostics_kind_http_server)
     AppErrorKind.PARSE -> stringResource(R.string.diagnostics_kind_parse)
+    AppErrorKind.RESPONSE_TOO_LARGE -> stringResource(R.string.diagnostics_kind_response_too_large)
     AppErrorKind.UNKNOWN -> stringResource(R.string.diagnostics_kind_unknown)
 }
 

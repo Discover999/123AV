@@ -154,9 +154,11 @@ class DetailViewModel(
      * 历史列表展示进度条，再次进入同一影片时自动切回上次选集并从该位置续播。
      */
     fun savePlaybackProgress(episodeIndex: Int, positionMs: Long, durationMs: Long) {
-        // 记住这一集停留的位置：换走再换回来时从这儿续播
-        if (episodeIndex >= 0 && positionMs >= 0L) {
-            episodePositions[episodeIndex] = positionMs
+        // 记住这一集停留的位置：换走再换回来时从这儿续播；
+        // 播到片尾（STATE_ENDED 回传完整时长）时本会话内从头播，别记成 seek 到片尾的位置
+        if (episodeIndex >= 0) {
+            val ended = durationMs > 0L && positionMs >= durationMs
+            episodePositions[episodeIndex] = if (ended) 0L else positionMs.coerceAtLeast(0L)
         }
         val video = _video.value ?: return
         viewModelScope.launch {

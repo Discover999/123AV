@@ -266,11 +266,13 @@
     <string name="error_http_too_many">请求过于频繁（HTTP %1$d），请稍后再试</string>
     <string name="error_http_server">服务器暂时不可用（HTTP %1$d），请稍后重试</string>
     <string name="error_parse">页面内容解析失败，数据源结构可能已更新</string>
+    <string name="error_response_too_large">页面内容过大，无法解析</string>
     <string name="error_unknown">加载失败，请稍后重试</string>
 
     <!-- 通用控件 -->
     <string name="common_play">播放</string>
     <string name="common_pause">暂停</string>
+    <string name="player_replay">重播</string>
     <string name="common_cancel">取消</string>
     <string name="common_confirm">确认</string>
     <string name="common_close">关闭</string>
@@ -454,6 +456,7 @@
     <string name="diagnostics_kind_http_client">HTTP 4xx</string>
     <string name="diagnostics_kind_http_server">HTTP 5xx</string>
     <string name="diagnostics_kind_parse">解析</string>
+    <string name="diagnostics_kind_response_too_large">过大</string>
     <string name="diagnostics_kind_unknown">其他</string>
     <string name="diagnostics_total">总耗时</string>
     <string name="diagnostics_seg_dns">DNS</string>

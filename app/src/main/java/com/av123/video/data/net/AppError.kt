@@ -33,6 +33,9 @@ enum class AppErrorKind {
     /** 响应已拿到但解析失败（站点结构变更等） */
     PARSE,
 
+    /** 响应体超过大小上限（非网络问题，重试无意义） */
+    RESPONSE_TOO_LARGE,
+
     /** 未归类错误 */
     UNKNOWN
 }
@@ -54,6 +57,7 @@ data class AppError(
             is UnknownHostException -> AppError(AppErrorKind.DNS)
             is SocketTimeoutException -> AppError(AppErrorKind.TIMEOUT)
             is SSLException -> AppError(AppErrorKind.SSL)
+            is ResponseTooLargeException -> AppError(AppErrorKind.RESPONSE_TOO_LARGE)
             is ConnectException -> AppError(AppErrorKind.NETWORK)
             is IOException -> AppError(AppErrorKind.NETWORK)
             else -> AppError(AppErrorKind.UNKNOWN)

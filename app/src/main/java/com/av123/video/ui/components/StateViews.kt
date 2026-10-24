@@ -151,6 +151,7 @@ fun appErrorText(context: Context, error: AppError): String = when (error.kind) 
     AppErrorKind.HTTP_SERVER ->
         context.getString(R.string.error_http_server, error.httpCode ?: 0)
     AppErrorKind.PARSE -> context.getString(R.string.error_parse)
+    AppErrorKind.RESPONSE_TOO_LARGE -> context.getString(R.string.error_response_too_large)
     AppErrorKind.UNKNOWN -> context.getString(R.string.error_unknown)
 }
 

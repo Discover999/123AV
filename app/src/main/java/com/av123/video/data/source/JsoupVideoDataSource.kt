@@ -26,6 +26,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
+import java.net.URLDecoder
 import java.net.URLEncoder
 
 /**
@@ -218,7 +219,8 @@ class JsoupVideoDataSource(
     private fun buildListUrl(path: String, page: Int, params: Map<String, String>): String {
         val basePath = path.substringBefore('?')
         val query = linkedMapOf<String, String>()
-        // path 自带查询串（如 /cn/all?sort=today），page 始终由分页参数显式控制，先剔除
+        // path 自带查询串（如 /cn/all?sort=today），page 始终由分页参数显式控制，先剔除；
+        // 值先解码再统一编码，避免非 ASCII/空格/&/# 拼出非法 URL 或二次编码。
         path.substringAfter('?', "")
             .takeIf { it.isNotBlank() }
             ?.split('&')
@@ -226,7 +228,9 @@ class JsoupVideoDataSource(
                 val idx = pair.indexOf('=')
                 val k = if (idx >= 0) pair.substring(0, idx) else pair
                 val v = if (idx >= 0) pair.substring(idx + 1) else ""
-                if (k.isNotBlank() && k != config.pageParam) query[k] = v
+                if (k.isNotBlank() && k != config.pageParam) {
+                    query[decodeQueryComponent(k)] = decodeQueryComponent(v)
+                }
             }
         params.forEach { (k, v) -> if (k.isNotBlank() && v.isNotBlank()) query[k] = v }
         if (page > 1) query[config.pageParam] = page.toString()
@@ -234,10 +238,20 @@ class JsoupVideoDataSource(
             append(joinUrl(config.baseUrl, basePath))
             if (query.isNotEmpty()) {
                 append("?")
-                append(query.entries.joinToString("&") { (k, v) -> "$k=$v" })
+                append(query.entries.joinToString("&") { (k, v) ->
+                    "${encodeQueryComponent(k)}=${encodeQueryComponent(v)}"
+                })
             }
         }
     }
+
+    /** 查询参数编码：筛选值/搜索词可能含中文、空格、& 等，必须转义后再拼 URL */
+    private fun encodeQueryComponent(value: String): String =
+        URLEncoder.encode(value, "UTF-8")
+
+    /** 查询参数解码：path 自带查询串已是百分号编码，先还原再统一编码，避免二次编码 */
+    private fun decodeQueryComponent(value: String): String =
+        runCatching { URLDecoder.decode(value, "UTF-8") }.getOrDefault(value)
 
     /**
      * 解析视频流页顶部筛选表单（form.filters）：每个 .sel 下拉归一化为一个 [FilterGroup]。

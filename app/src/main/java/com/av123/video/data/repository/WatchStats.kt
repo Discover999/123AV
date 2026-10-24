@@ -24,7 +24,7 @@ data class CategoryStat(
  * - [last7DaysMs] 近 7 天（含今天）总时长
  * - [week7] 近 7 天逐日时长，最旧→今天，缺测日期补 0
  * - [totalVideos] 历史累计影片数（观看历史条数）
- * - [finishedVideos] 已看完影片数（见 [FINISHED_THRESHOLD] 与 0 进度兜底说明）
+ * - [finishedVideos] 已看完影片数（进度 ≥ [FINISHED_THRESHOLD]）
  * - [streakDays] 截至今天/昨天的连续观看天数
  * - [activeDays] 有观看时长记录的总天数
  * - [categories] 分类影片数，按数量降序、名称升序，UI 取前 3
@@ -63,9 +63,9 @@ private val DAY_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
 /**
  * 由每日时长聚合行与观看历史快照计算统计结果。
  *
- * 注意：播放器播放结束（STATE_ENDED）时历史进度会被写成 0，因此看完判定除
- * “进度 ≥ [FINISHED_THRESHOLD]”外，还把 `durationMs>0 且 positionMs==0` 视为看完
- * （从未播放过的记录 durationMs 恒为 0，不会误判）。
+ * 看完统一按「进度 ≥ [FINISHED_THRESHOLD]」判定：播放器 STATE_ENDED 时进度回传
+ * 完整时长（而非 0），因此不再需要「0 进度兜底」去区分看完与从未播放，
+ * 也不会把「缓冲完但从未起播」误判成已看完。
  *
  * @param today 注入“今天”便于单测；生产传 [LocalDate.now]
  */
@@ -102,10 +102,8 @@ fun buildWatchStats(
     }
 
     val finished = records.count { record ->
-        record.durationMs > 0L && (
-            record.positionMs == 0L ||
-                record.positionMs.toFloat() / record.durationMs >= FINISHED_THRESHOLD
-            )
+        record.durationMs > 0L &&
+            record.positionMs.toFloat() / record.durationMs >= FINISHED_THRESHOLD
     }
 
     val categories = records

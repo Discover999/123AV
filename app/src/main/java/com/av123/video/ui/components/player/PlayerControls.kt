@@ -107,6 +107,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.Layout
@@ -176,6 +177,7 @@ internal fun PlayerControls(
     title: String,
     isFullscreen: Boolean,
     isPlaying: Boolean,
+    isEnded: Boolean,
     position: Long,
     duration: Long,
     bufferedPosition: Long,
@@ -432,8 +434,8 @@ internal fun PlayerControls(
             }
         }
 
-        // 竖屏画面小，不放中心键；全屏常显播放/暂停
-        if (isFullscreen) {
+        // 竖屏画面小，不放中心键；全屏常显播放/暂停（播完由居中重播按钮接管）
+        if (isFullscreen && !isEnded) {
             CenterPlayButton(
                 isPlaying = isPlaying,
                 onClick = {
@@ -1025,10 +1027,11 @@ private fun BatteryGlyph(level: Int, charging: Boolean) {
     )
 }
 
-/** 居中的播放/暂停键：半透明玻璃底 + 细描边 + 手绘柔光，按压轻微回弹 */
+/** 播放器玻璃圆钮：半透明玻璃底 + 细描边 + 手绘柔光，按压轻微回弹 */
 @Composable
-private fun CenterPlayButton(
-    isPlaying: Boolean,
+private fun GlassCircleButton(
+    icon: ImageVector,
+    contentDescription: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -1037,10 +1040,7 @@ private fun CenterPlayButton(
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.92f else 1f,
         animationSpec = Motion.PressSpring,
-        label = "centerPlayScale"
-    )
-    val description = stringResource(
-        if (isPlaying) R.string.common_pause else R.string.common_play
+        label = "glassCircleScale"
     )
     Box(
         modifier = modifier.size(96.dp),
@@ -1079,11 +1079,55 @@ private fun CenterPlayButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = if (isPlaying) AppIcons.Pause else AppIcons.PlayArrow,
-                contentDescription = description,
+                imageVector = icon,
+                contentDescription = contentDescription,
                 tint = Color.White,
                 modifier = Modifier.size(AppIconSize.Hero)
             )
         }
+    }
+}
+
+/** 居中的播放/暂停键 */
+@Composable
+private fun CenterPlayButton(
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val description = stringResource(
+        if (isPlaying) R.string.common_pause else R.string.common_play
+    )
+    GlassCircleButton(
+        icon = if (isPlaying) AppIcons.Pause else AppIcons.PlayArrow,
+        contentDescription = description,
+        onClick = onClick,
+        modifier = modifier
+    )
+}
+
+/** 播完（最后一集/关闭自动连播）的居中重播按钮：玻璃圆钮 + 重播文字 */
+@Composable
+internal fun ReplayEndedButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val replayDescription = stringResource(R.string.player_replay)
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        GlassCircleButton(
+            icon = AppIcons.Replay,
+            contentDescription = replayDescription,
+            onClick = onClick
+        )
+        Spacer(Modifier.height(10.dp))
+        Text(
+            text = replayDescription,
+            color = Color.White,
+            fontSize = AppTypeScale.Label,
+            fontWeight = FontWeight.Medium
+        )
     }
 }

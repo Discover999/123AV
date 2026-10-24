@@ -209,7 +209,7 @@ private const val FLIP_TO_EXIT_HOLD_MS = 500L
  * @param episodeIndex 本播放器实例对应的选集下标（0 起），随进度回调原样上抛，
  *   避免切集瞬间旧实例 onDispose 把旧集进度写到新集名下
  * @param onPlaybackProgress 播放进度回调（选集下标、当前位置、总时长），
- *   周期/退出/切后台时触发，用于持久化观看历史；播放结束时位置回传 0
+ *   周期/退出/切后台时触发，用于持久化观看历史；播放结束时位置回传完整时长（看完）
  * @param onPlayingElapsed 播放墙钟增量回调（ms）：仅 isPlaying 且无错误期间每个轮询 tick
  *   触发，暂停/缓冲/seek 不计；供观看时长统计累计
  * @param onEpisodeEnded 本集播放结束回调：调用方可据此自动连播下一集
@@ -264,15 +264,16 @@ fun VideoPlayer(
     // 观看时长增量回调同理：随播放/暂停重启的轮询协程始终拿到最新引用
     val playingElapsedCallback by rememberUpdatedState(onPlayingElapsed)
 
-    // 上报当前播放进度；总时长未知（未 READY）时跳过，
-    // 播放结束（STATE_ENDED）时位置回传 0，下次进入从头播放
+    // 上报当前播放进度；总时长未知（未 READY）时跳过。
+    // 播放结束（STATE_ENDED）也回传完整时长而非 0：让「已看完」统一按进度比例判定，
+    // 避免把「缓冲完但从未起播（0/时长）」误当成看完；是否从头播交给续播逻辑按进度折回 0。
     fun reportProgress() {
         val dur = player.duration.coerceAtLeast(0L)
         if (dur <= 0L) return
         if (player.playbackState == Player.STATE_READY ||
             player.playbackState == Player.STATE_ENDED
         ) {
-            val pos = if (player.playbackState == Player.STATE_ENDED) 0L
+            val pos = if (player.playbackState == Player.STATE_ENDED) dur
             else player.currentPosition
             // episodeIndex 取本播放器实例创建时的快照：切集后旧实例 onDispose
             // 仍上报旧集下标，不会把旧集进度写到新集
@@ -861,6 +862,22 @@ fun VideoPlayer(
             )
         }
 
+        // 播完终态（最后一集/关闭自动连播）：居中重播按钮，不随控制层隐藏
+        AnimatedVisibility(
+            visible = playbackState == Player.STATE_ENDED && error == null &&
+                !isInPip && !isLocked,
+            enter = scaleIn(animationSpec = Motion.PopSpring) + fadeIn(Motion.Overlay),
+            exit = fadeOut(Motion.Overlay),
+            modifier = Modifier.align(Alignment.Center)
+        ) {
+            ReplayEndedButton(
+                onClick = {
+                    hapticFeedback.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                    togglePlayOrReplay()
+                }
+            )
+        }
+
         // 错误层
         if (error != null) {
             ErrorOverlay(
@@ -886,6 +903,7 @@ fun VideoPlayer(
                 title = title,
                 isFullscreen = isFullscreen,
                 isPlaying = isPlaying,
+                isEnded = playbackState == Player.STATE_ENDED,
                 position = seekPreviewTargetMs ?: position,
                 duration = duration,
                 bufferedPosition = bufferedPosition,

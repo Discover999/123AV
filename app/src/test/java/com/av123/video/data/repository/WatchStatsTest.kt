@@ -132,7 +132,7 @@ class WatchStatsTest {
         val records = listOf(
             record("a", "X", positionMs = 50_000L, durationMs = 100_000L),    // 50%：继续
             record("b", "X", positionMs = 90_000L, durationMs = 100_000L),    // 90%：看完
-            record("c", "X", positionMs = 0L, durationMs = 100_000L),         // ENDED 写 0：看完
+            record("c", "X", positionMs = 0L, durationMs = 100_000L),         // 0 进度：不算继续
             record("d", "X", positionMs = 0L, durationMs = 0L),               // 未播
             record("e", "X", positionMs = 500L, durationMs = 0L),             // 时长未知
             record("f", "X", positionMs = 99_999L, durationMs = 100_000L),    // 99.999%：不算继续
@@ -182,19 +182,20 @@ class WatchStatsTest {
     }
 
     @Test
-    fun finishedVideos_thresholdAndEndedZero() {
+    fun finishedVideos_thresholdAndEnded() {
         val records = listOf(
             record("a", "X", positionMs = 90_000L, durationMs = 100_000L),   // 恰好 0.9：看完
             record("b", "X", positionMs = 89_999L, durationMs = 100_000L),   // 差一点：未看完
-            record("c", "X", positionMs = 0L, durationMs = 1_200_000L),      // ENDED 写 0：看完
+            record("c", "X", positionMs = 100_000L, durationMs = 100_000L),  // ENDED 回传满时长：看完
             record("d", "X", positionMs = 0L, durationMs = 0L),              // 从未播放：不算
-            record("e", "X", positionMs = 500L, durationMs = 0L)             // 时长未知：不算
+            record("e", "X", positionMs = 500L, durationMs = 0L),            // 时长未知：不算
+            record("f", "X", positionMs = 0L, durationMs = 100_000L)         // 缓冲完未起播：不算看完
         )
         val stats = buildWatchStats(emptyList(), records, today)
 
-        assertEquals(5, stats.totalVideos)
+        assertEquals(6, stats.totalVideos)
         assertEquals(2, stats.finishedVideos)
-        assertEquals(0.4f, stats.finishedRatio, 0.0001f)
+        assertEquals(2f / 6f, stats.finishedRatio, 0.0001f)
         // b 的 89.999% 是唯一「起播但没看完」的记录
         assertEquals(1, stats.continueWatching)
     }

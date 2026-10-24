@@ -19,6 +19,9 @@ import kotlin.random.Random
 /** 拿到响应但状态码非 2xx/3xx 时抛出，供 [AppError] 归类为站点侧错误 */
 class HttpStatusException(val code: Int) : IOException("HTTP $code")
 
+/** 响应体超过大小上限：非网络问题、重试无意义，单独归类供 UI 给出不劝重试的文案 */
+class ResponseTooLargeException : IOException("响应体超过大小上限")
+
 /** 一次 HTTP 调用的结果；4xx/5xx 不抛异常，由调用方决定语义（如站点探测） */
 data class HttpResponse(
     val code: Int,
@@ -171,7 +174,7 @@ object HttpClient {
     private fun readBodyCapped(body: ResponseBody?): String {
         if (body == null) return ""
         if (body.contentLength() > MAX_RESPONSE_BYTES) {
-            throw IOException("响应体超过 ${MAX_RESPONSE_BYTES / 1024 / 1024}MB 上限")
+            throw ResponseTooLargeException()
         }
         // 尊重 Content-Type 声明的字符集，未声明时回退 UTF-8：网页常为 UTF-8，
         // 但换站（GBK 等）时固定按 UTF-8 解码会让标题/分类乱码，且 meta charset 也救不回。
@@ -185,7 +188,7 @@ object HttpClient {
                 if (read < 0) break
                 total += read
                 if (total > MAX_RESPONSE_BYTES) {
-                    throw IOException("响应体超过 ${MAX_RESPONSE_BYTES / 1024 / 1024}MB 上限")
+                    throw ResponseTooLargeException()
                 }
                 output.write(buffer, 0, read)
             }
