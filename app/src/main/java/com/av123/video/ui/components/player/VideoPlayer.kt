@@ -484,9 +484,15 @@ fun VideoPlayer(
         }
     }
 
-    // 离开页面 / 播放器实例被替换：补存最后一次进度
+    // 离开组合（换集清空播放源 / 退出详情页）：先补存最后一次进度，再释放本实例。
+    // 换集清空 playbackUrl 时 VideoPlayer 会短暂离开组合，若只解绑 PlayerView 不释放，
+    // 旧集 ExoPlayer 仍 playWhenReady=true，会出现「页面转圈但后台还有声音」（2026-10-24）。
+    // 换源（缓存命中原地换 URL）时 initialize 已先释放旧实例，这里按身份判断不误释新实例。
     DisposableEffect(player) {
-        onDispose { reportProgress() }
+        onDispose {
+            reportProgress()
+            playerViewModel.releasePlayer(player)
+        }
     }
 
     // 控制器自动隐藏（弹窗打开或拖动进度条期间保持常显）

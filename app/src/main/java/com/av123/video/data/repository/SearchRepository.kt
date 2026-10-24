@@ -8,6 +8,7 @@ import com.av123.video.data.net.ErrorReporter
 import com.av123.video.data.runCatchingCancellable
 import com.av123.video.data.source.VideoSite
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,15 +36,18 @@ class SearchRepository(
     private val _state = MutableStateFlow(SearchState())
     val state: StateFlow<SearchState> = _state.asStateFlow()
 
+    /** 进行中的搜索任务：去重，避免 check-then-act 竞态导致并发搜索 */
+    private var searchJob: Job? = null
+
     fun search(keyword: String, page: Int = 1) {
         val kw = keyword.trim()
         if (kw.isBlank()) return
+        if (searchJob?.isActive == true) return
         val current = _state.value
-        if (current.isLoading) return
         val isNewQuery = kw != current.keyword
         val targetPage = if (isNewQuery) 1 else page.coerceAtLeast(1)
 
-        scope.launch {
+        searchJob = scope.launch {
             _state.update {
                 it.copy(
                     keyword = kw,

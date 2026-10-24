@@ -173,6 +173,9 @@ object HttpClient {
         if (body.contentLength() > MAX_RESPONSE_BYTES) {
             throw IOException("响应体超过 ${MAX_RESPONSE_BYTES / 1024 / 1024}MB 上限")
         }
+        // 尊重 Content-Type 声明的字符集，未声明时回退 UTF-8：网页常为 UTF-8，
+        // 但换站（GBK 等）时固定按 UTF-8 解码会让标题/分类乱码，且 meta charset 也救不回。
+        val charset = body.contentType()?.charset() ?: Charsets.UTF_8
         val output = ByteArrayOutputStream()
         val buffer = ByteArray(8 * 1024)
         var total = 0L
@@ -187,7 +190,7 @@ object HttpClient {
                 output.write(buffer, 0, read)
             }
         }
-        return output.toString(Charsets.UTF_8.name())
+        return output.toString(charset.name())
     }
 
     /** 仅解析秒数形式；超过 [MAX_RETRY_AFTER_MS] 按上限等待 */

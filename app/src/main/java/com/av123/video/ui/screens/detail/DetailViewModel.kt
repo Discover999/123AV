@@ -134,6 +134,9 @@ class DetailViewModel(
         videoRepository.getCachedPlayback(videoId, episodeIndex = 0)?.let { cached ->
             _playback.value = cached
             playbackFromCache = true
+            // 首集缓存命中与切集同口径：挂 5s 兜底，到点未进 READY 就作废重抓，
+            // 避免失效的缓存地址把播放器静默挂住
+            startCachedPlaybackWatchdog(episodeIndex = 0, url = cached.url)
         }
         viewModelScope.launch {
             // 先读历史续播信息（位置 + 上次选集），再拉详情：详情返回后若上次停留在
@@ -314,23 +317,30 @@ class DetailViewModel(
         if (cached != null) {
             _playback.value = cached
             playbackFromCache = true
-            // 缓存里的地址只证明「曾经能播」：起来之前挂一个兜底，
-            // 到点仍未进 READY 就作废并重新抓流，避免失效地址把播放器静默挂住
-            cachedPlaybackWatchdog = viewModelScope.launch {
-                delay(CACHED_PLAYBACK_TIMEOUT_MS)
-                if (playbackFromCache && _playback.value?.url == cached.url) {
-                    videoRepository.invalidatePlayback(videoId, index)
-                    playbackFromCache = false
-                    _playback.value = null
-                    _resolveFailed.value = false
-                    _captureEpoch.value += 1
-                }
-            }
+            startCachedPlaybackWatchdog(episodeIndex = index, url = cached.url)
         } else {
             // 播放源置空 -> 播放区显示“解析中”，抓流 WebView 以新代次重建抓该集
             playbackFromCache = false
             _playback.value = null
             _captureEpoch.value += 1
+        }
+    }
+
+    /**
+     * 缓存地址起播兜底：命中缓存的 m3u8 只证明「曾经能播」，起来之前挂一个
+     * [CACHED_PLAYBACK_TIMEOUT_MS] 计时，到点仍未进 READY（ExoPlayer 静默挂住而非抛错）
+     * 就作废缓存并重新抓流。首集 init 命中与 [switchEpisode] 命中共用同一口径。
+     */
+    private fun startCachedPlaybackWatchdog(episodeIndex: Int, url: String) {
+        cachedPlaybackWatchdog = viewModelScope.launch {
+            delay(CACHED_PLAYBACK_TIMEOUT_MS)
+            if (playbackFromCache && _playback.value?.url == url) {
+                videoRepository.invalidatePlayback(videoId, episodeIndex)
+                playbackFromCache = false
+                _playback.value = null
+                _resolveFailed.value = false
+                _captureEpoch.value += 1
+            }
         }
     }
 

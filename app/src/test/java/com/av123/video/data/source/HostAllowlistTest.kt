@@ -86,6 +86,24 @@ class HostAllowlistTest {
     }
 
     @Test
+    fun dynamicMedia_blocksDnsRebindingAndReservedHosts() {
+        val trusted = "https://sadie-shop.site"
+
+        // DNS 重绑定 / 固定回环域名：不是 IP 字面量，也必须拦截
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://127.0.0.1.nip.io/a.m3u8", trusted))
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://foo.sslip.io/a.m3u8", trusted))
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://lvh.me/a.m3u8", trusted))
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://localtest.me/a.m3u8", trusted))
+        // 保留给内部/私网使用的域名后缀
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://nas.internal/a.m3u8", trusted))
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://nas.lan/a.m3u8", trusted))
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://nas.home/a.m3u8", trusted))
+        assertFalse(dynamicAllowlist.isAllowedMedia("https://nas.corp/a.m3u8", trusted))
+        // 正常公网动态 host 仍放行，不受后缀拦截影响
+        assertTrue(dynamicAllowlist.isAllowedMedia("https://new-cdn.example/a.m3u8", trusted))
+    }
+
+    @Test
     fun dynamicMedia_doesNotOpenMainFrameNavigation() {
         assertFalse(dynamicAllowlist.isAllowedNavigation("https://new-cdn.example/video.m3u8"))
         assertTrue(dynamicAllowlist.isAllowedNavigation("https://806l.trueboldmove.site/a.m3u8"))

@@ -99,7 +99,7 @@ class AppContainer(context: Context) {
     val database = VideoHubDatabase.get(appContext)
     val pageCacheStore = PageCacheStore(database.pageCacheDao())
 
-    /** 内置 → 本地缓存 → 代码兜底的站点配置；远程刷新暂未启用 */
+    /** 内置 → 本地缓存 → 代码兜底的站点配置；启动 2s 后按 TTL 静默刷新远程配置，新配置下次冷启动生效 */
     val siteConfigStore: SiteConfigStore = SiteConfigStore(
         bundled = SiteConfigLoader.loadBundled(appContext),
         cacheFile = java.io.File(appContext.filesDir, "site-config-cache.json")

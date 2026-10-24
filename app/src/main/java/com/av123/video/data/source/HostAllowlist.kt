@@ -101,6 +101,11 @@ internal class HostAllowlist(
         if (host == "localhost" || host.endsWith(".localhost") || host.endsWith(".local")) {
             return true
         }
+        // 已知 DNS 重绑定/保留内部域名后缀：来源可信 embed 页也可能被劫持后把媒体地址
+        // 指向这类 host，主线程不做域名→IP 解析，这里按后缀拦截作为兜底。
+        if (REBINDING_HOST_SUFFIXES.any { host == it || host.endsWith(".$it") }) {
+            return true
+        }
         val isIpLiteral = host.contains(':') || IPV4_REGEX.matches(host)
         if (!isIpLiteral) return false
 
@@ -120,5 +125,19 @@ internal class HostAllowlist(
 
     private companion object {
         val IPV4_REGEX = Regex("""^(?:\d{1,3}\.){3}\d{1,3}$""")
+
+        /**
+         * 已知 DNS 重绑定 / 保留内部域名后缀。动态媒体 host 只在主线程做字面量判断、
+         * 不做域名→IP 解析，这里按后缀拦截，把 nip.io 这类「把私网/回环地址映射成域名」
+         * 的通道堵住；正常 CDN 域名不会用这些后缀，静态 [mediaHosts] 也不受影响。
+         */
+        val REBINDING_HOST_SUFFIXES = setOf(
+            // 经典 DNS 重绑定：任意 IP（含私网/回环）都可作为前导标签解析
+            "nip.io", "sslip.io", "xip.io",
+            // 固定解析到 127.0.0.1 的域名
+            "lvh.me", "localtest.me", "vcap.me", "traefik.me",
+            // 保留给内部/私网使用的特殊用途名（RFC 8375 / 6761 等）
+            "internal", "intranet", "lan", "home", "corp", "localdomain", "home.arpa"
+        )
     }
 }

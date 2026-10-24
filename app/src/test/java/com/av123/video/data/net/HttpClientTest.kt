@@ -1,5 +1,6 @@
 package com.av123.video.data.net
 
+import java.nio.charset.Charset
 import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -81,6 +82,22 @@ class HttpClientTest {
         assertEquals(403, response.code)
         assertEquals("forbidden", response.body)
         assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun execute_decodesBodyUsingContentTypeCharset() = runBlocking {
+        // GBK 编码的响应体：若固定按 UTF-8 解码，中文会乱码
+        val gbk = Charset.forName("GBK")
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(okio.Buffer().write("中文标题".toByteArray(gbk)))
+                .addHeader("Content-Type", "text/html; charset=GBK")
+        )
+
+        val response = HttpClient.execute(server.url("/page").toString())
+
+        assertEquals("中文标题", response.body)
     }
 
     @Test

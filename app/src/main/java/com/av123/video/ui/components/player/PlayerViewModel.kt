@@ -94,6 +94,17 @@ class PlayerViewModel : ViewModel() {
         initializedKey = null
     }
 
+    /**
+     * 释放指定播放器实例：仅当它仍是当前实例时才真正释放。
+     * 换源（缓存命中原地换 URL）时 [initialize] 已先释放旧实例并创建新实例，
+     * 旧组合的 onDispose 走到这里时身份不匹配，就不会误释新实例。
+     */
+    fun releasePlayer(instance: ExoPlayer) {
+        if (player === instance) {
+            releasePlayer()
+        }
+    }
+
     override fun onCleared() {
         releasePlayer()
     }

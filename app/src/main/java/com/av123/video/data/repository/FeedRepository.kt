@@ -32,6 +32,9 @@ class FeedRepository(
     private val _error = MutableStateFlow<AppError?>(null)
     val error: StateFlow<AppError?> = _error.asStateFlow()
 
+    /** 进行中的首页刷新任务：去重，避免 check-then-act 竞态导致并发抓取 */
+    private var refreshJob: Job? = null
+
     /** 从冷启动缓存条目恢复首页 feed，返回缓存落盘时间（无缓存返回 0） */
     fun hydrate(entries: List<PageCacheEntity>): Long {
         val entity = entries.firstOrNull { it.cacheKey == PageCacheStore.FEED_KEY }
@@ -48,9 +51,11 @@ class FeedRepository(
      * 返回加载任务，调用方可通过 join 等待其完成；已在刷新中或非强制且已有缓存时返回 null。
      */
     fun refresh(force: Boolean = false): Job? {
+        if (refreshJob?.isActive == true) return null
         if (_isRefreshing.value) return null
         if (!force && _feed.value != null) return null
         return scope.launch { refreshFeed(reportFailureSnackbar = true) }
+            .also { refreshJob = it }
     }
 
     /**

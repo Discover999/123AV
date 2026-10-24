@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.concurrent.ConcurrentHashMap
 
 /**
  * 某个分类列表页的当前状态：已加载视频、分页信息、加载中标记与错误信息。
@@ -70,6 +71,10 @@ class CategoryRepository(
     /** 各分栏栏目列表页状态（按导航路径缓存，如 /cn/hot、/cn/11，翻页/返回后保留） */
     private val _channelPages = MutableStateFlow<Map<String, CategoryPageState>>(emptyMap())
     val channelPages: StateFlow<Map<String, CategoryPageState>> = _channelPages.asStateFlow()
+
+    /** 在途加载任务去重：同一分类/栏目并发触发时复用同一 Job，避免重复抓取 */
+    private val inFlightCategories = ConcurrentHashMap<String, Job>()
+    private val inFlightChannels = ConcurrentHashMap<String, Job>()
 
     /** 从冷启动缓存条目恢复各分类/栏目第一页到内存状态 */
     fun hydrate(entries: List<PageCacheEntity>) {
@@ -123,7 +128,15 @@ class CategoryRepository(
      * 返回加载任务，调用方可 join 等待完成（下拉刷新场景需要，不能靠观察 isLoading
      * 瞬时跳变判断结束——空页可能毫秒级返回，StateFlow 合并会丢掉中间状态）。
      */
-    fun loadCategoryPage(category: String, page: Int): Job = scope.launch {
+    fun loadCategoryPage(category: String, page: Int): Job {
+        inFlightCategories[category]?.takeIf { it.isActive }?.let { return it }
+        return launchCategoryPage(category, page).also { job ->
+            inFlightCategories[category] = job
+            job.invokeOnCompletion { inFlightCategories.remove(category, job) }
+        }
+    }
+
+    private fun launchCategoryPage(category: String, page: Int): Job = scope.launch {
         _categoryPages.update { states ->
             states + (category to (states[category] ?: CategoryPageState())
                 .copy(isLoading = true, error = null, page = page))
@@ -198,6 +211,19 @@ class CategoryRepository(
      * 瞬时跳变判断结束——空页可能毫秒级返回，StateFlow 合并会丢掉中间状态）。
      */
     fun loadChannelPage(
+        path: String,
+        label: String,
+        page: Int,
+        queryParams: Map<String, String> = emptyMap()
+    ): Job {
+        inFlightChannels[path]?.takeIf { it.isActive }?.let { return it }
+        return launchChannelPage(path, label, page, queryParams).also { job ->
+            inFlightChannels[path] = job
+            job.invokeOnCompletion { inFlightChannels.remove(path, job) }
+        }
+    }
+
+    private fun launchChannelPage(
         path: String,
         label: String,
         page: Int,
